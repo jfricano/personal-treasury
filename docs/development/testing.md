@@ -25,6 +25,8 @@ Every public test uses synthetic workbooks (`tests/fixtures/`) or the fictional 
 
 ## Playwright (demo build)
 
+The eight current scenarios are a critical-flow baseline, not a complete UI or native-desktop certification. The [v2 plan](v2-plan.md) specifies a control-by-control inventory, additional negative and responsive paths, and a packaged macOS verification gate.
+
 The clock is pinned to 2026-09-24 so the date-relative sample data gives exact figures.
 
 1. Sample data → a change survives reload → start blank → undo → reset; a new tab starts from the sample.

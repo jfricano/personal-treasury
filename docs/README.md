@@ -15,6 +15,7 @@
 | [Architecture](development/architecture.md) | Understand the schema, the calculation model, the budget → treasury lifecycle and the demo build. |
 | [Data model and calculation rules](development/data-and-rules.md) | See the exact rules for reconciliation, transfers and debts that the app must never drift from. |
 | [Workbook import](development/workbook-import.md) | See which spreadsheet layouts import, and how rows are normalized and checked. |
-| [Acceptance tests](development/acceptance-tests.md) | See the behaviors every release must pass (AT1–AT15 in the test names). |
+| [Acceptance tests](development/acceptance-tests.md) | See the behaviors every release must pass and the release gate. |
 | [Testing](development/testing.md) | See what each test suite covers and how to run it. |
+| [V2 plan and builder handoff](development/v2-plan.md) | Review confirmed issues, design direction, exhaustive test scope, release gates, and the next-phase prompt. |
 | [Decisions](development/decisions/) | Read why things are the way they are, where the specification left a choice open. |
