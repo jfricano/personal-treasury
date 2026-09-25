@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   add,
+  formatMoneyInput,
   formatUSD,
   fromSourceNumber,
   isEffectivelyZero,
@@ -40,6 +41,9 @@ describe('AT1 decimal arithmetic', () => {
   it('formats negatives and parses user input', () => {
     expect(formatUSD('-1234', { parens: true })).toBe('($1,234.00)');
     expect(formatUSD('-0.004')).toBe('$0.00');
+    expect(formatMoneyInput('2345.678901234567')).toBe('2,345.678901234567');
+    expect(formatMoneyInput('-1234')).toBe('-1,234.00');
+    expect(formatMoneyInput('0.1')).toBe('0.10');
     expect(parseMoneyInput('$1,234.50')).toBe('1234.5');
     expect(parseMoneyInput('(12)')).toBe('-12');
     expect(parseMoneyInput('12abc')).toBeNull();

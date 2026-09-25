@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
-import { formatUSD, parseMoneyInput, spokenUSD, type Money } from '@/domain/money';
+import { formatMoneyInput, formatUSD, parseMoneyInput, spokenUSD, type Money } from '@/domain/money';
 import {
   DEBT_STATUS_LABEL,
   MONTH_STATUS_LABEL,
@@ -94,7 +94,7 @@ export function Dialog({
     <dialog
       ref={ref}
       aria-label={title}
-      style={wide ? { minWidth: 680 } : undefined}
+      className={wide ? 'wide-dialog' : undefined}
       onCancel={(e) => {
         e.preventDefault();
         onClose();
@@ -172,8 +172,9 @@ export function CommitInput({
   multiline?: boolean;
 }) {
   const [draft, setDraft] = useState<string | null>(null);
-  // Money shows cents at rest; focusing reveals the full stored precision for editing.
-  const shown = draft ?? (money && value !== '' ? formatUSD(value, { plain: true }) : value);
+  // The visible editable value always retains full precision. Focus must not
+  // replace the DOM value after the browser has selected text for replacement.
+  const shown = draft ?? (money && value !== '' ? formatMoneyInput(value) : value);
   const invalid = money && draft !== null && draft.trim() !== '' && parseMoneyInput(draft) === null;
   const commit = () => {
     if (draft === null) return;
@@ -190,7 +191,6 @@ export function CommitInput({
     disabled,
     placeholder,
     value: shown,
-    onFocus: () => setDraft(value),
     onBlur: commit,
     onChange: (e: { target: { value: string } }) => setDraft(e.target.value),
     onKeyDown: (e: React.KeyboardEvent) => {
@@ -318,4 +318,10 @@ export function Panel({
   );
 }
 
-export const todayIso = () => new Date().toISOString().slice(0, 10);
+export const todayIso = () => {
+  const date = new Date();
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};

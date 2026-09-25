@@ -38,6 +38,20 @@ export function Dashboard() {
   const accounts = t.accountMap();
   const goMonth = () => navigate({ page: 'monthly', monthId: m?.cycle.id });
   const required = m?.result.lines.filter((l) => l.required) ?? [];
+  const pending = m?.result.issues.filter((i) => !i.blocking) ?? [];
+  const review = m?.result.issues.filter((i) => i.blocking) ?? [];
+  const reviewCount =
+    review.length + d.needsReviewAccounts.length + (d.budgetDiff ? 1 : 0) + d.unresolvedWarnings.length;
+  const goIssue = (issue: { accountId?: string; entryId?: string }) =>
+    navigate({
+      page: 'monthly',
+      monthId: m?.cycle.id,
+      target: issue.entryId
+        ? `entry:${issue.entryId}`
+        : issue.accountId
+          ? `done:${issue.accountId}`
+          : 'summary',
+    });
   const rows = showAll ? (m?.result.lines ?? []) : required;
   const maxAlloc = m
     ? m.result.lines.reduce((mx, l) => (dec(l.budgetAmount).gt(mx) ? dec(l.budgetAmount) : mx), dec('0'))
@@ -91,16 +105,40 @@ export function Dashboard() {
       <div className="grid-2">
         <div>
           <Panel
-            title="Items requiring review"
-            actions={m && <span className="small subtle">{m.result.issues.length} item(s)</span>}
+            title="Transfers to complete"
+            actions={<span className="small subtle">{pending.length} item(s)</span>}
           >
             <ul className="issues">
-              {m?.result.issues.map((i, k) => (
+              {pending.map((i, k) => (
                 <li key={k}>
-                  <span className={`dot${i.blocking ? '' : ' soft'}`} aria-hidden />
+                  <span className="dot soft" aria-hidden />
                   <span>
                     {i.message}{' '}
-                    <button className="btn link small" onClick={goMonth}>
+                    <button
+                      className="btn link small"
+                      aria-label={`Mark ${i.accountId ? code(i.accountId) : 'transfer'} done`}
+                      onClick={() => goIssue(i)}
+                    >
+                      Mark done
+                    </button>
+                  </span>
+                </li>
+              ))}
+              {pending.length === 0 && <li className="subtle">No transfers waiting for confirmation.</li>}
+            </ul>
+          </Panel>
+          <Panel title="Needs review" actions={<span className="small subtle">{reviewCount} item(s)</span>}>
+            <ul className="issues">
+              {review.map((i, k) => (
+                <li key={k}>
+                  <span className="dot" aria-hidden />
+                  <span>
+                    {i.message}{' '}
+                    <button
+                      className="btn link small"
+                      aria-label={`Resolve ${i.message}`}
+                      onClick={() => goIssue(i)}
+                    >
                       Resolve
                     </button>
                   </span>
@@ -122,30 +160,38 @@ export function Dashboard() {
                   <span className="dot soft" aria-hidden />
                   <span>
                     Budget {d.budgetDiff.versionLabel} differs from this month&apos;s allocations.{' '}
-                    <button className="btn link small" onClick={goMonth}>
+                    <button
+                      className="btn link small"
+                      onClick={() =>
+                        navigate({ page: 'monthly', monthId: m?.cycle.id, target: 'budget-refresh' })
+                      }
+                    >
                       Review and refresh
                     </button>
                   </span>
                 </li>
               )}
-              {d.unresolvedWarnings.length > 0 && (
-                <li>
+              {d.unresolvedWarnings.map((warning) => (
+                <li key={warning.id}>
                   <span className="dot" aria-hidden />
                   <span>
-                    {d.unresolvedWarnings.length} high-severity import warning(s) are unresolved.{' '}
-                    <button className="btn link small" onClick={() => navigate({ page: 'import' })}>
+                    {warning.message}
+                    {warning.sheet
+                      ? ` (${warning.sheet}${warning.cell ? `!${warning.cell}` : ''})`
+                      : ''}.{' '}
+                    <button
+                      className="btn link small"
+                      aria-label={`Open import report for ${warning.message}`}
+                      onClick={() => navigate({ page: 'import' })}
+                    >
                       Open import report
                     </button>
                   </span>
                 </li>
+              ))}
+              {m && reviewCount === 0 && (
+                <li className="subtle">Nothing needs attention for {monthLabel(m.cycle.month)}.</li>
               )}
-              {m &&
-                m.result.issues.length === 0 &&
-                d.needsReviewAccounts.length === 0 &&
-                d.unresolvedWarnings.length === 0 &&
-                !d.budgetDiff && (
-                  <li className="subtle">Nothing needs attention for {monthLabel(m.cycle.month)}.</li>
-                )}
               {!m && <li className="subtle">No months yet. Create one from Monthly reconciliation.</li>}
             </ul>
           </Panel>

@@ -1,0 +1,3624 @@
+{
+  "dashboard": [
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Dashboard",
+      "disabled": false,
+      "href": "#/dashboard"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Monthly reconciliation",
+      "disabled": false,
+      "href": "#/monthly"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Budget and tax",
+      "disabled": false,
+      "href": "#/budget"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Interaccount debts",
+      "disabled": false,
+      "href": "#/debts"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "History",
+      "disabled": false,
+      "href": "#/history"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Accounts",
+      "disabled": false,
+      "href": "#/accounts"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Import and export",
+      "disabled": false,
+      "href": "#/import"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Settings",
+      "disabled": false,
+      "href": "#/settings"
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "↶ Undo",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Take the tour",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "What to try ▾",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Reset sample data",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Start blank",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "select",
+      "type": null,
+      "name": "Month",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Open reconciliation",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "MonthSeptember 2026",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Expected cash$4,690.96",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Allocation difference$0.00",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Transfers completed3 of 8",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Non-zero debts4",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Total debt outstanding$785.00",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Mark PETC done",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Mark TRV done",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Mark CLTH done",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Mark GIFT done",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Mark ENT done",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": "checkbox",
+      "name": "Show all",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": "checkbox",
+      "name": "Mark HH transfer done",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": "checkbox",
+      "name": "Mark PETC transfer done",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": "checkbox",
+      "name": "Mark LTS transfer done",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": "checkbox",
+      "name": "Mark TRV transfer done",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": "checkbox",
+      "name": "Mark KIDS transfer done",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": "checkbox",
+      "name": "Mark CLTH transfer done",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": "checkbox",
+      "name": "Mark GIFT transfer done",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": "checkbox",
+      "name": "Mark ENT transfer done",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Open budget",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Open debts",
+      "disabled": false,
+      "href": null
+    }
+  ],
+  "monthly": [
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Dashboard",
+      "disabled": false,
+      "href": "#/dashboard"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Monthly reconciliation",
+      "disabled": false,
+      "href": "#/monthly"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Budget and tax",
+      "disabled": false,
+      "href": "#/budget"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Interaccount debts",
+      "disabled": false,
+      "href": "#/debts"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "History",
+      "disabled": false,
+      "href": "#/history"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Accounts",
+      "disabled": false,
+      "href": "#/accounts"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Import and export",
+      "disabled": false,
+      "href": "#/import"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Settings",
+      "disabled": false,
+      "href": "#/settings"
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "↶ Undo",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Take the tour",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "What to try ▾",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Reset sample data",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Start blank",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "select",
+      "type": null,
+      "name": "Month",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Budget After the raise",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "New month",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Close month",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Export journal CSV",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "div",
+      "type": null,
+      "name": "ReconciliationExpected cashAllocation difference✓$0.00Journal difference✓$0.00Final transfer differe",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Expected cash",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "HH",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "HH budget allocation",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "select",
+      "type": null,
+      "name": "HH transferred",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "HH notes",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "PETC",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "PETC budget allocation",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "select",
+      "type": null,
+      "name": "PETC transferred",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "PETC notes",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "LTS",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "LTS budget allocation",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "select",
+      "type": null,
+      "name": "LTS transferred",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "LTS notes",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "TRV",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "TRV budget allocation",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "select",
+      "type": null,
+      "name": "TRV transferred",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "TRV notes",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "KIDS",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "KIDS budget allocation",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "select",
+      "type": null,
+      "name": "KIDS transferred",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "KIDS notes",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "CLTH",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "CLTH budget allocation",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "select",
+      "type": null,
+      "name": "CLTH transferred",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "CLTH notes",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "GIFT",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "GIFT budget allocation",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "select",
+      "type": null,
+      "name": "GIFT transferred",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "GIFT notes",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "ENT",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "ENT budget allocation",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "select",
+      "type": null,
+      "name": "ENT transferred",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "ENT notes",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Advanced entry",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "tr",
+      "type": null,
+      "name": "2026-09-01H-01Brakes paymentPETCLTS$100.00OKLoan H-01 -$100.00Edit✕",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Loan H-01 -$100.00",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Edit",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Delete entry",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "tr",
+      "type": null,
+      "name": "2026-09-02H-05Flights paymentTRVLTS$100.00OKLoan H-05 -$100.00Edit✕",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Loan H-05 -$100.00",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Edit",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Delete entry",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "tr",
+      "type": null,
+      "name": "2026-09-03School book fairENTKIDS$25.00OKEdit✕",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Edit",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Delete entry",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": "date",
+      "name": "Date",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Loan ID",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Description",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "From account",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "To account",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Amount",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Notes",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Add",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "textarea",
+      "type": null,
+      "name": "Month notes",
+      "disabled": false,
+      "href": null
+    }
+  ],
+  "budget": [
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Dashboard",
+      "disabled": false,
+      "href": "#/dashboard"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Monthly reconciliation",
+      "disabled": false,
+      "href": "#/monthly"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Budget and tax",
+      "disabled": false,
+      "href": "#/budget"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Interaccount debts",
+      "disabled": false,
+      "href": "#/debts"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "History",
+      "disabled": false,
+      "href": "#/history"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Accounts",
+      "disabled": false,
+      "href": "#/accounts"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Import and export",
+      "disabled": false,
+      "href": "#/import"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Settings",
+      "disabled": false,
+      "href": "#/settings"
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "↶ Undo",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Take the tour",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "What to try ▾",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Reset sample data",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Start blank",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Budget versions",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Tax rules",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "New empty draft",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "After the raise",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Spring plan",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Duplicate",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Version label",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": "month",
+      "name": "Effective from",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": "month",
+      "name": "Effective through",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Tax year",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "textarea",
+      "type": null,
+      "name": "Version notes",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Gross pay",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "401(k), 5% of gross label",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "401(k), 5% of gross rate percent",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "401(k), 5% of gross exclusion",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": "checkbox",
+      "name": "401(k), 5% of gross reducesFederalIncome",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": "checkbox",
+      "name": "401(k), 5% of gross reducesCaIncome",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": "checkbox",
+      "name": "401(k), 5% of gross reducesFicaWages",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Medical premium label",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Medical premium amount",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": "checkbox",
+      "name": "Medical premium reducesFederalIncome",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": "checkbox",
+      "name": "Medical premium reducesCaIncome",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": "checkbox",
+      "name": "Medical premium reducesFicaWages",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Dental and vision label",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Dental and vision amount",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": "checkbox",
+      "name": "Dental and vision reducesFederalIncome",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": "checkbox",
+      "name": "Dental and vision reducesCaIncome",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": "checkbox",
+      "name": "Dental and vision reducesFicaWages",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Supplemental life insurance label",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Supplemental life insurance amount",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Federal income tax withholding",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "California income tax withholding",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Social Security withholding",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Medicare withholding",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Edit tax rules",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Rent label",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Rent amount",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "select",
+      "type": null,
+      "name": "Rent funding account",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Utilities label",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Utilities amount",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "select",
+      "type": null,
+      "name": "Utilities funding account",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Internet and phone label",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Internet and phone amount",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "select",
+      "type": null,
+      "name": "Internet and phone funding account",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Groceries label",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Groceries amount",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "select",
+      "type": null,
+      "name": "Groceries funding account",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Household supplies label",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Household supplies amount",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "select",
+      "type": null,
+      "name": "Household supplies funding account",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Clothing label",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Clothing amount",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "select",
+      "type": null,
+      "name": "Clothing funding account",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Car insurance label",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Car insurance amount",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "select",
+      "type": null,
+      "name": "Car insurance funding account",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Fuel and parking label",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Fuel and parking amount",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "select",
+      "type": null,
+      "name": "Fuel and parking funding account",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Streaming and apps label",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Streaming and apps amount",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "select",
+      "type": null,
+      "name": "Streaming and apps funding account",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "After-school program label",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "After-school program amount",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "select",
+      "type": null,
+      "name": "After-school program funding account",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Soccer and activities label",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Soccer and activities amount",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "select",
+      "type": null,
+      "name": "Soccer and activities funding account",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Biscuit: food and vet label",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Biscuit: food and vet amount",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "select",
+      "type": null,
+      "name": "Biscuit: food and vet funding account",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Medical and dental copays label",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Medical and dental copays amount",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "select",
+      "type": null,
+      "name": "Medical and dental copays funding account",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Car maintenance label",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Car maintenance amount",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "select",
+      "type": null,
+      "name": "Car maintenance funding account",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Emergency fund label",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Emergency fund amount",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "select",
+      "type": null,
+      "name": "Emergency fund funding account",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Summer trip fund label",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Summer trip fund amount",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "select",
+      "type": null,
+      "name": "Summer trip fund funding account",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Birthdays and holidays label",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Birthdays and holidays amount",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "select",
+      "type": null,
+      "name": "Birthdays and holidays funding account",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Everything else label",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "select",
+      "type": null,
+      "name": "Everything else funding account",
+      "disabled": true,
+      "href": null
+    }
+  ],
+  "debts": [
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Dashboard",
+      "disabled": false,
+      "href": "#/dashboard"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Monthly reconciliation",
+      "disabled": false,
+      "href": "#/monthly"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Budget and tax",
+      "disabled": false,
+      "href": "#/budget"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Interaccount debts",
+      "disabled": false,
+      "href": "#/debts"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "History",
+      "disabled": false,
+      "href": "#/history"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Accounts",
+      "disabled": false,
+      "href": "#/accounts"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Import and export",
+      "disabled": false,
+      "href": "#/import"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Settings",
+      "disabled": false,
+      "href": "#/settings"
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "↶ Undo",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Take the tour",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "What to try ▾",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Reset sample data",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Start blank",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "New debt",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Record payment",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Export CSV",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Non-zero debts4",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Total outstanding$785.00",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Largest debt$300.00 Loan H-01, H-05",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "ENT",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Debts owed to ENT",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Debts owed by ENT",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "($35.00)",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "HH",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Debts owed to HH",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Debts owed by HH",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "$150.00",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "KIDS",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Debts owed to KIDS",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Debts owed by KIDS",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "($115.00)",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "LTS",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Debts owed to LTS",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Debts owed by LTS",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "$600.00",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "PETC",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Debts owed to PETC",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Debts owed by PETC",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "($300.00)",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "TRV",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Debts owed to TRV",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Debts owed by TRV",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "($300.00)",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Non-zero",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "All",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Open",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Paid",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Credit",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Review note",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "select",
+      "type": null,
+      "name": "Account filter",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": "search",
+      "name": "Search debts",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": "date",
+      "name": "Active from",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": "date",
+      "name": "Opened by",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "H-01",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "H-03",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "H-04",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "H-05",
+      "disabled": false,
+      "href": null
+    }
+  ],
+  "history": [
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Dashboard",
+      "disabled": false,
+      "href": "#/dashboard"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Monthly reconciliation",
+      "disabled": false,
+      "href": "#/monthly"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Budget and tax",
+      "disabled": false,
+      "href": "#/budget"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Interaccount debts",
+      "disabled": false,
+      "href": "#/debts"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "History",
+      "disabled": false,
+      "href": "#/history"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Accounts",
+      "disabled": false,
+      "href": "#/accounts"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Import and export",
+      "disabled": false,
+      "href": "#/import"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Settings",
+      "disabled": false,
+      "href": "#/settings"
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "↶ Undo",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Take the tour",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "What to try ▾",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Reset sample data",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Start blank",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "September 2026",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "August 2026",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "July 2026",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "June 2026",
+      "disabled": false,
+      "href": null
+    }
+  ],
+  "accounts": [
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Dashboard",
+      "disabled": false,
+      "href": "#/dashboard"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Monthly reconciliation",
+      "disabled": false,
+      "href": "#/monthly"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Budget and tax",
+      "disabled": false,
+      "href": "#/budget"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Interaccount debts",
+      "disabled": false,
+      "href": "#/debts"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "History",
+      "disabled": false,
+      "href": "#/history"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Accounts",
+      "disabled": false,
+      "href": "#/accounts"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Import and export",
+      "disabled": false,
+      "href": "#/import"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Settings",
+      "disabled": false,
+      "href": "#/settings"
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "↶ Undo",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Take the tour",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "What to try ▾",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Reset sample data",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Start blank",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "New account code",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Add account",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Move HH up",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Move HH down",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "HH display name",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "textarea",
+      "type": null,
+      "name": "HH description",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "+ alias",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": "color",
+      "name": "HH color",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": "checkbox",
+      "name": "Active",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Delete HH",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Move PETC up",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Move PETC down",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "PETC display name",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "textarea",
+      "type": null,
+      "name": "PETC description",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "+ alias",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": "color",
+      "name": "PETC color",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": "checkbox",
+      "name": "Active",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Delete PETC",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Move LTS up",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Move LTS down",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "LTS display name",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "textarea",
+      "type": null,
+      "name": "LTS description",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "+ alias",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": "color",
+      "name": "LTS color",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": "checkbox",
+      "name": "Active",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Delete LTS",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Move TRV up",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Move TRV down",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "TRV display name",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "textarea",
+      "type": null,
+      "name": "TRV description",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "+ alias",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": "color",
+      "name": "TRV color",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": "checkbox",
+      "name": "Active",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Delete TRV",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Move KIDS up",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Move KIDS down",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "KIDS display name",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "textarea",
+      "type": null,
+      "name": "KIDS description",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "+ alias",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": "color",
+      "name": "KIDS color",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": "checkbox",
+      "name": "Active",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Delete KIDS",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Move CLTH up",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Move CLTH down",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "CLTH display name",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "textarea",
+      "type": null,
+      "name": "CLTH description",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "+ alias",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": "color",
+      "name": "CLTH color",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": "checkbox",
+      "name": "Active",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Delete CLTH",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Move GIFT up",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Move GIFT down",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "GIFT display name",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "textarea",
+      "type": null,
+      "name": "GIFT description",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "+ alias",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": "color",
+      "name": "GIFT color",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": "checkbox",
+      "name": "Active",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Delete GIFT",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Move ENT up",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Move ENT down",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "ENT display name",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "textarea",
+      "type": null,
+      "name": "ENT description",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "+ alias",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": "color",
+      "name": "ENT color",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": "checkbox",
+      "name": "Active",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Delete ENT",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Budget and tax",
+      "disabled": false,
+      "href": null
+    }
+  ],
+  "import": [
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Dashboard",
+      "disabled": false,
+      "href": "#/dashboard"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Monthly reconciliation",
+      "disabled": false,
+      "href": "#/monthly"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Budget and tax",
+      "disabled": false,
+      "href": "#/budget"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Interaccount debts",
+      "disabled": false,
+      "href": "#/debts"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "History",
+      "disabled": false,
+      "href": "#/history"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Accounts",
+      "disabled": false,
+      "href": "#/accounts"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Import and export",
+      "disabled": false,
+      "href": "#/import"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Settings",
+      "disabled": false,
+      "href": "#/settings"
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "↶ Undo",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Take the tour",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "What to try ▾",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Reset sample data",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Start blank",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Choose workbook…",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Download the sample household's workbook",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Choose budget workbook…",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Excel workbook",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Complete JSON backup",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Journal CSV (per month)…",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Debt events CSV…",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Choose backup…",
+      "disabled": false,
+      "href": null
+    }
+  ],
+  "settings": [
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Dashboard",
+      "disabled": false,
+      "href": "#/dashboard"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Monthly reconciliation",
+      "disabled": false,
+      "href": "#/monthly"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Budget and tax",
+      "disabled": false,
+      "href": "#/budget"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Interaccount debts",
+      "disabled": false,
+      "href": "#/debts"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "History",
+      "disabled": false,
+      "href": "#/history"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Accounts",
+      "disabled": false,
+      "href": "#/accounts"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Import and export",
+      "disabled": false,
+      "href": "#/import"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Settings",
+      "disabled": false,
+      "href": "#/settings"
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "↶ Undo",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Take the tour",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "What to try ▾",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Reset sample data",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Start blank",
+      "disabled": false,
+      "href": null
+    }
+  ],
+  "demo:exercises": [
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Take the tour",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "What to try ▴",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Reset sample data",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Start blank",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Mark this month’s remaining transfers Done to complete it.",
+      "disabled": false,
+      "href": "#/monthly"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Change an allocation and watch the month move to Review.",
+      "disabled": false,
+      "href": "#/monthly"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Record a payment on debt H-01, then undo it with ⌘Z / Ctrl-Z.",
+      "disabled": false,
+      "href": "#/debts"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Overpay debt H-05 and see who owes whom reverse.",
+      "disabled": false,
+      "href": "#/debts"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Duplicate the active budget, change a line, activate it, then refresh the month.",
+      "disabled": false,
+      "href": "#/budget"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Download the sample workbook, start blank, and import it with a full preview.",
+      "disabled": false,
+      "href": "#/import"
+    }
+  ],
+  "demo:tour": [
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Skip tour",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Show me",
+      "disabled": false,
+      "href": null
+    }
+  ],
+  "monthly:advanced-entry": [
+    {
+      "tag": "input",
+      "type": "date",
+      "name": "Date",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Loan ID",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Description",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Posting 1 account",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Posting 1 amount",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Remove posting",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Posting 2 account",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Posting 2 amount",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Remove posting",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "+ Posting",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Notes",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Cancel",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Save balanced entry",
+      "disabled": true,
+      "href": null
+    }
+  ],
+  "monthly:advanced-entry:375": {
+    "left": 12,
+    "right": 363,
+    "viewport": 375,
+    "bodyScroll": 349
+  },
+  "monthly:new-month": [
+    {
+      "tag": "input",
+      "type": "month",
+      "name": "Month",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Expected cash",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "select",
+      "type": null,
+      "name": "Start fromActive budget After the raise (take-home $4,690.96)Legacy allocation template — none yetDuplicate a prior monthBlank (all active accounts at $0)",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Cancel",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Create month",
+      "disabled": false,
+      "href": null
+    }
+  ],
+  "monthly:refresh-budget": [
+    {
+      "tag": "input",
+      "type": "checkbox",
+      "name": "Also replace my manual overrides",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Cancel",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Refresh allocations",
+      "disabled": true,
+      "href": null
+    }
+  ],
+  "monthly:close-override": [
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Reason for override (recorded)",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Keep open",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Close with override",
+      "disabled": true,
+      "href": null
+    }
+  ],
+  "debts:new-debt": [
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Loan ID",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": "date",
+      "name": "Opened date",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Debt description",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Debtor account",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Creditor account",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Opening amount",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Terms / notes",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Cancel",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Create debt",
+      "disabled": true,
+      "href": null
+    }
+  ],
+  "debts:payment": [
+    {
+      "tag": "select",
+      "type": null,
+      "name": "Loan",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": "date",
+      "name": "Date",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Payment amount",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Description",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Notes",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": "checkbox",
+      "name": "Advanced: signed adjustment",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Cancel",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Save payment",
+      "disabled": true,
+      "href": null
+    }
+  ],
+  "debts:loan-drawer": [
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Record payment",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Close",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Correct",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Delete event",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Correct",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Delete event",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Correct",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Delete event",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Correct",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Delete event",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "2026-07",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "2026-08",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "2026-09",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Delete debt…",
+      "disabled": false,
+      "href": null
+    }
+  ],
+  "budget:new-draft": [
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Label",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Cancel",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Create draft",
+      "disabled": false,
+      "href": null
+    }
+  ],
+  "budget:activate": [
+    {
+      "tag": "input",
+      "type": "month",
+      "name": "In effect from",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Cancel",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Activate",
+      "disabled": false,
+      "href": null
+    }
+  ],
+  "accounts:add-alias": [
+    {
+      "tag": "input",
+      "type": null,
+      "name": "Alternate spelling for HH",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Cancel",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Add alias",
+      "disabled": false,
+      "href": null
+    }
+  ],
+  "import:preview": [
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Take the tour",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "What to try ▴",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Reset sample data",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Start blank",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Mark this month’s remaining transfers Done to complete it.",
+      "disabled": false,
+      "href": "#/monthly"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Change an allocation and watch the month move to Review.",
+      "disabled": false,
+      "href": "#/monthly"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Record a payment on debt H-01, then undo it with ⌘Z / Ctrl-Z.",
+      "disabled": false,
+      "href": "#/debts"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Overpay debt H-05 and see who owes whom reverse.",
+      "disabled": false,
+      "href": "#/debts"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Duplicate the active budget, change a line, activate it, then refresh the month.",
+      "disabled": false,
+      "href": "#/budget"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Download the sample workbook, start blank, and import it with a full preview.",
+      "disabled": false,
+      "href": "#/import"
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Start over",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "input",
+      "type": "checkbox",
+      "name": "Replace the data in this demo (a safety copy is saved first)",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Commit import",
+      "disabled": true,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Report (Markdown)",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Report (JSON)",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Choose budget workbook…",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Excel workbook",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Complete JSON backup",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Journal CSV (per month)…",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Debt events CSV…",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Choose backup…",
+      "disabled": false,
+      "href": null
+    }
+  ],
+  "demo:blank-confirm": [
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Cancel",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Start blank",
+      "disabled": false,
+      "href": null
+    }
+  ],
+  "dashboard:blank": [
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Take the tour",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "What to try ▴",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Reset sample data",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Start blank",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Mark this month’s remaining transfers Done to complete it.",
+      "disabled": false,
+      "href": "#/monthly"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Change an allocation and watch the month move to Review.",
+      "disabled": false,
+      "href": "#/monthly"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Record a payment on debt H-01, then undo it with ⌘Z / Ctrl-Z.",
+      "disabled": false,
+      "href": "#/debts"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Overpay debt H-05 and see who owes whom reverse.",
+      "disabled": false,
+      "href": "#/debts"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Duplicate the active budget, change a line, activate it, then refresh the month.",
+      "disabled": false,
+      "href": "#/budget"
+    },
+    {
+      "tag": "a",
+      "type": null,
+      "name": "Download the sample workbook, start blank, and import it with a full preview.",
+      "disabled": false,
+      "href": "#/import"
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Import workbookAnalyze Cash Flow and Account Ledger.xlsx, review the preview, then commit.",
+      "disabled": false,
+      "href": null
+    },
+    {
+      "tag": "button",
+      "type": null,
+      "name": "Create manuallyAdd account buckets and a default allocation, then start a month.",
+      "disabled": false,
+      "href": null
+    }
+  ]
+}

@@ -363,7 +363,7 @@ function VersionDetail({ view }: { view: VersionView }) {
         </Panel>
       ) : (
         <>
-          <div className="grid-2">
+          <div className="grid-2 budget-overview">
             <PayrollPanel view={view} editable={ed} />
             <TaxPanel view={view} />
           </div>
@@ -638,28 +638,33 @@ function DeductionGroup({
               onCommit={(s) => run(() => t.budget.updateDeduction(d.id, { ...d, label: s }))}
             />
             {d.method === 'rate_of_gross_less_exclusion' && (
-              <div className="small subtle btn-row" style={{ gap: 4 }}>
-                <span>=</span>
-                <CommitInput
-                  className="cell"
-                  ariaLabel={`${d.label} rate percent`}
-                  value={pct(d.rate ?? '0').replace('%', '')}
-                  disabled={!editable}
-                  onCommit={(s) => {
-                    const r = fromPct(s);
-                    if (r) run(() => t.budget.updateDeduction(d.id, { ...d, rate: r }));
-                  }}
-                />
-                <span>% × (gross −</span>
-                <CommitInput
-                  className="cell"
-                  ariaLabel={`${d.label} exclusion`}
-                  money
-                  value={d.monthlyExclusion ?? '0'}
-                  disabled={!editable}
-                  onCommit={(m) => run(() => t.budget.updateDeduction(d.id, { ...d, monthlyExclusion: m }))}
-                />
-                <span>)</span>
+              <div className="small subtle deduction-formula" aria-label={`${d.label} formula`}>
+                <span className="formula-group">
+                  <span>=</span>
+                  <CommitInput
+                    className="cell formula-rate"
+                    ariaLabel={`${d.label} rate percent`}
+                    value={pct(d.rate ?? '0').replace('%', '')}
+                    disabled={!editable}
+                    onCommit={(s) => {
+                      const r = fromPct(s);
+                      if (r) run(() => t.budget.updateDeduction(d.id, { ...d, rate: r }));
+                    }}
+                  />
+                  <span>% ×</span>
+                </span>
+                <span className="formula-group">
+                  <span>(gross −</span>
+                  <CommitInput
+                    className="cell formula-exclusion"
+                    ariaLabel={`${d.label} exclusion`}
+                    money
+                    value={d.monthlyExclusion ?? '0'}
+                    disabled={!editable}
+                    onCommit={(m) => run(() => t.budget.updateDeduction(d.id, { ...d, monthlyExclusion: m }))}
+                  />
+                  <span>)</span>
+                </span>
               </div>
             )}
           </td>

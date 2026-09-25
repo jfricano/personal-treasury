@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTreasury } from '@/app/context';
 import type { EntryView, Treasury } from '@/api/treasury';
 import {
@@ -30,6 +30,23 @@ export function MonthlyPage() {
   const confirm = useConfirm();
 
   const monthId = route.monthId && t.repos.getMonth(route.monthId) ? route.monthId : t.currentMonthId();
+  useEffect(() => {
+    if (!monthId || !route.target) return;
+    const target = route.target;
+    const id = target.startsWith('done:')
+      ? `month-done-${target.slice(5)}`
+      : target.startsWith('entry:')
+        ? `month-entry-${target.slice(6)}`
+        : target === 'budget-refresh'
+          ? 'month-budget-refresh'
+          : 'month-summary';
+    const frame = requestAnimationFrame(() => {
+      const element = document.getElementById(id);
+      element?.scrollIntoView({ block: 'center', inline: 'nearest' });
+      element?.focus({ preventScroll: true });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [monthId, route.target]);
   if (!monthId) {
     return (
       <>
@@ -109,7 +126,7 @@ export function MonthlyPage() {
 
   return (
     <>
-      <div className="page-head">
+      <div className="page-head monthly-head">
         <h2>Monthly reconciliation</h2>
         <MonthSelect value={monthId} onChange={(id) => navigate({ page: 'monthly', monthId: id })} />
         <MonthStatusBadge status={r.status} closed={v.closed} />
@@ -131,31 +148,33 @@ export function MonthlyPage() {
           </span>
         ) : null}
         <span className="spacer" />
-        <button className="btn" onClick={() => setNewMonthOpen(true)}>
-          New month
-        </button>
-        {v.closed ? (
-          <button
-            className="btn"
-            onClick={() => run(() => t.reopenMonth(monthId), `${v.cycle.month} reopened`)}
-          >
-            Reopen month
+        <div className="monthly-actions">
+          <button className="btn" onClick={() => setNewMonthOpen(true)}>
+            New month
           </button>
-        ) : (
-          <button
-            className="btn"
-            onClick={() =>
-              r.status === 'REVIEW'
-                ? setCloseOpen(true)
-                : run(() => t.closeMonth(monthId), `${v.cycle.month} closed`)
-            }
-          >
-            Close month
+          {v.closed ? (
+            <button
+              className="btn"
+              onClick={() => run(() => t.reopenMonth(monthId), `${v.cycle.month} reopened`)}
+            >
+              Reopen month
+            </button>
+          ) : (
+            <button
+              className="btn"
+              onClick={() =>
+                r.status === 'REVIEW'
+                  ? setCloseOpen(true)
+                  : run(() => t.closeMonth(monthId), `${v.cycle.month} closed`)
+              }
+            >
+              Close month
+            </button>
+          )}
+          <button className="btn" onClick={exportCsv}>
+            Export journal CSV
           </button>
-        )}
-        <button className="btn" onClick={exportCsv}>
-          Export journal CSV
-        </button>
+        </div>
       </div>
 
       {v.closed && (
@@ -169,57 +188,71 @@ export function MonthlyPage() {
 
       {!v.closed && <BudgetBanner monthId={monthId} />}
 
-      <Panel title="Reconciliation">
-        <div className="checks" role="list">
-          <label className="check" role="listitem">
-            <div className="k">Expected cash</div>
-            <CommitInput
-              money
-              ariaLabel="Expected cash"
-              value={v.cycle.expectedCash}
-              disabled={readOnly}
-              className="cell"
-              onCommit={(m) => run(() => t.updateMonth(monthId, { expectedCash: m }))}
+      <div
+        id="month-summary"
+        tabIndex={-1}
+        className={route.target === 'summary' ? 'review-target' : undefined}
+      >
+        <Panel title="Reconciliation">
+          <div className="checks" role="list">
+            <label className="check" role="listitem">
+              <div className="k">Expected cash</div>
+              <CommitInput
+                money
+                ariaLabel="Expected cash"
+                value={v.cycle.expectedCash}
+                disabled={readOnly}
+                className="cell"
+                onCommit={(m) => run(() => t.updateMonth(monthId, { expectedCash: m }))}
+              />
+            </label>
+            <Check
+              label="Allocation difference"
+              ok={r.checks.allocation}
+              value={<Amount value={r.allocationDifference} />}
             />
-          </label>
-          <Check
-            label="Allocation difference"
-            ok={r.checks.allocation}
-            value={<Amount value={r.allocationDifference} />}
-          />
-          <Check
-            label="Journal difference"
-            ok={r.checks.journal}
-            value={<Amount value={r.journalDifference} />}
-          />
-          <Check
-            label="Final transfer difference"
-            ok={r.checks.finalTransfer}
-            value={<Amount value={r.finalTransferDifference} />}
-          />
-          <Check label="Invalid entries" ok={r.checks.entries} value={r.invalidEntryCount} />
-          <Check label="Negative transfers" ok={r.checks.negatives} value={r.negativeTransferCount} />
-          <div className={`check${r.status === 'REVIEW' ? ' fail' : ''}`} role="listitem">
-            <div className="k">Overall status</div>
-            <div className="v">
-              <MonthStatusBadge status={r.status} />
-            </div>
-            <div className="small subtle">
-              {r.doneCount} of {r.requiredCount} transfers done
+            <Check
+              label="Journal difference"
+              ok={r.checks.journal}
+              value={<Amount value={r.journalDifference} />}
+            />
+            <Check
+              label="Final transfer difference"
+              ok={r.checks.finalTransfer}
+              value={<Amount value={r.finalTransferDifference} />}
+            />
+            <Check label="Invalid entries" ok={r.checks.entries} value={r.invalidEntryCount} />
+            <Check label="Negative transfers" ok={r.checks.negatives} value={r.negativeTransferCount} />
+            <div className={`check${r.status === 'REVIEW' ? ' fail' : ''}`} role="listitem">
+              <div className="k">Overall status</div>
+              <div className="v">
+                <MonthStatusBadge status={r.status} />
+              </div>
+              <div className="small subtle">
+                {r.doneCount} of {r.requiredCount} transfers done
+              </div>
             </div>
           </div>
-        </div>
-        {r.issues.length > 0 && (
-          <ul className="issues" style={{ marginTop: 10 }} aria-label="Reconciliation issues">
-            {r.issues.map((i, k) => (
-              <li key={k}>
-                <span className={`dot${i.blocking ? '' : ' soft'}`} aria-hidden />
-                <span className={i.blocking ? 'neg' : ''}>{i.message}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Panel>
+          {r.issues.some((i) => i.blocking) && (
+            <ul className="issues" style={{ marginTop: 10 }} aria-label="Needs review">
+              {r.issues
+                .filter((i) => i.blocking)
+                .map((i, k) => (
+                  <li key={k}>
+                    <span className="dot" aria-hidden />
+                    <span className="neg">{i.message}</span>
+                  </li>
+                ))}
+            </ul>
+          )}
+          {r.issues.some((i) => !i.blocking) && (
+            <p className="small subtle" role="status">
+              {r.requiredCount - r.doneCount} transfer(s) awaiting confirmation. Mark them Done in the account
+              summary.
+            </p>
+          )}
+        </Panel>
+      </div>
 
       <Panel
         title="Account transfer summary"
@@ -286,6 +319,7 @@ export function MonthlyPage() {
                 <td style={{ width: 140 }}>
                   {l.required ? (
                     <select
+                      id={`month-done-${l.accountId}`}
                       className={`cell${l.effectiveState === 'done' ? ' btn done' : ''}`}
                       aria-label={`${code(l.accountId)} transferred`}
                       disabled={readOnly}
@@ -501,7 +535,7 @@ function JournalRow({
 
   return (
     <>
-      <tr className={e.result.valid ? '' : 'sel'}>
+      <tr id={`month-entry-${en.id}`} tabIndex={-1} className={e.result.valid ? '' : 'sel'}>
         <td>
           {multi && (
             <button
@@ -1238,7 +1272,13 @@ function BudgetBanner({ monthId }: { monthId: string }) {
   const changed = diff.rows.filter((r) => r.after !== r.current || r.changed);
   const isSameVersion = diff.monthVersionId === diff.versionId;
   return (
-    <section className="panel" aria-label="Budget differences" style={{ borderColor: '#f1d9a6' }}>
+    <section
+      id="month-budget-refresh"
+      tabIndex={-1}
+      className="panel"
+      aria-label="Budget differences"
+      style={{ borderColor: '#f1d9a6' }}
+    >
       <header style={{ background: 'var(--amber-bg)', color: 'var(--amber)' }}>
         {isSameVersion
           ? `This month differs from budget ${diff.versionLabel}`

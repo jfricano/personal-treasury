@@ -10,12 +10,20 @@ export async function pickFile(accept: string[]): Promise<PickedFile | null> {
   if (isTauri()) {
     const { open } = await import('@tauri-apps/plugin-dialog');
     const { readFile } = await import('@tauri-apps/plugin-fs');
+    // Some macOS Open panels leave valid Excel files unselectable when the
+    // plugin passes a multi-extension workbook filter. Check the extension
+    // ourselves after selection, before reading any bytes.
+    const workbook = accept.includes('.xlsx');
     const path = await open({
       multiple: false,
       directory: false,
-      filters: [{ name: 'Files', extensions: accept.map((a) => a.replace(/^\./, '')) }],
+      ...(workbook
+        ? {}
+        : { filters: [{ name: 'Files', extensions: accept.map((a) => a.replace(/^\./, '')) }] }),
     });
     if (!path || Array.isArray(path)) return null;
+    if (!accept.some((ext) => path.toLowerCase().endsWith(ext.toLowerCase())))
+      throw new Error(`Choose a ${accept.join(', ')} file.`);
     return { name: path.split(/[\\/]/).pop() ?? path, bytes: await readFile(path) };
   }
   return new Promise((resolve) => {

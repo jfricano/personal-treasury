@@ -102,6 +102,14 @@ export function formatUSD(v: MoneyLike, opts: FormatOptions = {}): string {
   return body;
 }
 
+/** Editable display with grouping and at least cents, without discarding stored precision. */
+export function formatMoneyInput(v: MoneyLike): string {
+  const exact = normalize(v);
+  const negative = exact.startsWith('-');
+  const [whole, fraction = ''] = (negative ? exact.slice(1) : exact).split('.');
+  return `${negative ? '-' : ''}${whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}.${fraction.padEnd(2, '0')}`;
+}
+
 /** Screen-reader friendly amount, e.g. "negative 12 dollars and 50 cents". */
 export function spokenUSD(v: MoneyLike): string {
   const cents = toCents(v);
