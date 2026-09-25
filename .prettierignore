@@ -1,0 +1,7 @@
+dist
+dist-demo
+src-tauri/target
+reference
+*.md
+package-lock.json
+public/

@@ -1,0 +1,14 @@
+# Keep personal data and build output out of the image build context.
+reference
+tests/local
+node_modules
+dist
+dist-demo
+test-results
+playwright-report
+src-tauri/target
+src-tauri/gen
+.git
+.github
+*.local
+.DS_Store

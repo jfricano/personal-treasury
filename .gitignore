@@ -1,0 +1,15 @@
+node_modules
+dist
+test-results
+playwright-report
+src-tauri/target
+src-tauri/gen
+*.local
+.DS_Store
+dist-demo
+# Personal financial data is never committed: the source workbooks, their audit
+# notes and control totals, and the tests that check them. See reference/README.md.
+reference/*
+!reference/README.md
+tests/local/
+*.tsbuildinfo

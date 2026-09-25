@@ -1,0 +1,42 @@
+name: Demo container
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  IMAGE: ghcr.io/${{ github.repository }}-demo
+
+jobs:
+  image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build
+        run: docker build -t demo .
+      - name: Smoke test
+        run: |
+          docker run -d --name demo -p 8080:8080 demo
+          for i in $(seq 1 30); do curl -fsS http://localhost:8080/healthz && break; sleep 1; done
+          curl -fsS http://localhost:8080/ | grep -q 'Personal Treasury · Demo'
+          curl -fsSI http://localhost:8080/ | grep -qi '^content-security-policy:.*frame-ancestors'
+          curl -fsSI http://localhost:8080/ | grep -qi '^cache-control: no-cache'
+          wasm=$(docker exec demo ls /usr/share/nginx/html/assets | grep '\.wasm$')
+          curl -fsSI "http://localhost:8080/assets/$wasm" | grep -qi '^content-type: application/wasm'
+          curl -fsSI "http://localhost:8080/assets/$wasm" | grep -qi 'immutable'
+          # Hash routes fall back to index.html.
+          curl -fsS http://localhost:8080/anything | grep -q 'id="root"'
+          docker exec demo id -u | grep -vq '^0$'
+      - name: Publish
+        if: github.event_name == 'push'
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          docker tag demo "$IMAGE:latest"
+          docker tag demo "$IMAGE:${GITHUB_SHA::12}"
+          docker push "$IMAGE:latest"
+          docker push "$IMAGE:${GITHUB_SHA::12}"
