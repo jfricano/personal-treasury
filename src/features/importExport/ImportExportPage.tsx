@@ -39,10 +39,10 @@ export function ImportExportPage() {
   const confirm = useConfirm();
 
   const choose = async () => {
-    const f = await pickFile(['.xlsx', '.xlsm', '.xls']);
-    if (!f) return;
-    setImp({ step: 'analyzing', name: f.name });
     try {
+      const f = await pickFile(['.xlsx', '.xlsm', '.xls']);
+      if (!f) return;
+      setImp({ step: 'analyzing', name: f.name });
       const plan = await analyzeWorkbook(f.bytes, f.name, {
         existingAliases: t.existingAliasesForImport(),
         committedHashes: t.committedHashes(),
@@ -50,7 +50,7 @@ export function ImportExportPage() {
       setImp({ step: 'preview', plan });
       setReplaceOk(false);
     } catch (err) {
-      toast(`Could not analyze ${f.name}: ${(err as Error).message}`, 'error');
+      toast(`Could not analyze workbook: ${(err as Error).message}`, 'error');
       setImp({ step: 'idle' });
     }
   };
@@ -100,9 +100,9 @@ export function ImportExportPage() {
     }
   };
   const chooseBackup = async () => {
-    const f = await pickFile(['.json']);
-    if (!f) return;
     try {
+      const f = await pickFile(['.json']);
+      if (!f) return;
       const { backup, summary } = readBackup(new TextDecoder().decode(f.bytes));
       setRestore({ name: f.name, backup, summary, profile: `restored-${stamp()}` });
     } catch (err) {

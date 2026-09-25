@@ -5,11 +5,15 @@ import { HOUSEHOLD } from './persona';
 import type { SessionDatabaseStorage } from './sessionStorage';
 import { DemoTour, tourSeen } from './Tour';
 
-const TRY: { text: string; route: Route }[] = [
+const TRY: { text: string; route: Route; loanId?: string }[] = [
   { text: 'Mark this month’s remaining transfers Done to complete it.', route: { page: 'monthly' } },
   { text: 'Change an allocation and watch the month move to Review.', route: { page: 'monthly' } },
-  { text: 'Record a payment on debt H-01, then undo it with ⌘Z / Ctrl-Z.', route: { page: 'debts' } },
-  { text: 'Overpay debt H-05 and see who owes whom reverse.', route: { page: 'debts' } },
+  {
+    text: 'Record a payment on debt H-01, then undo it with ⌘Z / Ctrl-Z.',
+    route: { page: 'debts' },
+    loanId: 'H-01',
+  },
+  { text: 'Overpay debt H-05 and see who owes whom reverse.', route: { page: 'debts' }, loanId: 'H-05' },
   {
     text: 'Duplicate the active budget, change a line, activate it, then refresh the month.',
     route: { page: 'budget' },
@@ -105,7 +109,12 @@ export function DemoBanner({
                 href={`#/${item.route.page}`}
                 onClick={(e) => {
                   e.preventDefault();
-                  navigate(item.route);
+                  setOpen(false);
+                  navigate({
+                    ...item.route,
+                    monthId: item.route.page === 'monthly' ? treasury.currentMonthId() : undefined,
+                    debtId: item.loanId ? treasury.repos.getDebtByLoanId(item.loanId)?.id : undefined,
+                  });
                 }}
               >
                 {item.text}

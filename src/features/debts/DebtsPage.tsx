@@ -175,7 +175,10 @@ export function DebtsPage() {
         </div>
       </div>
 
-      <div className="grid-2" style={{ '--cols': 'minmax(300px, 0.8fr) minmax(0, 2fr)' } as CSSProperties}>
+      <div
+        className="grid-2 debt-panels"
+        style={{ '--cols': 'minmax(300px, 0.8fr) minmax(0, 2fr)' } as CSSProperties}
+      >
         <Panel title="Net by account">
           <table className="t" aria-label="Net by account">
             <thead>

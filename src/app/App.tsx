@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import type { Treasury } from '@/api/treasury';
 import { AppProvider, useApp, useTreasuryVersion, type AppExtras, type Page } from './context';
 import { Dashboard } from '@/features/dashboard/Dashboard';
@@ -23,7 +23,14 @@ const NAV: { page: Page; label: string }[] = [
 
 function Shell() {
   const { route, navigate, treasury, toasts, dismissToast, toast, extras } = useApp();
+  const navRef = useRef<HTMLElement>(null);
   useTreasuryVersion();
+
+  useEffect(() => {
+    const nav = navRef.current;
+    if (!nav || window.matchMedia('(min-width: 761px)').matches) return;
+    nav.querySelector('[aria-current="page"]')?.scrollIntoView({ block: 'nearest', inline: 'center' });
+  }, [route.page]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -64,7 +71,7 @@ function Shell() {
     <div className="shell">
       <aside className="rail">
         <h1>Personal Treasury</h1>
-        <nav aria-label="Main">
+        <nav aria-label="Main" ref={navRef}>
           {NAV.map((n) => (
             <a
               key={n.page}
@@ -82,6 +89,9 @@ function Shell() {
             </a>
           ))}
         </nav>
+        <span className="nav-hint" aria-hidden="true">
+          Swipe for more sections ↔
+        </span>
         <div className="foot">
           <button
             disabled={!treasury.undoLabel}

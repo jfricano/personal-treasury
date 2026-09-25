@@ -19,21 +19,21 @@ export function BudgetImportPanel() {
   const [replaceTax, setReplaceTax] = useState(false);
 
   const choose = async () => {
-    const f = await pickFile(['.xlsx', '.xlsm']);
-    if (!f) return;
-    setS({ step: 'analyzing', name: f.name });
-    // Compare budget funding with the most recent treasury month, when there is one.
-    const months = t.months();
-    const last = months[months.length - 1];
-    const treasuryReference = last
-      ? {
-          month: last.month,
-          allocations: Object.fromEntries(
-            t.repos.listAllocations(last.id).map((a) => [t.codeOf(a.accountId), a.budgetAmount]),
-          ),
-        }
-      : null;
     try {
+      const f = await pickFile(['.xlsx', '.xlsm']);
+      if (!f) return;
+      setS({ step: 'analyzing', name: f.name });
+      // Compare budget funding with the most recent treasury month, when there is one.
+      const months = t.months();
+      const last = months[months.length - 1];
+      const treasuryReference = last
+        ? {
+            month: last.month,
+            allocations: Object.fromEntries(
+              t.repos.listAllocations(last.id).map((a) => [t.codeOf(a.accountId), a.budgetAmount]),
+            ),
+          }
+        : null;
       const plan = await analyzeBudgetWorkbook(f.bytes, f.name, {
         committedHashes: t.committedHashes(),
         treasuryReference,
@@ -42,7 +42,7 @@ export function BudgetImportPanel() {
       setReplaceTax(false);
       setS({ step: 'preview', plan });
     } catch (err) {
-      toast(`Could not analyze ${f.name}: ${(err as Error).message}`, 'error');
+      toast(`Could not analyze budget workbook: ${(err as Error).message}`, 'error');
       setS({ step: 'idle' });
     }
   };

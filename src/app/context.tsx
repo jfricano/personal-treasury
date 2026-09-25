@@ -24,6 +24,8 @@ export interface Route {
   /** Budget version id, or the tax-rules tab. */
   version?: string | null;
   tab?: 'versions' | 'tax' | null;
+  /** In-page destination for review actions. */
+  target?: string | null;
 }
 
 const PAGES: Page[] = [
@@ -49,6 +51,7 @@ function parseHash(): Route {
     role: (q.get('role') as Route['role']) ?? null,
     version: q.get('version'),
     tab: (q.get('tab') as Route['tab']) ?? null,
+    target: q.get('target'),
   };
 }
 
@@ -60,6 +63,7 @@ function toHash(r: Route): string {
   if (r.role) q.set('role', r.role);
   if (r.version) q.set('version', r.version);
   if (r.tab) q.set('tab', r.tab);
+  if (r.target) q.set('target', r.target);
   const s = q.toString();
   return `#/${r.page}${s ? `?${s}` : ''}`;
 }

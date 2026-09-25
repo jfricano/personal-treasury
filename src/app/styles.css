@@ -16,6 +16,10 @@
   --amber: #8a5a00;
   --amber-bg: #fff4dc;
   --focus: #3b73d9;
+  --teal: #176b63;
+  --teal-hover: #11564f;
+  --teal-tint: #e8f4f1;
+  --control-line: #8192aa;
   --radius: 6px;
   --mono: ui-monospace, 'SF Mono', Menlo, monospace;
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif;
@@ -111,6 +115,9 @@ textarea {
 .rail .foot button:disabled {
   opacity: 0.45;
   cursor: default;
+}
+.nav-hint {
+  display: none;
 }
 
 main {
@@ -375,27 +382,32 @@ td.code,
 }
 
 .btn {
-  border: 1px solid var(--line-strong);
+  border: 1px solid var(--control-line);
   background: var(--surface);
-  border-radius: 5px;
-  padding: 4px 10px;
+  border-radius: 6px;
+  padding: 6px 11px;
   cursor: pointer;
   white-space: nowrap;
 }
 .btn:hover {
-  background: var(--band-2);
+  background: var(--teal-tint);
+  border-color: var(--teal);
+}
+.btn:active {
+  background: #d4eae5;
 }
 .btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 .btn.primary {
-  background: var(--navy);
+  background: var(--teal);
   color: #fff;
-  border-color: var(--navy);
+  border-color: var(--teal);
 }
 .btn.primary:hover {
-  background: var(--navy-2);
+  background: var(--teal-hover);
+  border-color: var(--teal-hover);
 }
 .btn.danger {
   color: var(--red);
@@ -413,12 +425,12 @@ td.code,
   border: 0;
   background: none;
   padding: 0;
-  color: var(--navy-2);
+  color: var(--teal-hover);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
 .btn.small {
-  padding: 1px 7px;
+  padding: 2px 7px;
   font-size: 12px;
 }
 .btn-row {
@@ -502,9 +514,17 @@ dialog {
   border: 1px solid var(--line-strong);
   border-radius: 8px;
   padding: 0;
-  min-width: 440px;
-  max-width: min(760px, 94vw);
+  width: min(440px, calc(100vw - 24px));
+  max-width: calc(100vw - 24px);
+  max-height: calc(100dvh - 24px);
   box-shadow: 0 12px 40px rgba(20, 35, 60, 0.25);
+}
+dialog.wide-dialog {
+  width: min(680px, calc(100vw - 24px));
+}
+dialog[open] {
+  display: flex;
+  flex-direction: column;
 }
 dialog::backdrop {
   background: rgba(20, 30, 50, 0.35);
@@ -519,6 +539,8 @@ dialog > .body {
   padding: 14px;
   display: grid;
   gap: 12px;
+  min-width: 0;
+  overflow: auto;
 }
 dialog > footer {
   display: flex;
@@ -527,6 +549,50 @@ dialog > footer {
   padding: 10px 14px;
   border-top: 1px solid var(--line);
   background: var(--band-2);
+  flex-wrap: wrap;
+}
+.deduction-formula {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px 5px;
+}
+.formula-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
+}
+input.cell.formula-rate {
+  width: 3.8rem;
+  min-width: 3.8rem;
+}
+input.cell.formula-exclusion {
+  width: 7.4rem;
+  min-width: 7.4rem;
+}
+.monthly-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.review-target:focus-visible,
+.review-target:focus-within,
+tr[id^='month-entry-']:focus-visible,
+.panel[id='month-budget-refresh']:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+select[id^='month-done-']:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+@media (max-width: 1500px) {
+  .debt-panels,
+  .budget-overview {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .drawer {
@@ -845,6 +911,7 @@ table.t td .btn.small.danger:focus-visible {
   .rail nav {
     flex-direction: row;
     overflow-x: auto;
+    scroll-padding-inline: 12px;
   }
   .rail a {
     white-space: nowrap;
@@ -857,6 +924,12 @@ table.t td .btn.small.danger:focus-visible {
   }
   .rail .foot {
     display: none;
+  }
+  .nav-hint {
+    display: block;
+    color: #cfdbef;
+    font-size: 10px;
+    padding: 0 12px 3px;
   }
   main {
     padding: 12px 12px 40px;
@@ -983,4 +1056,11 @@ table.t td .btn.small.danger:focus-visible {
 }
 .tour-actions .spacer {
   flex: 1;
+}
+@media (max-width: 600px) {
+  .monthly-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
