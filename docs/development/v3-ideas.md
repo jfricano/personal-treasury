@@ -4,7 +4,7 @@ Started 2026-09-25. This is a place to collect possibilities, not a release comm
 
 ## Keep from v2.1
 
-- Financial data and calculations stay on the user's computer. The public demo continues to use fictional data.
+- Calculations stay on the user's device. The optional v2.2 private sync service stores client-encrypted snapshots; the public demo continues to use fictional data.
 - Preserve exact money calculations, import compatibility, budget history, and the ability to undo or restore changes.
 - Keep the compact, clear interface. Prefer a few useful additions over a larger set of controls.
 
@@ -29,5 +29,7 @@ Tauri's [Windows installer guide](https://v2.tauri.app/distribute/windows-instal
 | Compare budget versions | Show the active budget beside a draft before activation: take-home pay, category totals, and funding differences. | Which comparisons would actually help a budget decision? |
 | Year overview | Summarize completed months and debt balances from records already in the app. | What is useful to see together without adding a new bookkeeping task? |
 | Backup confidence | Make it easier to see when a backup was last saved and check that it can be restored. | How can the check avoid changing the active profile? |
+
+- customizeable/collapsable views from the dashboard
 
 Pick and scope these with real use cases before implementation. None of the ideas in this table is approved or scheduled yet.

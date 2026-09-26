@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useSyncExternalStore } from 'react';
 import type { Treasury } from '@/api/treasury';
 import { AppProvider, useApp, useTreasuryVersion, type AppExtras, type Page } from './context';
 import { Dashboard } from '@/features/dashboard/Dashboard';
@@ -9,6 +9,21 @@ import { HistoryPage } from '@/features/history/HistoryPage';
 import { AccountsPage } from '@/features/accounts/AccountsPage';
 import { ImportExportPage } from '@/features/importExport/ImportExportPage';
 import { SettingsPage } from '@/features/settings/SettingsPage';
+import type { CloudSyncSession } from '@/sync/session';
+
+function SyncNotice({ session }: { session: CloudSyncSession }) {
+  const { navigate } = useApp();
+  const status = useSyncExternalStore(session.subscribe, session.getStatus);
+  if (status.phase !== 'conflict' && status.phase !== 'offline' && status.phase !== 'error') return null;
+  return (
+    <div className={`sync-notice ${status.phase}`} role="alert">
+      <span>{status.message} Local changes are still saved on this device.</span>
+      <button className="btn small" onClick={() => navigate({ page: 'settings' })}>
+        Open sync settings
+      </button>
+    </div>
+  );
+}
 
 const NAV_GROUPS: { page: Page; label: string }[][] = [
   [{ page: 'dashboard', label: 'Dashboard' }],
@@ -28,7 +43,7 @@ const NAV_GROUPS: { page: Page; label: string }[][] = [
 ];
 
 function Shell() {
-  const { route, navigate, treasury, toasts, dismissToast, toast, extras } = useApp();
+  const { route, navigate, treasury, toasts, dismissToast, toast, extras, syncSession } = useApp();
   const navRef = useRef<HTMLElement>(null);
   useTreasuryVersion();
 
@@ -122,11 +137,12 @@ function Shell() {
                   ? 'Kept in this tab'
                   : 'Saved locally'}
           </span>
-          <span>Offline · no telemetry</span>
+          <span>{syncSession ? 'Cloud sync connected · no telemetry' : 'Offline · no telemetry'}</span>
         </div>
       </aside>
       <main>
         {extras.banner}
+        {syncSession && <SyncNotice session={syncSession} />}
         {page}
       </main>
       <div className="toasts" aria-live="polite">
@@ -147,14 +163,21 @@ export function App({
   treasury,
   switchProfile,
   extras,
+  syncSession,
 }: {
   treasury: Treasury;
   switchProfile: (name: string) => void;
   /** Supplied only by the public demo build. */
   extras?: AppExtras;
+  syncSession?: CloudSyncSession | null;
 }) {
   return (
-    <AppProvider treasury={treasury} switchProfile={switchProfile} extras={extras}>
+    <AppProvider
+      treasury={treasury}
+      switchProfile={switchProfile}
+      extras={extras}
+      initialSyncSession={syncSession}
+    >
       <Shell />
     </AppProvider>
   );

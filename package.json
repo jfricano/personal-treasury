@@ -1,7 +1,7 @@
 {
   "name": "personal-treasury",
   "private": true,
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Local-first personal treasury: budget-driven monthly cash allocation, transfer journal and interaccount debts.",
   "license": "MIT",
   "repository": {
@@ -12,8 +12,10 @@
   "scripts": {
     "dev": "vite",
     "dev:demo": "vite --mode demo",
+    "dev:private": "vite --mode private",
     "build": "tsc -b && vite build",
     "build:demo": "tsc -b && vite build --mode demo",
+    "build:private": "tsc -b && vite build --mode private",
     "preview": "vite preview",
     "preview:demo": "vite preview --mode demo",
     "typecheck": "tsc -b --noEmit",
@@ -21,12 +23,14 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest run",
+    "test:server": "node --test tests/server/*.test.mjs",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "test:e2e:demo": "playwright test --config playwright.demo.config.ts",
+    "test:e2e:private": "playwright test --config playwright.private.config.ts",
     "tauri": "tauri",
     "db:check": "vitest run tests/integration/database.test.ts",
-    "check": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run build && npm run build:demo",
+    "check": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run test:server && npm run build && npm run build:demo && npm run build:private",
     "privacy:check": "node scripts/privacy-check.mjs"
   },
   "dependencies": {

@@ -43,7 +43,7 @@ Open the app and choose one of the two paths on the welcome screen:
 
 ## 5. Back up
 
-Nothing leaves your Mac unless you save a file yourself. Use **Import and export → Complete JSON backup** regularly. A backup restores every record exactly, including budgets and tax rules.
+By default, data stays on your Mac unless you save a file yourself. If you connect the optional private cloud service, encrypted database snapshots sync across your devices. See [private cloud sync](cloud-sync.md). Use **Import and export → Complete JSON backup** regularly. A backup restores every record exactly, including budgets and tax rules.
 
 ## Next
 

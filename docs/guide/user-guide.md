@@ -139,4 +139,4 @@ Choose **New debt**, then enter the Loan ID (unique; hyphens are fine), opened d
 - **CSV**: the journal for the selected month, or debt events for the current debt filter.
 - **Settings → Safety copies**: automatic copies taken before an import or restore replaces data.
 
-Nothing leaves your computer unless you save a file somewhere yourself.
+Without cloud sync, nothing leaves your computer unless you save a file somewhere yourself. If you connect the optional private service, encrypted snapshots sync across devices; see [private cloud sync](cloud-sync.md).

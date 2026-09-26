@@ -1493,6 +1493,40 @@ export class Treasury {
     this.notify();
   }
 
+  /** Adopt a validated cloud snapshot without creating a local edit or audit row. */
+  async adoptCloudSnapshot(
+    bytes: Uint8Array,
+    saveCurrentCopy = false,
+    expectedCurrent?: Uint8Array,
+  ): Promise<void> {
+    await this.flush();
+    const candidate = new SqlJsDriver(await loadSqlJs(), bytes);
+    migrate(candidate);
+    const integrity = candidate.get<{ integrity_check: string }>('PRAGMA integrity_check');
+    if (integrity?.integrity_check !== 'ok' || candidate.all('PRAGMA foreign_key_check').length)
+      throw new TreasuryError('The cloud snapshot failed database integrity checks.', 'validation');
+    const validBytes = candidate.export();
+    if (saveCurrentCopy) await this.saveSafetyCopy('before-cloud-pull');
+    // No awaits between this check and replacement: an edit made during the
+    // download, validation or safety-copy I/O must never be discarded.
+    if (expectedCurrent) {
+      const current = this.db.export();
+      if (
+        current.length !== expectedCurrent.length ||
+        current.some((value, index) => value !== expectedCurrent[index])
+      )
+        throw new TreasuryError(
+          'This device changed while the cloud snapshot was being checked.',
+          'sync_conflict',
+        );
+    }
+    this.db.replace(validBytes);
+    this.undoStack = [];
+    this.schedulePersist();
+    this.notify();
+    await this.flush();
+  }
+
   auditLog(limit = 200) {
     return this.repos.listAudit(limit);
   }

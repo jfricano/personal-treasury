@@ -129,6 +129,48 @@ main {
   overflow: auto;
   padding: 18px 24px 48px;
 }
+.cloud-gate {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+}
+.cloud-gate .panel {
+  width: min(100%, 430px);
+}
+.cloud-access {
+  display: grid;
+  gap: 12px;
+}
+.cloud-access .box {
+  width: 100%;
+}
+.cloud-access .btn {
+  justify-self: start;
+}
+.sync-notice,
+.cloud-conflict {
+  background: var(--amber-bg);
+  border: 1px solid #e2c581;
+  color: var(--text);
+  padding: 9px 12px;
+  border-radius: var(--radius);
+  margin-bottom: 16px;
+}
+.sync-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.sync-notice.error {
+  background: var(--red-bg);
+  border-color: #e6b3ae;
+}
+.cloud-conflict p {
+  margin-top: 0;
+}
 .page-head {
   display: flex;
   align-items: center;
