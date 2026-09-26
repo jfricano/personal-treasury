@@ -21,6 +21,21 @@ Before calling it ready:
 
 Tauri's [Windows installer guide](https://v2.tauri.app/distribute/windows-installer/) and [GitHub Actions guide](https://v2.tauri.app/distribute/pipelines/github/) are the starting references.
 
+## Candidate: multi-user access and administration
+
+Let people request access with first name, last name, and email. An administrator reviews pending requests in a restricted dashboard, either within the main app or in a separate admin app. Approval creates a unique, high-entropy, user-scoped access token and a way to deliver it to that user. The admin can also see request and account status, revoke or rotate access, and review a minimal audit trail.
+
+This needs more than an admin screen:
+
+- Give each user a separate account and encrypted snapshot history. Replace v2.2's one shared service token with user-scoped authentication and enforce account isolation on every API request, version lookup, backup, and restore.
+- Show the admin only the identity and operational details needed to approve and support accounts. Treasury contents, sync passphrases, encryption keys, and plaintext backups must remain unavailable to the admin and server. Make that boundary clear in the request form: the admin will see the submitted name and email.
+- Generate tokens securely, display or deliver them only once, store a verifier rather than the raw token on the server, and support expiration, rotation, revocation, and lost-device recovery. Decide whether approval should issue a one-time activation token that the user exchanges for ongoing credentials.
+- Verify email ownership and protect the request form against spam and repeated requests. Record approvals, denials, token changes, and admin actions without logging secrets or financial data.
+- Let a user establish their own sync passphrase on their device. Admin approval must not grant a way to decrypt that user's treasury; define an honest recovery path for a lost passphrase, such as a user-held backup or an explicitly designed recovery key.
+- Plan migration of the existing single-person v2.2 service and its snapshot history into one user account, plus tests that try cross-user reads, writes, restores, and token misuse.
+
+Open design choices include where to host the admin interface, how to deliver credentials safely, which account metadata an admin may see, and whether invitation-only onboarding is preferable to public access requests. Scope these before implementation.
+
 ## Ideas to discuss later
 
 | Idea | Why it might help | Open question |
