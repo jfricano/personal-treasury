@@ -51,7 +51,7 @@ export function createBackup(db: SqlDriver): BackupFile {
     format: BACKUP_FORMAT,
     schemaVersion: SCHEMA_VERSION,
     exportedAt: new Date().toISOString(),
-    application: 'Personal Treasury 0.1.0',
+    application: 'Personal Treasury 0.2.1',
     counts: Object.fromEntries(Object.entries(tables).map(([k, v]) => [k, v.length])),
     tables,
   };

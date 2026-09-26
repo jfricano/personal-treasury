@@ -5,6 +5,7 @@
 | Document | Read it to… |
 | --- | --- |
 | [Getting started](guide/getting-started.md) | Try the demo, run the app, build the desktop version and set up your household. |
+| [One-minute demo walkthrough](guide/demo-walkthrough.md) | Follow the fictional paycheck, bucket transfers, reconciliation and debt example. |
 | [User guide](guide/user-guide.md) | Learn the monthly workflow, interaccount debts, budgets, payroll and the tax estimate. |
 
 ## Building and changing it
@@ -19,4 +20,7 @@
 | [Testing](development/testing.md) | See what each test suite covers and how to run it. |
 | [V2 plan and builder handoff](development/v2-plan.md) | Review confirmed issues, design direction, exhaustive test scope, release gates, and the next-phase prompt. |
 | [V3 ideas](development/v3-ideas.md) | Collect possible future improvements, starting with a Windows desktop installer. |
+| [Distribution plan](distribution-plan.md) | Track the Mac release, GitHub publication, promotion and directory submissions. |
+| [Launch post](launch-post.md) | Copy a short, example-led announcement once the Mac release is live. |
+| [v0.2.1 release notes draft](release-notes-v0.2.1.md) | Review the public release description and final verification checklist. |
 | [Decisions](development/decisions/) | Read why things are the way they are, where the specification left a choice open. |
