@@ -77,6 +77,7 @@ export interface AppExtras {
   banner?: ReactNode;
   /** A ready-made workbook offered on Import and export. */
   sampleWorkbook?: { fileName: string; build: () => Promise<Uint8Array> };
+  sampleBudgetWorkbook?: { fileName: string; build: () => Promise<Uint8Array> };
 }
 
 interface Toast {
@@ -135,7 +136,7 @@ export function AppProvider({
     (text: string, kind: Toast['kind'] = 'info') => {
       const id = Date.now() + Math.random();
       setToasts((t) => [...t.slice(-1), { id, kind, text }]);
-      if (kind !== 'error') setTimeout(() => dismissToast(id), 2500);
+      setTimeout(() => dismissToast(id), kind === 'error' ? 3500 : 2500);
     },
     [dismissToast],
   );

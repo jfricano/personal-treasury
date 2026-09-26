@@ -208,7 +208,7 @@ export class Repositories {
         'SELECT COUNT(*) n FROM debts WHERE origin_debtor_account_id = ?1 OR origin_creditor_account_id = ?1',
       ) +
       q('SELECT COUNT(*) n FROM allocation_profile_lines WHERE account_id = ?') +
-      q('SELECT COUNT(*) n FROM account_aliases WHERE account_id = ?')
+      q('SELECT COUNT(*) n FROM budget_lines WHERE funding_account_id = ?')
     );
   }
 
@@ -227,6 +227,9 @@ export class Repositories {
   }
   deleteAlias(alias: string) {
     this.db.run('DELETE FROM account_aliases WHERE alias = ?', [alias.trim().toUpperCase()]);
+  }
+  deleteAliasesForAccount(accountId: string) {
+    this.db.run('DELETE FROM account_aliases WHERE account_id = ?', [accountId]);
   }
 
   // --------------------------------------------------- allocation profiles

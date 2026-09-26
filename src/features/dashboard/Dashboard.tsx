@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useTreasury } from '@/app/context';
 import { Amount, MonthStatusBadge, Panel } from '@/components/ui';
 import { monthLabel } from '@/domain/monthly';
@@ -8,6 +8,7 @@ import { MonthSelect } from '@/features/monthly/MonthSelect';
 export function Dashboard() {
   const { t, route, navigate, run } = useTreasury();
   const [showAll, setShowAll] = useState(false);
+  const reviewRef = useRef<HTMLDivElement>(null);
 
   if (t.isEmpty()) {
     return (
@@ -34,7 +35,7 @@ export function Dashboard() {
   const monthId = route.monthId && t.repos.getMonth(route.monthId) ? route.monthId : t.currentMonthId();
   const d = t.dashboard(monthId);
   const m = d.month;
-  const code = t.codeOf;
+  const code = t.nameOf;
   const accounts = t.accountMap();
   const goMonth = () => navigate({ page: 'monthly', monthId: m?.cycle.id });
   const required = m?.result.lines.filter((l) => l.required) ?? [];
@@ -64,7 +65,18 @@ export function Dashboard() {
         {m && (
           <MonthSelect value={m.cycle.id} onChange={(id) => navigate({ page: 'dashboard', monthId: id })} />
         )}
-        {m && <MonthStatusBadge status={m.result.status} closed={m.closed} />}
+        {m &&
+          (m.result.status === 'REVIEW' || reviewCount > 0 ? (
+            <button
+              className="status-jump"
+              aria-label="Jump to needs review"
+              onClick={() => reviewRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+            >
+              <MonthStatusBadge status={m.result.status} closed={m.closed} />
+            </button>
+          ) : (
+            <MonthStatusBadge status={m.result.status} closed={m.closed} />
+          ))}
         <span className="spacer" />
         <button className="btn" onClick={() => navigate({ page: 'monthly', monthId: m?.cycle.id })}>
           Open reconciliation
@@ -127,74 +139,76 @@ export function Dashboard() {
               {pending.length === 0 && <li className="subtle">No transfers waiting for confirmation.</li>}
             </ul>
           </Panel>
-          <Panel title="Needs review" actions={<span className="small subtle">{reviewCount} item(s)</span>}>
-            <ul className="issues">
-              {review.map((i, k) => (
-                <li key={k}>
-                  <span className="dot" aria-hidden />
-                  <span>
-                    {i.message}{' '}
-                    <button
-                      className="btn link small"
-                      aria-label={`Resolve ${i.message}`}
-                      onClick={() => goIssue(i)}
-                    >
-                      Resolve
-                    </button>
-                  </span>
-                </li>
-              ))}
-              {d.needsReviewAccounts.map((a) => (
-                <li key={a.id}>
-                  <span className="dot" aria-hidden />
-                  <span>
-                    Imported account code <span className="code">{a.code}</span> needs review.{' '}
-                    <button className="btn link small" onClick={() => navigate({ page: 'accounts' })}>
-                      Review
-                    </button>
-                  </span>
-                </li>
-              ))}
-              {d.budgetDiff && (
-                <li>
-                  <span className="dot soft" aria-hidden />
-                  <span>
-                    Budget {d.budgetDiff.versionLabel} differs from this month&apos;s allocations.{' '}
-                    <button
-                      className="btn link small"
-                      onClick={() =>
-                        navigate({ page: 'monthly', monthId: m?.cycle.id, target: 'budget-refresh' })
-                      }
-                    >
-                      Review and refresh
-                    </button>
-                  </span>
-                </li>
-              )}
-              {d.unresolvedWarnings.map((warning) => (
-                <li key={warning.id}>
-                  <span className="dot" aria-hidden />
-                  <span>
-                    {warning.message}
-                    {warning.sheet
-                      ? ` (${warning.sheet}${warning.cell ? `!${warning.cell}` : ''})`
-                      : ''}.{' '}
-                    <button
-                      className="btn link small"
-                      aria-label={`Open import report for ${warning.message}`}
-                      onClick={() => navigate({ page: 'import' })}
-                    >
-                      Open import report
-                    </button>
-                  </span>
-                </li>
-              ))}
-              {m && reviewCount === 0 && (
-                <li className="subtle">Nothing needs attention for {monthLabel(m.cycle.month)}.</li>
-              )}
-              {!m && <li className="subtle">No months yet. Create one from Monthly reconciliation.</li>}
-            </ul>
-          </Panel>
+          <div ref={reviewRef} id="dashboard-needs-review" className="review-target">
+            <Panel title="Needs review" actions={<span className="small subtle">{reviewCount} item(s)</span>}>
+              <ul className="issues">
+                {review.map((i, k) => (
+                  <li key={k}>
+                    <span className="dot" aria-hidden />
+                    <span>
+                      {i.message}{' '}
+                      <button
+                        className="btn link small"
+                        aria-label={`Resolve ${i.message}`}
+                        onClick={() => goIssue(i)}
+                      >
+                        Resolve
+                      </button>
+                    </span>
+                  </li>
+                ))}
+                {d.needsReviewAccounts.map((a) => (
+                  <li key={a.id}>
+                    <span className="dot" aria-hidden />
+                    <span>
+                      Imported account <span>{a.displayName || a.code}</span> needs review.{' '}
+                      <button className="btn link small" onClick={() => navigate({ page: 'accounts' })}>
+                        Review
+                      </button>
+                    </span>
+                  </li>
+                ))}
+                {d.budgetDiff && (
+                  <li>
+                    <span className="dot soft" aria-hidden />
+                    <span>
+                      Budget {d.budgetDiff.versionLabel} differs from this month&apos;s allocations.{' '}
+                      <button
+                        className="btn link small"
+                        onClick={() =>
+                          navigate({ page: 'monthly', monthId: m?.cycle.id, target: 'budget-refresh' })
+                        }
+                      >
+                        Review and refresh
+                      </button>
+                    </span>
+                  </li>
+                )}
+                {d.unresolvedWarnings.map((warning) => (
+                  <li key={warning.id}>
+                    <span className="dot" aria-hidden />
+                    <span>
+                      {warning.message}
+                      {warning.sheet
+                        ? ` (${warning.sheet}${warning.cell ? `!${warning.cell}` : ''})`
+                        : ''}.{' '}
+                      <button
+                        className="btn link small"
+                        aria-label={`Open import report for ${warning.message}`}
+                        onClick={() => navigate({ page: 'import' })}
+                      >
+                        Open import report
+                      </button>
+                    </span>
+                  </li>
+                ))}
+                {m && reviewCount === 0 && (
+                  <li className="subtle">Nothing needs attention for {monthLabel(m.cycle.month)}.</li>
+                )}
+                {!m && <li className="subtle">No months yet. Create one from Monthly reconciliation.</li>}
+              </ul>
+            </Panel>
+          </div>
 
           <Panel
             title="Required transfers"
@@ -386,6 +400,7 @@ export function Dashboard() {
           </Panel>
         </div>
       </div>
+      {reviewCount > 0 && <div className="dashboard-review-scroll-space" aria-hidden="true" />}
     </>
   );
 }

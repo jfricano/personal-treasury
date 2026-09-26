@@ -448,8 +448,8 @@ export class BudgetService {
     return this.t.mutate('Delete budget', () => {
       const v = this.repos.getVersion(id);
       if (!v) throw new TreasuryError('Budget version not found', 'not_found');
-      if (v.status !== 'draft')
-        throw new TreasuryError('Only drafts can be deleted; historical versions are kept.', 'read_only');
+      if (v.status === 'active')
+        throw new TreasuryError('Only drafts or unused archived budgets can be deleted.', 'read_only');
       if (this.repos.monthsUsingVersion(id).length)
         throw new TreasuryError('Treasury months use this version.', 'referenced');
       this.repos.deleteVersion(id);
@@ -571,13 +571,18 @@ export class BudgetService {
       });
       const accountId = (code: string) => {
         const existing = this.t.repos.getAccountByCode(code);
-        if (existing) return existing.id;
+        if (existing) {
+          const name = plan.accountNames?.[code];
+          if (name && name !== existing.displayName)
+            this.t.repos.updateAccount({ ...existing, displayName: name });
+          return existing.id;
+        }
         const id = uuid();
         this.t.repos.insertAccount(
           {
             id,
             code,
-            displayName: null,
+            displayName: plan.accountNames?.[code] ?? null,
             description: null,
             color: null,
             sortOrder: this.t.repos.nextAccountSortOrder(),
@@ -589,7 +594,8 @@ export class BudgetService {
         return id;
       };
       const categoryId = (key: string) => {
-        const def = CATEGORIES.find((c) => c.key === key);
+        const defs = plan.categories ?? CATEGORIES;
+        const def = defs.find((c) => c.key === key);
         if (!def) throw new TreasuryError(`Unknown budget category ${key}`, 'import_integrity');
         const existing = this.repos.getCategoryByName(def.name);
         if (existing) return existing.id;
@@ -598,12 +604,12 @@ export class BudgetService {
           id,
           name: def.name,
           description: def.description,
-          sortOrder: CATEGORIES.indexOf(def),
+          sortOrder: defs.indexOf(def),
           active: true,
         });
         return id;
       };
-      for (const c of CATEGORIES) categoryId(c.key);
+      for (const c of plan.categories ?? CATEGORIES) categoryId(c.key);
       const labels = new Set(this.repos.listVersions().map((v) => v.label));
       const ids: string[] = [];
       for (const v of plan.versions) {
@@ -636,7 +642,7 @@ export class BudgetService {
           lockedAt: null,
           grossMonthly: v.grossMonthly,
           taxYear: v.taxYear,
-          filingStatus: 'single',
+          filingStatus: v.filingStatus ?? 'single',
           notes: v.notes,
           sourceWorkbook: plan.filename,
           sourceSheet: v.sheet,

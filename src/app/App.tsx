@@ -10,15 +10,21 @@ import { AccountsPage } from '@/features/accounts/AccountsPage';
 import { ImportExportPage } from '@/features/importExport/ImportExportPage';
 import { SettingsPage } from '@/features/settings/SettingsPage';
 
-const NAV: { page: Page; label: string }[] = [
-  { page: 'dashboard', label: 'Dashboard' },
-  { page: 'monthly', label: 'Monthly reconciliation' },
-  { page: 'budget', label: 'Budget and tax' },
-  { page: 'debts', label: 'Interaccount debts' },
-  { page: 'history', label: 'History' },
-  { page: 'accounts', label: 'Accounts' },
-  { page: 'import', label: 'Import and export' },
-  { page: 'settings', label: 'Settings' },
+const NAV_GROUPS: { page: Page; label: string }[][] = [
+  [{ page: 'dashboard', label: 'Dashboard' }],
+  [
+    { page: 'budget', label: 'Budget and tax' },
+    { page: 'history', label: 'Budget History' },
+    { page: 'monthly', label: 'Monthly reconciliation' },
+  ],
+  [
+    { page: 'debts', label: 'Interaccount debts' },
+    { page: 'accounts', label: 'Accounts' },
+  ],
+  [
+    { page: 'import', label: 'Import and export' },
+    { page: 'settings', label: 'Settings' },
+  ],
 ];
 
 function Shell() {
@@ -72,22 +78,25 @@ function Shell() {
       <aside className="rail">
         <h1>Personal Treasury</h1>
         <nav aria-label="Main" ref={navRef}>
-          {NAV.map((n) => (
-            <a
-              key={n.page}
-              href={`#/${n.page}`}
-              aria-current={route.page === n.page ? 'page' : undefined}
-              onClick={(e) => {
-                e.preventDefault();
-                navigate({
-                  page: n.page,
-                  monthId: n.page === 'monthly' || n.page === 'dashboard' ? route.monthId : null,
-                });
-              }}
-            >
-              {n.label}
-            </a>
-          ))}
+          {NAV_GROUPS.flatMap((group, index) => [
+            ...(index ? [<span key={`divider-${index}`} className="nav-divider" aria-hidden="true" />] : []),
+            ...group.map((n) => (
+              <a
+                key={n.page}
+                href={`#/${n.page}`}
+                aria-current={route.page === n.page ? 'page' : undefined}
+                onClick={(e) => {
+                  e.preventDefault();
+                  navigate({
+                    page: n.page,
+                    monthId: n.page === 'monthly' || n.page === 'dashboard' ? route.monthId : null,
+                  });
+                }}
+              >
+                {n.label}
+              </a>
+            )),
+          ])}
         </nav>
         <span className="nav-hint" aria-hidden="true">
           Swipe for more sections ↔

@@ -4,7 +4,7 @@ import { Amount, Panel } from '@/components/ui';
 import { analyzeBudgetWorkbook, type BudgetImportPlan } from '@/import/budget/analyzeBudget';
 import { SEVERITY_ORDER } from '@/import/report';
 import { monthLabel } from '@/domain/monthly';
-import { pickFile } from '@/platform/files';
+import { pickFile, saveFile } from '@/platform/files';
 
 type State =
   | { step: 'idle' }
@@ -13,7 +13,7 @@ type State =
   | { step: 'done'; plan: BudgetImportPlan; message: string; ok: boolean };
 
 export function BudgetImportPanel() {
-  const { t, toast, navigate } = useTreasury();
+  const { t, toast, navigate, extras } = useTreasury();
   const [s, setS] = useState<State>({ step: 'idle' });
   const [activate, setActivate] = useState(true);
   const [replaceTax, setReplaceTax] = useState(false);
@@ -85,9 +85,31 @@ export function BudgetImportPanel() {
             Choose budget workbook…
           </button>
           <span className="subtle">
-            Personal Budget.xlsx: plan, payroll, withholding, tax rules and budget history. Treasury data is
-            not changed.
+            Imports a current budget plan, payroll and tax rules. Treasury data is not changed.
           </span>
+          {extras.sampleBudgetWorkbook && (
+            <span className="small subtle">
+              No workbook handy?{' '}
+              <button
+                className="btn link small"
+                onClick={async () => {
+                  try {
+                    const sample = extras.sampleBudgetWorkbook!;
+                    await saveFile(
+                      sample.fileName,
+                      await sample.build(),
+                      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                    );
+                  } catch (err) {
+                    toast(`Download failed: ${(err as Error).message}`, 'error');
+                  }
+                }}
+              >
+                Download the sample household's budget workbook
+              </button>
+              .
+            </span>
+          )}
         </div>
       )}
       {s.step === 'analyzing' && <p role="status">Analyzing {s.name}…</p>}

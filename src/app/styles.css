@@ -79,6 +79,11 @@ textarea {
   flex-direction: column;
   gap: 1px;
 }
+.rail .nav-divider {
+  display: block;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  margin: 8px 16px;
+}
 .rail a {
   color: #cfdbef;
   text-decoration: none;
@@ -698,6 +703,25 @@ select[id^='month-done-']:focus-visible {
   font-size: 14px;
 }
 
+.status-jump {
+  appearance: none;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.status-jump:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+.review-target {
+  scroll-margin-top: 18px;
+}
+.dashboard-review-scroll-space {
+  height: min(50vh, 420px);
+}
+
 .empty {
   text-align: center;
   padding: 48px 24px;
@@ -912,6 +936,11 @@ table.t td .btn.small.danger:focus-visible {
     flex-direction: row;
     overflow-x: auto;
     scroll-padding-inline: 12px;
+  }
+  .rail .nav-divider {
+    border-top: 0;
+    border-left: 1px solid rgba(255, 255, 255, 0.24);
+    margin: 7px 5px;
   }
   .rail a {
     white-space: nowrap;

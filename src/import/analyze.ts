@@ -124,7 +124,7 @@ class Registry {
           'inferred_alias',
           sheet,
           cell,
-          `“${text}” resolved to ${target.code} through the alias table (confirmed mapping; review in Accounts).`,
+          `“${text}” matched the existing account ${target.displayName || target.code}. Review this match in Accounts.`,
         );
       }
       return { code: target.code, originalCode: text };
@@ -375,7 +375,7 @@ export async function analyzeWorkbook(
         'unknown_code',
         a.discoveredIn[0] ?? null,
         null,
-        `Account code “${a.code}” is not a standard identifier. It was preserved as its own account and needs review.`,
+        `Imported account “${a.displayName || a.code}” was kept as its own account and needs review.`,
       );
     } else if (templateCodes.size && !templateCodes.has(a.code)) {
       warn(
@@ -1669,6 +1669,16 @@ function parseAccountsTable(
     const a = reg.ensure(code, g.name);
     a.code = code.trim();
     a.displayName = g.text(r, col('display name')!);
+    if (
+      a.displayName &&
+      codeKey(a.displayName) !== codeKey(a.code) &&
+      !reg.aliases.has(codeKey(a.displayName))
+    )
+      reg.aliases.set(codeKey(a.displayName), {
+        alias: a.displayName,
+        targetCode: a.code,
+        note: 'From exported account name',
+      });
     a.description = g.text(r, col('description')!);
     const color = col('color');
     a.color = color !== null ? g.text(r, color) : null;
