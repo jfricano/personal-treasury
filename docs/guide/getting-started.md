@@ -16,7 +16,7 @@ npm run dev:demo      # the demo, with sample data, at http://localhost:1420
 npm run dev           # the app itself, starting empty, at http://localhost:1420
 ```
 
-`npm run dev` keeps its data in that browser's local storage. For real use, build the desktop app.
+`npm run dev` keeps its data locally in that browser. For a Mac app, build the desktop version.
 
 ## 3. Build the desktop app
 
@@ -41,9 +41,19 @@ Open the app and choose one of the two paths on the welcome screen:
   3. Activate the budget.
   4. On **Monthly reconciliation**, choose **New month**. The month starts from the active budget.
 
-## 5. Back up
+## 5. Optional: use the same treasury on another device
 
-By default, data stays on your Mac unless you save a file yourself. If you connect the optional private cloud service, encrypted database snapshots sync across your devices. See [private cloud sync](cloud-sync.md). Use **Import and export → Complete JSON backup** regularly. A backup restores every record exactly, including budgets and tax rules.
+V2.2 adds a private website for a phone or computer and optional cloud sync in the Mac app. The [public demo](https://jfricano.github.io/personal-treasury/) is separate and never uses your treasury.
+
+1. Set up a private HTTPS snapshot service with persistent storage and an off-service backup plan. The [Railway guide](railway-sync.md) is one option.
+2. Save its access token and a new sync passphrase in your password manager. If your data already lives in the Mac app, open **Settings → Cloud sync**, enter the service URL and both secrets, and wait for **Up to date** before connecting another device. For the first cloud upload, repeat the passphrase in the confirmation field.
+3. Open your private HTTPS URL on your phone or another computer. Enter the same token and passphrase and wait for **Up to date** before editing. Check that status again before switching devices.
+
+The private website can reconnect after a reload. **Log out** ends its tab session, and 30 minutes without activity logs it out. The [cloud sync guide](cloud-sync.md) explains conflicts, older versions, offline changes and session behavior.
+
+## 6. Back up
+
+By default, data stays on your Mac unless you save a file yourself. If you connect cloud sync, the service stores encrypted database versions, but versions on one volume cannot recover a lost volume. Use **Import and export → Complete JSON backup** regularly and keep that file in encrypted storage outside the service. A backup restores every record exactly, including budgets and tax rules.
 
 ## Next
 

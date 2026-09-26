@@ -13,6 +13,18 @@ The [live demo](https://jfricano.github.io/personal-treasury/) runs the same app
 
 ![The guided tour](../images/demo-tour.png)
 
+## Private web app and cloud sync (v2.2)
+
+The private website uses your real treasury and is separate from the public demo. It and the Mac app each keep a local working copy. When you connect them to the same private HTTPS service, they exchange client-encrypted, versioned snapshots. The service cannot read your treasury or sync passphrase. Cloud sync is optional for the Mac app.
+
+1. If you already use the Mac app, connect it first under **Settings → Cloud sync** with the service URL, access token and a new sync passphrase. Repeat the passphrase for the first upload, then wait for **Up to date**.
+2. Open the private HTTPS URL on your phone or computer. Enter the same token and passphrase and wait for **Up to date** before editing. The private website keeps its working copy in browser IndexedDB; the Mac app keeps its SQLite profile on disk.
+3. Before switching devices, check **Settings → Cloud sync** for **Up to date**, or choose **Sync now**. Edits made without a connection still save locally and are checked when the service returns.
+
+If both a device and the cloud changed from the same starting version, the app shows **Needs a choice**. **Use cloud copy** saves the device's current copy locally before opening the cloud version. **Keep device copy** makes the device's copy the next cloud version; the previous cloud version stays in history. Review both before choosing. Under **Cloud versions**, **Restore** makes an older snapshot the newest version and saves a local safety copy first.
+
+Reloading the private website reconnects without re-entering credentials. **Log out** clears that tab's credentials and hides the treasury; 30 minutes without activity does the same. The local browser working copy remains on the device. The Mac app asks for the token and passphrase each app session. V2.2 has no in-app credential recovery or passphrase change, so keep both secrets in a password manager and retain complete JSON backups. See the [cloud sync guide](cloud-sync.md) for setup and backup details.
+
 ## First launch: import your workbooks
 
 Import the treasury workbook first, then the budget workbook. Both imports are on **Import and export**. If you're starting fresh instead, create accounts on **Accounts** and a budget on **Budget and tax**.
@@ -139,4 +151,4 @@ Choose **New debt**, then enter the Loan ID (unique; hyphens are fine), opened d
 - **CSV**: the journal for the selected month, or debt events for the current debt filter.
 - **Settings → Safety copies**: automatic copies taken before an import or restore replaces data.
 
-Without cloud sync, nothing leaves your computer unless you save a file somewhere yourself. If you connect the optional private service, encrypted snapshots sync across devices; see [private cloud sync](cloud-sync.md).
+Without cloud sync, nothing leaves your computer unless you save a file somewhere yourself. If you connect the optional private service, encrypted snapshots sync across devices. Cloud version history stays on the service's volume, so keep a complete JSON backup in encrypted storage elsewhere; see [private cloud sync](cloud-sync.md).
