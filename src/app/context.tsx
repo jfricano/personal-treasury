@@ -8,6 +8,8 @@ import {
   type ReactNode,
 } from 'react';
 import type { Treasury } from '@/api/treasury';
+import { CloudClient, decryptSnapshot } from '@/sync';
+import { CloudSyncSession } from '@/sync/session';
 
 export type Page =
   'dashboard' | 'monthly' | 'budget' | 'debts' | 'history' | 'accounts' | 'import' | 'settings';
@@ -101,6 +103,13 @@ interface AppCtx {
   run: <T>(fn: () => T, success?: string) => T | undefined;
   switchProfile: (name: string) => void;
   extras: AppExtras;
+  syncSession: CloudSyncSession | null;
+  connectCloud: (config: {
+    baseUrl?: string;
+    token: string;
+    passphrase: string;
+    confirmation?: string;
+  }) => Promise<CloudSyncSession>;
 }
 
 const Ctx = createContext<AppCtx | null>(null);
@@ -110,14 +119,52 @@ export function AppProvider({
   children,
   switchProfile,
   extras = {},
+  initialSyncSession = null,
 }: {
   treasury: Treasury;
   children: ReactNode;
   switchProfile: (name: string) => void;
   extras?: AppExtras;
+  initialSyncSession?: CloudSyncSession | null;
 }) {
   const [route, setRoute] = useState<Route>(parseHash);
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [syncSession, setSyncSession] = useState<CloudSyncSession | null>(initialSyncSession);
+
+  const connectCloud = useCallback(
+    async ({
+      baseUrl,
+      token,
+      passphrase,
+      confirmation,
+    }: {
+      baseUrl?: string;
+      token: string;
+      passphrase: string;
+      confirmation?: string;
+    }) => {
+      if (passphrase.length < 12) throw new Error('Use a sync passphrase of at least 12 characters.');
+      const client = new CloudClient({ baseUrl, token });
+      const head = await client.getHead();
+      if (head.revision === 0 && passphrase !== confirmation)
+        throw new Error('Repeat the passphrase before creating the first cloud snapshot.');
+      if (head.revision > 0) {
+        const current = await client.getVersion(head.revision);
+        await decryptSnapshot(current.envelope, passphrase);
+      }
+      const endpoint = baseUrl ?? window.location.origin;
+      const session = new CloudSyncSession(treasury, client, passphrase, endpoint);
+      await session.start();
+      if (session.getStatus().phase === 'error' || session.getStatus().phase === 'offline') {
+        const message = session.getStatus().message;
+        session.close();
+        throw new Error(message);
+      }
+      setSyncSession(session);
+      return session;
+    },
+    [treasury],
+  );
 
   useEffect(() => {
     const onHash = () => setRoute(parseHash());
@@ -157,7 +204,19 @@ export function AppProvider({
 
   return (
     <Ctx.Provider
-      value={{ treasury, route, navigate, toasts, toast, dismissToast, run, switchProfile, extras }}
+      value={{
+        treasury,
+        route,
+        navigate,
+        toasts,
+        toast,
+        dismissToast,
+        run,
+        switchProfile,
+        extras,
+        syncSession,
+        connectCloud,
+      }}
     >
       {children}
     </Ctx.Provider>

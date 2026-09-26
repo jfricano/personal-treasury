@@ -22,21 +22,38 @@ const demoHtml = (): Plugin => ({
       ),
 });
 
+const privateHtml = (): Plugin => ({
+  name: 'private-html',
+  apply: 'build',
+  transformIndexHtml: (html) =>
+    html
+      .replace(
+        /connect-src [^"]*/,
+        "connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'",
+      )
+      .replace('<title>Personal Treasury</title>', '<title>Personal Treasury · Private</title>'),
+});
+
 // Tauri expects a fixed port and no clearing of the screen during `tauri dev`.
 export default defineConfig(({ mode }) => {
   const demo = mode === 'demo';
+  const privateWeb = mode === 'private';
   return {
-    plugins: [react(), ...(demo ? [demoHtml()] : [])],
+    plugins: [react(), ...(demo ? [demoHtml()] : []), ...(privateWeb ? [privateHtml()] : [])],
     base: demo ? './' : '/',
     clearScreen: false,
     resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
-    server: { port: 1420, strictPort: true },
+    server: {
+      port: 1420,
+      strictPort: true,
+      ...(privateWeb ? { proxy: { '/api/sync': 'http://127.0.0.1:8787' } } : {}),
+    },
     preview: demo ? { port: 4174, strictPort: true } : undefined,
     envPrefix: ['VITE_', 'TAURI_ENV_'],
     build: {
       target: 'safari15',
-      outDir: demo ? 'dist-demo' : 'dist',
-      sourcemap: !demo,
+      outDir: demo ? 'dist-demo' : privateWeb ? 'dist-private' : 'dist',
+      sourcemap: !demo && !privateWeb,
       chunkSizeWarningLimit: 1600,
     },
     test: {

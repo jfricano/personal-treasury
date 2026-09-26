@@ -24,6 +24,7 @@
 npm install
 npm run dev            # browser dev server at http://localhost:1420 (IndexedDB storage)
 npm run dev:demo       # the public demo with sample data, at http://localhost:1420
+npm run dev:private    # private web UI; proxy /api/sync to localhost:8787
 npm test               # unit + integration + database checks (Vitest)
 npm run db:check       # database integrity, constraints and migrations only
 npm run check          # format, lint, typecheck, tests, production build and demo build
@@ -32,12 +33,18 @@ npm run test:e2e       # Playwright against the personal reference workbooks (lo
 npm run lint && npm run typecheck
 npm run build          # production web bundle in dist/
 npm run build:demo     # static demo site in dist-demo/
+npm run build:private  # private web app in dist-private/
+npm run test:server    # snapshot service auth, CAS and history checks
 npm run privacy:check  # scan publishable files for personal terms (run before every push)
 ```
 
 ### Personal data stays local
 
 The owner's workbooks and everything derived from them live in `reference/` and `tests/local/`, which are gitignored. Vitest and `npm run test:e2e` include `tests/local/` only when it exists, so a fresh clone runs the public suite alone. `npm run privacy:check` fails if any committed or committable file contains a term from `reference/privacy-terms.txt`; run it before pushing.
+
+## Private cloud build
+
+`npm run build:private` creates the credential-gated web app. `sync-server/server.mjs` serves it and stores encrypted snapshot versions on persistent disk; see [private cloud sync](../guide/cloud-sync.md) and [ADR 0007](decisions/0007-guarded-cloud-snapshots.md). The public demo and private build have separate output folders and storage behavior. The desktop build remains local-first and connects to the same service only when configured in Settings.
 
 ### Demo container
 

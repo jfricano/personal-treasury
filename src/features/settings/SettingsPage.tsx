@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useTreasury } from '@/app/context';
 import { Field, Panel, useConfirm } from '@/components/ui';
+import { CloudPanel } from '@/sync/CloudPanel';
 
 export function SettingsPage() {
-  const { t, toast, switchProfile, version } = useTreasury();
+  const { t, toast, switchProfile, version, syncSession } = useTreasury();
   const [files, setFiles] = useState<string[]>([]);
   const [newProfile, setNewProfile] = useState('');
   const confirm = useConfirm();
@@ -21,6 +22,7 @@ export function SettingsPage() {
       <div className="page-head">
         <h2>Settings</h2>
       </div>
+      <CloudPanel />
       <div className="grid-2">
         {t.storage.kind === 'session' ? (
           <Panel title="Storage">
@@ -29,7 +31,7 @@ export function SettingsPage() {
               tab closes. The desktop app keeps separate profiles as SQLite files on your computer.
             </p>
           </Panel>
-        ) : (
+        ) : import.meta.env.MODE === 'private' ? null : (
           <Panel title="Profiles (separate local databases)">
             <ul className="issues">
               {profiles.map((p) => (
@@ -137,8 +139,12 @@ export function SettingsPage() {
       </Panel>
       <Panel title="Privacy">
         <p style={{ margin: 0 }}>
-          Personal Treasury works offline. It has no accounts, telemetry, analytics, remote logging or cloud
-          sync. Exports and backups are written only when you choose a location.
+          Personal Treasury works offline and has no telemetry, analytics or remote logging.{' '}
+          {syncSession
+            ? import.meta.env.MODE === 'private'
+              ? 'When connected, encrypted database snapshots are sent to your private cloud service. This tab remembers the access token and sync passphrase across reloads; Log out clears them.'
+              : 'When connected, encrypted database snapshots are sent to your private cloud service. The access token and sync passphrase stay in memory for this session.'
+            : 'Your data remains on this device until you connect cloud sync or export a file.'}
         </p>
       </Panel>
       {confirm.element}

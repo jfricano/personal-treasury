@@ -36,6 +36,15 @@ function switchProfile(name: string) {
 async function boot() {
   const root = createRoot(document.getElementById('root')!);
   try {
+    if (import.meta.env.MODE === 'private') {
+      const { PrivateBoot } = await import('@/sync/PrivateBoot');
+      root.render(
+        <StrictMode>
+          <PrivateBoot wasmUrl={wasmUrl} />
+        </StrictMode>,
+      );
+      return;
+    }
     let treasury: Treasury;
     let extras: AppExtras | undefined;
     // The public demo build (`vite build --mode demo`); this branch is removed from every other build.

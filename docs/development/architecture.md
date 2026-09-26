@@ -1,6 +1,8 @@
 # Architecture — Personal Treasury
 
-This covers the treasury system, the budget, payroll and tax integration built on top of it, and the public browser demo (§13).
+This covers the treasury system, the budget, payroll and tax integration built on top of it, the public browser demo (§13), and the optional v2.2 private cloud snapshot path.
+
+The v2.2 private web build and desktop executable share the existing in-process SQLite and domain layers. `src/sync/` encrypts full snapshots, compares remote revisions before upload, and stops on divergence. `sync-server/` stores immutable encrypted versions and serves the private web build. See [ADR 0007](decisions/0007-guarded-cloud-snapshots.md) for the boundaries and recovery behavior.
 
 Where things are specified:
 - **Treasury rules:** [Data model and calculation rules](data-and-rules.md), [Workbook import](workbook-import.md) and [Acceptance tests](acceptance-tests.md).

@@ -6,7 +6,7 @@ import { dec, formatUSD } from '@/domain/money';
 import { MonthSelect } from '@/features/monthly/MonthSelect';
 
 export function Dashboard() {
-  const { t, route, navigate, run } = useTreasury();
+  const { t, route, navigate, run, syncSession } = useTreasury();
   const [showAll, setShowAll] = useState(false);
   const reviewRef = useRef<HTMLDivElement>(null);
 
@@ -15,8 +15,12 @@ export function Dashboard() {
       <div className="empty">
         <h3>Welcome to Personal Treasury</h3>
         <p className="subtle">
-          All data stays {t.storage.kind === 'session' ? 'in this browser tab' : 'on this computer'}. Start by
-          importing your workbook, or set up accounts by hand.
+          {t.storage.kind === 'session'
+            ? 'All data stays in this browser tab.'
+            : syncSession
+              ? 'This device saves locally and syncs encrypted snapshots to your private cloud.'
+              : 'Data stays on this computer until you connect cloud sync or export a file.'}{' '}
+          Start by importing your workbook, or set up accounts by hand.
         </p>
         <div className="choice">
           <button onClick={() => navigate({ page: 'import' })}>

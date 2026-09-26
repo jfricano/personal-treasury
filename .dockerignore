@@ -4,6 +4,7 @@ tests/local
 node_modules
 dist
 dist-demo
+dist-private
 test-results
 playwright-report
 src-tauri/target

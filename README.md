@@ -2,7 +2,7 @@
 
 By Orca Solutions.
 
-A local-first desktop app for running a household's money as a set of **virtual account buckets**: plan how each paycheck is split, record transfers between buckets, reconcile every month to the cent, and keep an event-sourced ledger of what the buckets owe each other.
+A local-first desktop and private web app for running a household's money as a set of **virtual account buckets**: plan how each paycheck is split, record transfers between buckets, reconcile every month to the cent, and keep an event-sourced ledger of what the buckets owe each other.
 
 **[Try the live demo →](https://jfricano.github.io/personal-treasury/)** It runs entirely in your browser with sample data for a made-up family, starts with a one-minute guided tour, and includes a sample workbook to import. Nothing is sent anywhere, and your changes disappear when you close the tab.
 
@@ -42,7 +42,7 @@ A local-first desktop app for running a household's money as a set of **virtual 
 
 ## Privacy
 
-The desktop app keeps its data in a SQLite file on your Mac. It has no accounts, no telemetry, no network calls and no cloud sync. The demo keeps its database in the browser tab's session storage. Money is stored as exact decimal strings and calculated with `decimal.js`, never binary floating point.
+The desktop app keeps its data in a SQLite file on your Mac and can optionally sync encrypted, versioned snapshots through a private service. The private web build keeps a working copy in the browser's IndexedDB and requires cloud credentials before opening it. The public demo keeps its database in the browser tab's session storage and does not sync. There is no telemetry or remote logging. Money is stored as exact decimal strings and calculated with `decimal.js`, never binary floating point. See [private cloud sync](docs/guide/cloud-sync.md) and the [Railway hosting example](docs/guide/railway-sync.md).
 
 ## Get started
 
@@ -50,6 +50,7 @@ The desktop app keeps its data in a SQLite file on your Mac. It has no accounts,
 npm install
 npm run dev:demo      # the demo with sample data at http://localhost:1420
 npm run tauri build   # the macOS desktop app (needs Rust)
+npm run build:private # private web build for the snapshot service
 ```
 
 Or run the demo container: `docker run --rm -p 8080:8080 ghcr.io/jfricano/personal-treasury-demo`, then open http://localhost:8080.
@@ -58,7 +59,7 @@ Or run the demo container: `docker run --rm -p 8080:8080 ghcr.io/jfricano/person
 
 ## Documentation
 
-- **Using it:** [Getting started](docs/guide/getting-started.md) and the [user guide](docs/guide/user-guide.md), which uses the demo household as its example.
+- **Using it:** [Getting started](docs/guide/getting-started.md), [private cloud sync](docs/guide/cloud-sync.md), and the [user guide](docs/guide/user-guide.md), which uses the demo household as its example.
 - **Sharing it:** [Distribution plan](docs/distribution-plan.md) and the [demo walkthrough](docs/guide/demo-walkthrough.md).
 - **Building it:** [Development](docs/development/development.md), [architecture](docs/development/architecture.md), the [calculation rules](docs/development/data-and-rules.md), [workbook import](docs/development/workbook-import.md), [acceptance tests](docs/development/acceptance-tests.md), [testing](docs/development/testing.md) and [decisions](docs/development/decisions/).
 

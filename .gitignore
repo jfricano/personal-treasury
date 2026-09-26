@@ -7,6 +7,7 @@ src-tauri/gen
 *.local
 .DS_Store
 dist-demo
+dist-private
 # Personal financial data is never committed: the source workbooks, their audit
 # notes and control totals, and the tests that check them. See reference/README.md.
 reference/*
