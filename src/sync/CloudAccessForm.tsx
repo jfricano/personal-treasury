@@ -99,8 +99,10 @@ export function CloudAccessForm({
         />
       </Field>
       <p className="small subtle" style={{ margin: 0 }}>
-        The access token and passphrase stay in memory for this app session. Keep both somewhere safe; cloud
-        versions cannot be decrypted without the passphrase.
+        {desktop
+          ? 'The access token and passphrase stay in memory for this app session.'
+          : 'This tab remembers the access token and passphrase across reloads. Log out clears them; closing the tab usually clears them. The app logs out after 30 minutes without activity.'}{' '}
+        Keep both somewhere safe; cloud versions cannot be decrypted without the passphrase.
       </p>
       {error && (
         <p role="alert" className="err" style={{ margin: 0 }}>

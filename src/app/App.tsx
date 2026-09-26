@@ -42,7 +42,7 @@ const NAV_GROUPS: { page: Page; label: string }[][] = [
   ],
 ];
 
-function Shell() {
+function Shell({ onLogout }: { onLogout?: () => void }) {
   const { route, navigate, treasury, toasts, dismissToast, toast, extras, syncSession } = useApp();
   const navRef = useRef<HTMLElement>(null);
   useTreasuryVersion();
@@ -91,7 +91,14 @@ function Shell() {
   return (
     <div className="shell">
       <aside className="rail">
-        <h1>Personal Treasury</h1>
+        <div className="rail-title">
+          <h1>Personal Treasury</h1>
+          {onLogout && (
+            <button className="mobile-logout" type="button" onClick={onLogout}>
+              Log out
+            </button>
+          )}
+        </div>
         <nav aria-label="Main" ref={navRef}>
           {NAV_GROUPS.flatMap((group, index) => [
             ...(index ? [<span key={`divider-${index}`} className="nav-divider" aria-hidden="true" />] : []),
@@ -112,6 +119,14 @@ function Shell() {
               </a>
             )),
           ])}
+          {onLogout && (
+            <>
+              <span className="nav-divider logout-divider" aria-hidden="true" />
+              <button className="nav-logout" type="button" onClick={onLogout}>
+                Log out
+              </button>
+            </>
+          )}
         </nav>
         <span className="nav-hint" aria-hidden="true">
           Swipe for more sections ↔
@@ -164,12 +179,15 @@ export function App({
   switchProfile,
   extras,
   syncSession,
+  onLogout,
 }: {
   treasury: Treasury;
   switchProfile: (name: string) => void;
   /** Supplied only by the public demo build. */
   extras?: AppExtras;
   syncSession?: CloudSyncSession | null;
+  /** Supplied only by the private web build. */
+  onLogout?: () => void;
 }) {
   return (
     <AppProvider
@@ -178,7 +196,7 @@ export function App({
       extras={extras}
       initialSyncSession={syncSession}
     >
-      <Shell />
+      <Shell onLogout={onLogout} />
     </AppProvider>
   );
 }

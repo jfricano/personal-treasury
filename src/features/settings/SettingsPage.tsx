@@ -141,7 +141,9 @@ export function SettingsPage() {
         <p style={{ margin: 0 }}>
           Personal Treasury works offline and has no telemetry, analytics or remote logging.{' '}
           {syncSession
-            ? 'When connected, encrypted database snapshots are sent to your private cloud service. The access token and sync passphrase stay in memory for this session.'
+            ? import.meta.env.MODE === 'private'
+              ? 'When connected, encrypted database snapshots are sent to your private cloud service. This tab remembers the access token and sync passphrase across reloads; Log out clears them.'
+              : 'When connected, encrypted database snapshots are sent to your private cloud service. The access token and sync passphrase stay in memory for this session.'
             : 'Your data remains on this device until you connect cloud sync or export a file.'}
         </p>
       </Panel>

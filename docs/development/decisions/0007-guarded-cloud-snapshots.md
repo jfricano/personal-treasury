@@ -11,7 +11,8 @@ The earlier local-only requirements in the original project brief are superseded
 ## Decision
 
 - Add a separate private web build. It uses local IndexedDB and requires the snapshot service access token and sync passphrase before opening the treasury. The public demo remains fictional and tab-scoped.
-- Keep the desktop executable's local SQLite profile. Connecting cloud sync is optional and requires an HTTPS service URL, access token, and passphrase each app session. Neither secret is written to browser storage by the app.
+- Keep the desktop executable's local SQLite profile. Connecting cloud sync is optional and requires an HTTPS service URL, access token, and passphrase each app session. The desktop app keeps both secrets in memory.
+- The private web tab keeps the token and passphrase in session storage so reload can reconnect and reconcile with the cloud. Log out clears them, and 30 minutes without activity locks the app. Closing the tab normally clears session storage; browser session restore can preserve it until the inactivity limit expires.
 - A small Node service stores opaque, client-encrypted SQLite snapshots. The service can run on an always-on home machine or a hosted machine with persistent disk and HTTPS. The client API is the same in either place.
 - Every upload includes the cloud revision the client last saw. The service atomically advances the revision only if it still matches. Older versions remain available and can be restored as a new head.
 - Each device remembers the last synced revision and a hash of its local database. If both the local database and cloud head changed, syncing stops for an explicit choice. Choosing the cloud saves the device copy locally first; choosing the device creates a new cloud version and retains the old cloud head in history.
