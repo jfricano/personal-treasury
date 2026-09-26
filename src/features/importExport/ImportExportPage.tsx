@@ -5,6 +5,7 @@ import { analyzeWorkbook } from '@/import/analyze';
 import type { ImportPlan } from '@/import/plan';
 import { SEVERITY_ORDER, reportJson, reportMarkdown, type ReportOutcome } from '@/import/report';
 import { exportWorkbook } from '@/export/workbook';
+import { exportBudgetWorkbook } from '@/export/budgetWorkbook';
 import {
   buildDatabaseFromBackup,
   createBackup,
@@ -73,14 +74,20 @@ export function ImportExportPage() {
 
   const exportXlsx = async () => {
     try {
-      if (
-        await saveFile(
-          `Personal Treasury export ${stamp()}.xlsx`,
-          exportWorkbook(t),
+      const treasurySaved = await saveFile(
+        `Personal Treasury export ${stamp()}.xlsx`,
+        exportWorkbook(t),
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      );
+      if (!treasurySaved) return;
+      if (t.budget.activeVersion()) {
+        const budgetSaved = await saveFile(
+          `Personal Budget export ${stamp()}.xlsx`,
+          exportBudgetWorkbook(t),
           'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        )
-      )
-        toast('Workbook exported', 'success');
+        );
+        toast(budgetSaved ? 'Both Excel workbooks exported' : 'Treasury workbook exported', 'success');
+      } else toast('Treasury workbook exported; there is no active budget yet', 'success');
     } catch (err) {
       toast(`Export failed; nothing was changed: ${(err as Error).message}`, 'error');
     }
@@ -254,7 +261,7 @@ export function ImportExportPage() {
         <Panel title="Export">
           <div className="btn-row">
             <button className="btn" onClick={exportXlsx} disabled={t.isEmpty()}>
-              Excel workbook
+              Excel workbooks
             </button>
             <button className="btn" onClick={exportJson}>
               Complete JSON backup
@@ -267,9 +274,9 @@ export function ImportExportPage() {
             </button>
           </div>
           <p className="small subtle" style={{ marginBottom: 0 }}>
-            The workbook contains Overview, Monthly Template, Account Ledger, one sheet per month, Interco
-            Debt Summary and account/debt/month tables so it can be re-imported without loss. Excel stores
-            numbers as doubles; the JSON backup keeps every decimal exactly.
+            Exports separate treasury and current-budget workbooks. The budget file starts with Summary,
+            followed by one sheet per category and Payroll and tax; it can be imported as a current plan.
+            Excel stores numbers as doubles; the JSON backup keeps every decimal exactly.
           </p>
         </Panel>
         <Panel title="Restore JSON backup">
@@ -369,10 +376,8 @@ function PlanView({ plan }: { plan: ImportPlan }) {
           </div>
         </div>
         <div>
-          <div className="k">Accounts / aliases</div>
-          <div className="v">
-            {plan.counts.accounts} / {plan.counts.aliases}
-          </div>
+          <div className="k">Accounts</div>
+          <div className="v">{plan.counts.accounts}</div>
         </div>
         <div>
           <div className="k">Months / entries</div>
@@ -478,7 +483,7 @@ function PlanView({ plan }: { plan: ImportPlan }) {
       </details>
 
       <details className="sec">
-        <summary>Sheets, accounts and aliases</summary>
+        <summary>Sheets and accounts</summary>
         <div className="body">
           <ul className="warn-list">
             {plan.sheets.map((s) => (
@@ -491,19 +496,10 @@ function PlanView({ plan }: { plan: ImportPlan }) {
             Accounts:{' '}
             {plan.accounts.map((a) => (
               <span key={a.code} className="pill">
-                {a.code}
+                {a.displayName || a.code}
                 {a.needsReview ? ' ⚠' : ''}
               </span>
             ))}
-          </p>
-          <p className="small">
-            Aliases:{' '}
-            {plan.aliases.map((a) => (
-              <span key={a.alias} className="pill">
-                {a.alias} → {a.targetCode}
-              </span>
-            ))}{' '}
-            · applied {plan.aliasApplications.length} time(s)
           </p>
         </div>
       </details>

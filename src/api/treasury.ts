@@ -250,6 +250,10 @@ export class Treasury {
   }
 
   codeOf = (id: string): string => this.repos.getAccount(id)?.code ?? `?${id.slice(0, 6)}`;
+  nameOf = (id: string): string => {
+    const account = this.repos.getAccount(id);
+    return account ? account.displayName || account.code : `?${id.slice(0, 6)}`;
+  };
 
   resolver(): AccountResolver {
     return new AccountResolver(this.accounts(), this.repos.listAliases());
@@ -292,6 +296,19 @@ export class Treasury {
     });
   }
 
+  /** Names are the user-facing identity. A generated key keeps older workbook links stable. */
+  createNamedAccount(name: string): Account {
+    const displayName = name.trim();
+    if (!displayName) throw new TreasuryError('Account name is required', 'validation');
+    if (
+      this.accounts().some((a) =>
+        [a.displayName, a.code].some((value) => value?.toLowerCase() === displayName.toLowerCase()),
+      )
+    )
+      throw new TreasuryError(`Account ${displayName} already exists`, 'duplicate');
+    return this.createAccount({ code: `A${uuid().replace(/-/g, '').slice(0, 20)}`, displayName });
+  }
+
   updateAccount(
     id: string,
     patch: Partial<
@@ -302,6 +319,19 @@ export class Treasury {
       const before = this.repos.getAccount(id);
       if (!before) throw new TreasuryError('Account not found', 'not_found');
       const after: Account = { ...before, ...patch };
+      if (patch.displayName !== undefined) {
+        const name = patch.displayName?.trim();
+        if (!name) throw new TreasuryError('Account name is required', 'validation');
+        if (
+          this.accounts().some(
+            (a) =>
+              a.id !== id &&
+              [a.displayName, a.code].some((value) => value?.toLowerCase() === name.toLowerCase()),
+          )
+        )
+          throw new TreasuryError(`Account ${name} already exists`, 'duplicate');
+        after.displayName = name;
+      }
       if (patch.code !== undefined) {
         after.code = parse(AccountInput.shape.code, patch.code);
         const clash = this.repos.getAccountByCode(after.code);
@@ -334,7 +364,11 @@ export class Treasury {
       if (!a) throw new TreasuryError('Account not found', 'not_found');
       const refs = this.repos.accountReferenceCount(id);
       if (refs > 0)
-        throw new TreasuryError(`${a.code} is used by ${refs} record(s). Archive it instead.`, 'referenced');
+        throw new TreasuryError(
+          `${a.displayName || a.code} is used by ${refs} record(s). Archive it instead.`,
+          'referenced',
+        );
+      this.repos.deleteAliasesForAccount(id);
       this.repos.deleteAccount(id);
       this.repos.audit('delete', 'account', id, a, null);
     });
@@ -419,7 +453,7 @@ export class Treasury {
 
   private computeFor(cycle: MonthlyCycle, entries?: StoredEntry[]): MonthResult {
     const accounts = this.accounts();
-    const codes = new Map(accounts.map((a) => [a.id, a.code]));
+    const codes = new Map(accounts.map((a) => [a.id, a.displayName || a.code]));
     return computeMonth({
       expectedCash: cycle.expectedCash,
       allocations: this.repos.listAllocations(cycle.id),
@@ -949,7 +983,7 @@ export class Treasury {
     const byDebt = new Map<string, DebtEvent[]>();
     for (const e of events) byDebt.set(e.debtId, [...(byDebt.get(e.debtId) ?? []), e]);
     const positions = this.repos.listDebts().map((d) => debtPosition(d, byDebt.get(d.id) ?? []));
-    const codes = new Map(this.accounts().map((a) => [a.id, a.code]));
+    const codes = new Map(this.accounts().map((a) => [a.id, a.displayName || a.code]));
     return { positions, summary: summarizeDebts(positions, (id) => codes.get(id) ?? id) };
   }
 
@@ -1218,7 +1252,8 @@ export class Treasury {
             ...existing,
             sortOrder: a.sortOrder,
             description: existing.description ?? a.description,
-            displayName: existing.displayName ?? a.displayName,
+            displayName: a.displayName ?? existing.displayName,
+            active: a.active,
             needsReview: existing.needsReview || a.needsReview,
           });
           continue;

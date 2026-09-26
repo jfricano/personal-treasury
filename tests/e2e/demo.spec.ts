@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Download, type Page } from '@playwright/test';
 
 // The sample data is dated relative to "today"; pin the clock so amounts and months are exact.
 const TODAY = new Date('2026-09-24T10:00:00');
@@ -73,7 +73,7 @@ test('allocation change → Review → undo; keyboard transfer settles a debt; m
   await expect(page.getByRole('combobox', { name: 'Month' })).toContainText('September 2026');
   await expect(badge(page)).toHaveText(/Ready to transfer/);
 
-  const hh = page.getByLabel('HH budget allocation');
+  const hh = page.getByLabel('Household budget allocation');
   await hh.click();
   await hh.fill('3200');
   await hh.press('Enter');
@@ -86,16 +86,16 @@ test('allocation change → Review → undo; keyboard transfer settles a debt; m
   const row = page.getByRole('row', { name: 'New transfer' });
   await row.getByLabel('Loan ID').fill('H-03');
   await row.getByLabel('Description').fill('Settle cleats credit');
-  await row.getByLabel('From account').fill('ent');
-  await row.getByLabel('To account').fill('KIDS');
+  await row.getByLabel('From account').fill('Entertainment');
+  await row.getByLabel('To account').fill('Kids');
   await row.getByLabel('Amount').fill('35');
   await row.getByLabel('Notes').fill('e2e');
   await row.getByLabel('Notes').press('Enter');
   const journal = page.getByRole('table', { name: 'Transfer journal' });
   await expect(journal.getByText('Settle cleats credit')).toBeVisible();
   const accounts = page.getByRole('table', { name: 'Account transfer summary' });
-  await expect(accounts.getByRole('row', { name: /^ENT/ })).toContainText('$478.96');
-  await expect(accounts.getByRole('row', { name: /^KIDS/ })).toContainText('$320.00');
+  await expect(accounts.getByRole('row', { name: /^Entertainment/ })).toContainText('$478.96');
+  await expect(accounts.getByRole('row', { name: /^Kids/ })).toContainText('$320.00');
 
   await journal.getByRole('button', { name: /Record on Loan H-03: \+?\$35\.00/ }).click();
   await expect(journal.getByRole('button', { name: /Loan H-03 \+?\$35\.00/ })).toBeVisible();
@@ -121,7 +121,7 @@ test('record a payoff, then overpay and see the direction reverse', async ({ pag
 
   await detail.getByRole('button', { name: 'H-01', exact: true }).click();
   const drawer = page.getByRole('complementary', { name: 'Loan H-01' });
-  await expect(drawer).toContainText('PETC owes LTS $300.00');
+  await expect(drawer).toContainText('Pets etc. owes Long-term savings $300.00');
   await drawer.getByRole('button', { name: 'Record payment' }).click();
   const dlg = page.getByRole('dialog', { name: 'Record payment' });
   await dlg.getByLabel('Payment amount').fill('300');
@@ -131,15 +131,15 @@ test('record a payoff, then overpay and see the direction reverse', async ({ pag
   await expect(page.getByTestId('debt-total')).toHaveText('$485.00');
   await drawer.getByRole('button', { name: 'Close' }).click();
 
-  // Overpay H-05 (TRV owes LTS $300) by paying $400: LTS now owes TRV $100.
+  // Overpay H-05 (Travel owes Long-term savings $300) by paying $400: LTS now owes TRV $100.
   await detail.getByRole('button', { name: 'H-05', exact: true }).click();
   const d5 = page.getByRole('complementary', { name: 'Loan H-05' });
   await d5.getByRole('button', { name: 'Record payment' }).click();
   const dlg5 = page.getByRole('dialog', { name: 'Record payment' });
   await dlg5.getByLabel('Payment amount').fill('400');
-  await expect(dlg5).toContainText('The direction reverses: LTS owes TRV $100.00');
+  await expect(dlg5).toContainText('The direction reverses: Long-term savings owes Travel $100.00');
   await dlg5.getByRole('button', { name: 'Save payment' }).click();
-  await expect(d5).toContainText('LTS owes TRV $100.00');
+  await expect(d5).toContainText('Long-term savings owes Travel $100.00');
   await expect(page.getByTestId('debt-total')).toHaveText('$285.00');
   await page.screenshot({ path: `${SHOTS}/debt-drawer.png`, fullPage: true });
 });
@@ -160,10 +160,16 @@ test('JSON backup → start blank → restore; Excel export → start blank → 
   await page.getByRole('button', { name: 'Complete JSON backup' }).click();
   const backup = testInfo.outputPath('backup.json');
   await (await backupDl).saveAs(backup);
-  const excelDl = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'Excel workbook' }).click();
+  const excelDownloads: Download[] = [];
+  page.on('download', (download) => excelDownloads.push(download));
+  await page.getByRole('button', { name: 'Excel workbooks' }).click();
+  await expect.poll(() => excelDownloads.length).toBe(2);
+  expect(excelDownloads.map((download) => download.suggestedFilename())).toEqual([
+    expect.stringMatching(/^Personal Treasury export .*\.xlsx$/),
+    expect.stringMatching(/^Personal Budget export .*\.xlsx$/),
+  ]);
   const workbook = testInfo.outputPath('export.xlsx');
-  await (await excelDl).saveAs(workbook);
+  await excelDownloads[0].saveAs(workbook);
 
   // Restore the JSON backup over a blank database. The demo has no profiles to restore into.
   await confirmBanner(page, 'Start blank', 'Start blank');
@@ -253,6 +259,39 @@ test('sample workbook: download → start blank → import with every control pa
   await expect(summary(page, 'Total debt outstanding')).toContainText('$785.00');
 });
 
+test('sample budget workbook downloads and imports as the current plan', async ({ page }, testInfo) => {
+  await page.getByRole('link', { name: 'Import and export' }).click();
+  const download = page.waitForEvent('download');
+  await page.getByRole('button', { name: "Download the sample household's budget workbook" }).click();
+  const file = testInfo.outputPath('sample-budget.xlsx');
+  await (await download).saveAs(file);
+  await confirmBanner(page, 'Start blank', 'Start blank');
+  await page.getByRole('button', { name: /Import workbook/ }).click();
+  const chooser = page.waitForEvent('filechooser');
+  await page.getByRole('button', { name: 'Choose budget workbook…' }).click();
+  await (await chooser).setFiles(file);
+  await expect(page.getByRole('table', { name: 'Budget versions to import' })).toContainText(
+    'After the raise',
+  );
+  await expect(page.getByTestId('budget-controls-result')).toContainText(/All \d+ pass/);
+  await page.getByRole('button', { name: 'Commit budget import' }).click();
+  await page.getByRole('button', { name: 'Open budget' }).click();
+  await expect(page.getByText('$4,690.96').first()).toBeVisible();
+});
+
+test('review status jumps to the needs review section', async ({ page }) => {
+  await page.getByRole('link', { name: 'Monthly reconciliation' }).click();
+  await page.getByLabel('Household budget allocation').fill('3200');
+  await page.getByLabel('Household budget allocation').press('Enter');
+  await page.getByRole('link', { name: 'Dashboard' }).click();
+  await page.getByRole('button', { name: 'Jump to needs review' }).click();
+  await expect
+    .poll(async () =>
+      page.locator('#dashboard-needs-review').evaluate((el) => Math.round(el.getBoundingClientRect().top)),
+    )
+    .toBeLessThan(120);
+});
+
 test('phone width: pages never scroll sideways; wide tables, drawers and dialogs fit', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 });
   const main = page.locator('main');
@@ -272,7 +311,7 @@ test('phone width: pages never scroll sideways; wide tables, drawers and dialogs
     .getByRole('button', { name: 'H-01', exact: true })
     .click();
   const drawer = page.getByRole('complementary', { name: 'Loan H-01' });
-  await expect(drawer).toContainText('PETC owes LTS $300.00');
+  await expect(drawer).toContainText('Pets etc. owes Long-term savings $300.00');
   expect(await drawer.evaluate((d) => d.getBoundingClientRect().width)).toBeLessThanOrEqual(375);
   await drawer.getByRole('button', { name: 'Record payment' }).click();
   const dlg = page.getByRole('dialog', { name: 'Record payment' });

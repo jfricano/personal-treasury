@@ -17,6 +17,8 @@ const esc = (s: string) => s.replace(/\|/g, '\\|').replace(/\n/g, ' ');
 
 export function reportMarkdown(plan: ImportPlan, outcome: ReportOutcome): string {
   const lines: string[] = [];
+  const accountName = (code: string) =>
+    plan.accounts.find((account) => account.code === code)?.displayName || code;
   lines.push(`# Import report — ${plan.filename}`, '');
   lines.push(`- Analyzed: ${plan.analyzedAt}`);
   lines.push(`- SHA-256: \`${plan.hash}\``);
@@ -33,11 +35,14 @@ export function reportMarkdown(plan: ImportPlan, outcome: ReportOutcome): string
     '',
     '## Accounts',
     '',
-    plan.accounts.map((a) => `${a.code}${a.needsReview ? ' (needs review)' : ''}`).join(', '),
+    plan.accounts
+      .map((a) => `${a.displayName || a.code}${a.needsReview ? ' (needs review)' : ''}`)
+      .join(', '),
   );
-  lines.push('', '## Aliases applied', '');
+  lines.push('', '## Workbook account names matched', '');
   if (!plan.aliasApplications.length) lines.push('None.');
-  for (const a of plan.aliasApplications) lines.push(`- ${a.sheet}!${a.cell}: “${a.original}” → ${a.code}`);
+  for (const a of plan.aliasApplications)
+    lines.push(`- ${a.sheet}!${a.cell}: “${a.original}” → ${accountName(a.code)}`);
   lines.push(
     '',
     '## Control comparisons',

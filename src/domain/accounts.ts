@@ -36,6 +36,7 @@ export class AccountResolver {
   constructor(accounts: Account[], aliases: AccountAlias[]) {
     for (const a of accounts) {
       this.byKey.set(codeKey(a.code), a);
+      if (a.displayName) this.byKey.set(codeKey(a.displayName), a);
       this.byId.set(a.id, a);
     }
     for (const al of aliases) this.aliasByKey.set(codeKey(al.alias), al);
@@ -43,6 +44,7 @@ export class AccountResolver {
 
   addAccount(a: Account) {
     this.byKey.set(codeKey(a.code), a);
+    if (a.displayName) this.byKey.set(codeKey(a.displayName), a);
     this.byId.set(a.id, a);
   }
 

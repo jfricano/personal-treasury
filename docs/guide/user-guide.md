@@ -9,7 +9,7 @@ The [live demo](https://jfricano.github.io/personal-treasury/) runs the same app
 - A one-minute **guided tour** starts on your first visit and walks through each screen. **Take the tour** in the banner runs it again.
 - **Reset sample data** puts the Harpers back. **Start blank** gives you an empty database, as on a first launch. Both can be undone with ⌘Z / Ctrl-Z.
 - **What to try** lists short exercises, one per feature. The examples in this guide use the Harpers too.
-- To try an import, choose **Download the sample household's workbook** on **Import and export**, then **Start blank** and import it.
+- To try an import, download either sample workbook beside its import button on **Import and export**, then choose **Start blank** and import it.
 
 ![The guided tour](../images/demo-tour.png)
 
@@ -30,18 +30,19 @@ Historical months are imported as closed. The most recent month stays open. Impo
 ### Budget workbook
 
 1. Under **Import budget workbook**, choose your budget workbook. It's only read.
-2. The preview lists the current full plan and any summary-only history from the Budget History sheet. It also shows control comparisons: take-home pay, every category total, the tax sheet's liability and withholding, and funding by account compared with the latest treasury month.
+2. The preview lists the current plan and its control comparisons. The older Personal Budget layout can also bring in summary-only history. A budget workbook exported by this app contains only the current plan: Summary, a sheet for every category, and Payroll and tax.
 3. Leave **Make the workbook's current plan the active budget** ticked and choose **Commit budget import**. Treasury months, transfers and debts aren't changed.
 
 ## Budget and tax
 
 Open **Budget and tax**. Budgets plan how take-home pay is funded into your accounts. They never create transfers.
 
-### Budget versions (history)
+### Budget History
 
-- The **Budget history** table lists every version: its status (Active, Draft, Archived; Locked once a treasury month uses it), the months it was in effect, which treasury months used it, and take-home pay. The Harpers have an archived **Spring plan** and the active **After the raise**.
+- **Budget History** in the sidebar lists every version: its status (Active, Draft, Archived; Locked once a treasury month uses it), the months it was in effect, which treasury months used it, and take-home pay. The Harpers have an archived **Spring plan** and the active **After the raise**.
 - Summary-only versions imported from an old Budget History sheet show the figures recorded there. They're read-only.
 - **To change your budget**, choose **Duplicate** on the current version. Edit the draft, then **Activate…** and pick the month it takes effect. The previous version is archived, with its end date set to the month before. Locked and archived versions can't change amounts, so history stays intact.
+- You can delete a draft or an archived version that no treasury month uses. Active and used versions stay linked to their months.
 
 ### Pay and payroll deductions
 
@@ -51,9 +52,9 @@ Open **Budget and tax**. Budgets plan how take-home pay is funded into your acco
 
 ### Planned allocations
 
-- Each line has a **category** (what it's for) and a **Funded by** account (where the money comes from). The Harpers' clothing is funded by CLTH; most household, transportation and lifestyle items are funded by HH.
-- **Pets etc.** holds recurring but non-regular charges funded from PETC: Biscuit's food and vet bills, medical and dental copays, and car maintenance.
-- **Discretionary** is the remainder (take-home minus every other line), funded by ENT.
+- Each line has a **category** (what it's for) and a **Funded by** account (where the money comes from). The Harpers' clothing is funded by **Clothing**; most household, transportation and lifestyle items are funded by **Household**.
+- **Pets etc.** holds recurring but non-regular charges: Biscuit's food and vet bills, medical and dental copays, and car maintenance.
+- **Discretionary** is the remainder (take-home minus every other line), funded by **Entertainment**.
 - **Funding by treasury account** shows what each account receives. New treasury months use these totals.
 
 ### Tax estimate and tax rules
@@ -82,18 +83,18 @@ Open **Monthly reconciliation**.
    - Closed months are never refreshed, and archival imported months aren't linked to budgets.
 2. **Record transfers**, one row per transfer, in the entry row at the bottom of the Transfer journal:
    - Date → Loan ID (optional) → Description → From → To → Amount → Notes, then press **Enter**. The row saves and a fresh row opens.
-   - Type account codes directly (`hh`, `PETC`, or an alias such as `Splurge`). Amounts must be positive: From decreases, To increases.
+   - Type account names directly, such as **Household** or **Pets etc.** Amounts must be positive: From decreases, To increases.
    - **Escape** clears the row. Invalid rows (missing account, same account, zero or negative amount) are rejected with the reason.
    - If the row's Loan ID matches a debt and money moves between that debt's two accounts, a **Record on Loan …** button shows the exact change. Click it to post the payment to the debt ledger. It can't be recorded twice.
    - **Advanced entry** opens a multi-posting editor. Imported legacy rows with more than two postings show a ▸ control that expands their postings.
-3. **Reconcile.** The Reconciliation panel shows allocation difference, journal difference, final-transfer difference, invalid entries, negative transfers, and overall status. Every failing check is listed by name, for example “Final transfer for TRV is negative”.
+3. **Reconcile.** The Reconciliation panel shows allocation difference, journal difference, final-transfer difference, invalid entries, negative transfers, and overall status. Every failing check is listed by name, for example “Final transfer for Travel is negative”.
    - **Review**: something needs fixing.
    - **Ready to transfer**: all checks pass, but some transfers haven't been made.
    - **Complete**: every non-zero final transfer is marked Done. Zero lines are “Not required”.
 4. **Make the bank transfers** and set each account's **Transferred?** to Done, here or on the Dashboard.
 5. **Close month.** A closed month is read-only until you choose **Reopen**. Closing a month in Review asks for a reason and records it.
 
-Click an account code in the transfer summary to filter the journal to that account. Cmd-Z undoes the last change in this session. Editable cells outlined in amber have unsaved edits: Enter saves, Escape reverts.
+Click an account name in the transfer summary to filter the journal to that account. **Past months** near the bottom of Monthly reconciliation lists earlier reconciliations. Cmd-Z undoes the last change in this session. Editable cells outlined in amber have unsaved edits: Enter saves, Escape reverts.
 
 ## Interaccount debts
 
@@ -111,13 +112,13 @@ Use **Record payment** (at the top of the page or in the drawer), enter the date
 
 - The change that will be stored (negative relative to the origin direction while the debt is positive).
 - The resulting balance. “This pays the debt off” means it will leave the summary.
-- For an overpayment, a red note shows the reversed direction. Paying $400 on the Harpers' H-05 (TRV owes LTS $300) shows *LTS owes TRV $100.00*.
+- For an overpayment, a red note shows the reversed direction. Paying $400 on the Harpers' H-05 (Travel owes Long-term savings $300) shows *Long-term savings owes Travel $100.00*.
 
 Tick **Advanced: signed adjustment** to enter a signed change directly. Positive changes increase what the origin debtor owes.
 
 ### Create a debt
 
-Choose **New debt**, then enter the Loan ID (unique; hyphens are fine), opened date, description, debtor account (who owes), creditor account (who is owed), a positive opening amount, and optional terms. The dialog confirms “HH owes LTS $250.00” before you save. For more activity on an existing Loan ID, record a payment or adjustment. Don't create a second debt.
+Choose **New debt**, then enter the Loan ID (unique; hyphens are fine), opened date, description, debtor account (who owes), creditor account (who is owed), a positive opening amount, and optional terms. The dialog confirms “Household owes Long-term savings $250.00” before you save. For more activity on an existing Loan ID, record a payment or adjustment. Don't create a second debt.
 
 ### Correcting mistakes
 
@@ -127,14 +128,13 @@ Choose **New debt**, then enter the Loan ID (unique; hyphens are fine), opened d
 
 ## Accounts
 
-- Codes are yours. The app never merges, renames or reinterprets them. PETC ("pets etc.") is a flexible, as-needed actual savings account for recurring but non-regular charges: pets, medical, dental, auto maintenance and similar.
-- Reorder with the arrows, set display names, descriptions and colors, and archive accounts you no longer use. Accounts that are referenced anywhere can't be deleted.
-- Aliases map alternate spellings found in imports. `???` shows **Imported unknown** until you mark it reviewed.
+- Add and rename accounts by name. Older workbook identifiers are kept internally so imported records still match their accounts.
+- Reorder with the arrows, edit descriptions, and use **Active** to archive or restore accounts. Used accounts can't be deleted. Imported unknown accounts can be marked reviewed.
 - Monthly allocations come from the budget (see **Budget and tax**). The old allocation template is kept for history only.
 
 ## Backups and exports (always your choice)
 
-- **Excel workbook**: Overview, Account Ledger, one sheet per month, Interco Debt Summary, plus account, debt and month tables, and a Monthly Template sheet when a legacy allocation template exists. It re-imports cleanly. Budget and tax data aren't in the Excel export; the JSON backup carries them.
+- **Excel workbooks**: one treasury workbook with Overview, Account Ledger, monthly sheets and supporting tables; one current-budget workbook with Summary, category sheets, and Payroll and tax. Each can be imported through its matching import button. If there is no active budget, only the treasury workbook is saved.
 - **Complete JSON backup**: exact decimals and every record, including budget versions, payroll and tax rules. In the desktop app, restore it into a **new profile** (recommended) or replace the current one; in the demo, it replaces the demo data. A safety copy is saved first.
 - **CSV**: the journal for the selected month, or debt events for the current debt filter.
 - **Settings → Safety copies**: automatic copies taken before an import or restore replaces data.

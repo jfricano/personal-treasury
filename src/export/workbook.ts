@@ -239,7 +239,7 @@ function normalizedSheet(n: NormalizedInput): XLSX.WorkSheet {
 export function exportWorkbook(t: Treasury): Uint8Array {
   const wb = XLSX.utils.book_new();
   const accounts = t.accounts();
-  const code = new Map(accounts.map((a) => [a.id, a.code]));
+  const code = new Map(accounts.map((a) => [a.id, a.displayName || a.code]));
   const c = (id: string) => code.get(id) ?? id;
   const exportedAt = new Date().toISOString();
   const profile = t.activeProfile();
@@ -507,10 +507,7 @@ export function exportWorkbook(t: Treasury): Uint8Array {
   {
     const w = new SheetWriter();
     const aliases = t.aliases();
-    w.row(
-      0,
-      ['Order', 'Code', 'Display name', 'Description', 'Aliases', 'Active', 'Color', 'Needs review'].map(str),
-    );
+    w.row(0, ['Order', 'Code', 'Display name', 'Description', 'Aliases', 'Active', 'Needs review'].map(str));
     accounts.forEach((a, i) =>
       w.row(i + 1, [
         { t: 'n', v: i + 1 },
@@ -524,11 +521,14 @@ export function exportWorkbook(t: Treasury): Uint8Array {
             .join(', '),
         ),
         str(a.active ? 'Yes' : 'No'),
-        str(a.color),
         str(a.needsReview ? 'Yes' : 'No'),
       ]),
     );
-    XLSX.utils.book_append_sheet(wb, w.finish([8, 10, 20, 60, 20, 8, 10, 12]), 'Accounts');
+    const sheet = w.finish([8, 24, 24, 60, 20, 8, 12]);
+    // These columns are for lossless re-import of old workbooks, not day-to-day account naming.
+    sheet['!cols']![1].hidden = true;
+    sheet['!cols']![4].hidden = true;
+    XLSX.utils.book_append_sheet(wb, sheet, 'Accounts');
   }
   {
     const w = new SheetWriter();

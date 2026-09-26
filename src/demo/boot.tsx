@@ -3,6 +3,7 @@ import type { AppExtras } from '@/app/context';
 import { loadSqlJs } from '@/db/driver';
 import { MemoryStorage } from '@/db/storage';
 import { exportWorkbook } from '@/export/workbook';
+import { exportBudgetWorkbook } from '@/export/budgetWorkbook';
 import { buildBlankDatabase, buildSampleDatabase } from './seed';
 import { SessionDatabaseStorage } from './sessionStorage';
 import { DemoBanner } from './DemoBanner';
@@ -33,6 +34,14 @@ export async function openDemo(wasmUrl: string): Promise<{ treasury: Treasury; e
           const storage = new MemoryStorage();
           await storage.save('sample', await sampleBytes());
           return exportWorkbook(await Treasury.open({ SQL, storage, profile: 'sample' }));
+        },
+      },
+      sampleBudgetWorkbook: {
+        fileName: 'Harper household budget.xlsx',
+        build: async () => {
+          const storage = new MemoryStorage();
+          await storage.save('sample', await sampleBytes());
+          return exportBudgetWorkbook(await Treasury.open({ SQL, storage, profile: 'sample' }));
         },
       },
     },

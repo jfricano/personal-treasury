@@ -17,6 +17,7 @@ import { formatUSD, isEffectivelyZero, isStrictlyPositive, parseMoneyInput, sum 
 import type { Account, TransferState } from '@/domain/types';
 import { saveFile } from '@/platform/files';
 import { MonthSelect } from './MonthSelect';
+import { MonthHistory } from './MonthHistory';
 
 export function MonthlyPage() {
   const { t, route, navigate, run, toast } = useTreasury();
@@ -72,7 +73,7 @@ export function MonthlyPage() {
 
   const v = t.monthView(monthId);
   const r = v.result;
-  const code = t.codeOf;
+  const code = t.nameOf;
   const accounts = t.accounts();
   const readOnly = v.closed;
   const allocMeta = new Map(t.repos.listAllocations(monthId).map((a) => [a.accountId, a]));
@@ -451,6 +452,8 @@ export function MonthlyPage() {
         )}
       </Panel>
 
+      <MonthHistory />
+
       <NewMonthDialog open={newMonthOpen} onClose={() => setNewMonthOpen(false)} />
       <AdvancedEntryDialog
         state={advanced}
@@ -504,7 +507,7 @@ function JournalRow({
   const { t, run, navigate } = useTreasury();
   const [expanded, setExpanded] = useState(false);
   const [editing, setEditing] = useState(false);
-  const code = t.codeOf;
+  const code = t.nameOf;
   const en = e.entry;
   const multi = !e.simple;
   const source = en.sourceSheet ? `${en.sourceSheet}!${en.sourceRange}` : null;
@@ -1242,7 +1245,7 @@ function BudgetBanner({ monthId }: { monthId: string }) {
   const [open, setOpen] = useState(false);
   const diff = t.budgetDiff(monthId);
   if (!diff || !diff.hasChanges) return null;
-  const code = t.codeOf;
+  const code = t.nameOf;
 
   if (!diff.needsRefresh) {
     // Only kept manual values differ: note them quietly instead of asking for a refresh.
@@ -1332,7 +1335,7 @@ function RefreshDialog({
   const [reset, setReset] = useState(false);
   const shown = reset ? t.budgetDiff(monthId, diff.versionId, { resetOverrides: true })! : diff;
   const manualCash = t.repos.getMonth(monthId)?.expectedCashOrigin === 'manual';
-  const code = t.codeOf;
+  const code = t.nameOf;
   return (
     <Dialog
       open={open}

@@ -209,7 +209,7 @@ export function CommitInput({
 }
 
 /**
- * Account picker that accepts typed codes (and aliases). Emits the resolved
+ * Account picker that accepts typed names (and legacy workbook identifiers). Emits the resolved
  * account id, or null while the text does not match an account.
  */
 export function AccountField({
@@ -233,12 +233,15 @@ export function AccountField({
 }) {
   const { treasury } = useApp();
   const listId = useId();
-  const code = value ? (accounts.find((a) => a.id === value)?.code ?? '') : '';
-  const [text, setText] = useState(code);
+  const account = accounts.find((a) => a.id === value);
+  const name = account?.displayName || account?.code || '';
+  const [text, setText] = useState(name);
   const [lastValue, setLastValue] = useState(value);
-  if (value !== lastValue) {
+  const [lastName, setLastName] = useState(name);
+  if (value !== lastValue || name !== lastName) {
     setLastValue(value);
-    setText(code);
+    setLastName(name);
+    setText(name);
   }
   const unresolved = text.trim() !== '' && !value;
   return (
@@ -252,7 +255,7 @@ export function AccountField({
         value={text}
         autoComplete="off"
         spellCheck={false}
-        style={{ textTransform: 'uppercase', width: '100%', minWidth: 64 }}
+        style={{ width: '100%', minWidth: 64 }}
         onChange={(e) => {
           setText(e.target.value);
           const r = treasury.resolver().resolve(e.target.value);
@@ -266,9 +269,7 @@ export function AccountField({
         {accounts
           .filter((a) => a.active)
           .map((a) => (
-            <option key={a.id} value={a.code}>
-              {a.displayName ?? ''}
-            </option>
+            <option key={a.id} value={a.displayName || a.code} />
           ))}
       </datalist>
     </>

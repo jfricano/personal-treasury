@@ -16,6 +16,7 @@ import { estimateTax } from '@/domain/tax/estimate';
 import { bracketsFromIncrements, parseRules, type Jurisdiction, type TaxRuleSet } from '@/domain/tax/rules';
 import type { ControlCheck, PlanWarning, Severity } from '../plan';
 import { Grid, cellMoney, rangeRef, ref, sha256Hex, type CellValue } from '../sheet';
+import { analyzeCurrentBudget } from './analyzeCurrentBudget';
 
 export const BUDGET_RECOGNIZER_VERSION = 'personal-budget/1.0.0';
 
@@ -97,6 +98,7 @@ export interface PlannedBudgetVersion {
   effectiveTo: string | null;
   grossMonthly: Money | null;
   taxYear: number | null;
+  filingStatus?: string;
   notes: string | null;
   deductions: PlannedDeduction[];
   withholdings: { component: WithholdingComponent; amount: Money; sourceRange: string | null }[];
@@ -120,6 +122,9 @@ export interface BudgetImportPlan {
   analyzedAt: string;
   sheets: { name: string; role: string }[];
   accountCodes: string[];
+  /** Present for workbooks exported by this app; legacy imports use CATEGORIES. */
+  categories?: { key: string; name: string; description: string | null }[];
+  accountNames?: Record<string, string>;
   versions: PlannedBudgetVersion[];
   taxRuleSets: PlannedRuleSet[];
   controls: ControlCheck[];
@@ -210,6 +215,10 @@ export async function analyzeBudgetWorkbook(
       `The file could not be read as an Excel workbook: ${(err as Error).message}`,
     );
     plan.fatal = true;
+    return plan;
+  }
+  if (wb.Sheets.Summary?.A1?.v === 'Personal Treasury Budget v1') {
+    analyzeCurrentBudget(wb, plan);
     return plan;
   }
   const grid = (name: string) => (wb.Sheets[name] ? new Grid(name, wb.Sheets[name]) : null);

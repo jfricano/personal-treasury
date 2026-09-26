@@ -27,14 +27,16 @@ test('V2-01 wide entry and refresh dialogs fit a phone and remain operable', asy
   await page.getByRole('button', { name: 'Advanced entry' }).click();
   const advanced = page.getByRole('dialog', { name: 'Advanced entry' });
   await fitsViewport(page, 'dialog[open]');
-  await advanced.getByLabel('Posting 1 account').fill('HH');
+  await advanced.getByLabel('Posting 1 account').fill('Household');
   await advanced.getByLabel('Posting 1 amount').fill('-1');
-  await advanced.getByLabel('Posting 2 account').fill('PETC');
+  await advanced.getByLabel('Posting 2 account').fill('Pets etc.');
   await advanced.getByLabel('Posting 2 amount').fill('1');
   await advanced.getByRole('button', { name: 'Save balanced entry' }).click();
-  await expect(page.getByRole('table', { name: 'Transfer journal' })).toContainText('HHPETC$1.00');
-  await page.getByLabel('HH budget allocation').fill('3200');
-  await page.getByLabel('HH budget allocation').press('Enter');
+  await expect(page.getByRole('table', { name: 'Transfer journal' })).toContainText(
+    'HouseholdPets etc.$1.00',
+  );
+  await page.getByLabel('Household budget allocation').fill('3200');
+  await page.getByLabel('Household budget allocation').press('Enter');
   await page.getByRole('note', { name: 'Budget overrides' }).getByRole('button', { name: 'Review' }).click();
   await expect(page.getByRole('dialog')).toBeVisible();
   await fitsViewport(page, 'dialog[open]');
@@ -69,13 +71,13 @@ test('formatted money replacement commits exactly the entered value at every wid
   for (const width of widths) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto(`${BASE}monthly`);
-    const allocation = page.getByLabel('HH budget allocation');
+    const allocation = page.getByLabel('Household budget allocation');
     await allocation.fill('3200');
     await expect(allocation).toHaveValue('3200');
     await allocation.press('Enter');
     await expect(allocation).toHaveValue('3,200.00');
     await page.reload();
-    await expect(page.getByLabel('HH budget allocation')).toHaveValue('3,200.00');
+    await expect(page.getByLabel('Household budget allocation')).toHaveValue('3,200.00');
   }
 });
 
@@ -86,18 +88,18 @@ test('V2-03/04/05 pending, review counts and destination focus stay in sync', as
   await expect(pending.locator('header')).toContainText('5 item(s)');
   await expect(review.locator('header')).toContainText('0 item(s)');
   await expect(review).toContainText('Nothing needs attention');
-  await pending.getByRole('button', { name: 'Mark PETC done' }).click();
+  await pending.getByRole('button', { name: 'Mark Pets etc. done' }).click();
   await expect(page).toHaveURL(/#\/monthly\?.*target=done/);
-  await expect(page.getByLabel('PETC transferred')).toBeFocused();
-  await page.getByLabel('PETC transferred').selectOption('done');
+  await expect(page.getByLabel('Pets etc. transferred')).toBeFocused();
+  await page.getByLabel('Pets etc. transferred').selectOption('done');
   await page.goBack();
   await expect(pending.locator('li')).toHaveCount(4);
   await expect(pending.locator('header')).toContainText('4 item(s)');
   await page.getByRole('button', { name: /Undo: Edit allocation/ }).click();
   await expect(pending.locator('li')).toHaveCount(5);
   await page.getByRole('link', { name: 'Monthly reconciliation' }).click();
-  await page.getByLabel('HH budget allocation').fill('3200');
-  await page.getByLabel('HH budget allocation').press('Enter');
+  await page.getByLabel('Household budget allocation').fill('3200');
+  await page.getByLabel('Household budget allocation').press('Enter');
   await expect(page.locator('.page-head .badge').first()).toContainText('Review');
   await page.getByRole('link', { name: 'Dashboard' }).click();
   await expect(review.locator('li')).toHaveCount(2);
@@ -194,46 +196,34 @@ test('V2-10 direct mobile route keeps active nav fully visible', async ({ page }
   }
 });
 
-test('account actions persist, archive, remove alias, and delete only unused codes', async ({ page }) => {
+test('account names persist, archived accounts restore, and unused accounts delete', async ({ page }) => {
   await page.goto(`${BASE}accounts`);
   const accountTable = page.getByRole('table', { name: 'Accounts' });
   await expect(page.getByRole('button', { name: 'Add account' })).toBeDisabled();
-  await page.getByLabel('New account code').fill('V2QA');
+  await page.getByLabel('New account name').fill('Quality check');
   await page.getByRole('button', { name: 'Add account' }).click();
-  let row = accountTable.getByRole('row').filter({ has: page.getByText('V2QA', { exact: true }) });
+  let row = accountTable.getByRole('row').filter({ has: page.getByLabel('Quality check name') });
   await expect(row).toBeVisible();
-  await page.getByLabel('V2QA display name').fill('Quality check');
-  await page.getByLabel('V2QA display name').press('Enter');
-  await page.getByLabel('V2QA description').fill('Local account test');
-  await page.getByLabel('V2QA description').press('Tab');
-  await row.getByRole('button', { name: '+ alias' }).click();
-  const alias = page.getByRole('dialog', { name: 'Add alias' });
-  await alias.getByLabel('Alternate spelling for V2QA').fill('Quality Alias');
-  await alias.getByRole('button', { name: 'Add alias' }).click();
-  await expect(row).toContainText('Quality Alias');
-  await page.getByLabel('V2QA color').fill('#176b63');
-  await page.getByRole('button', { name: 'Move V2QA up' }).click();
+  await page.getByLabel('Quality check name').fill('Quality checks');
+  await page.getByLabel('Quality check name').press('Enter');
+  row = accountTable.getByRole('row').filter({ has: page.getByLabel('Quality checks name') });
+  await page.getByLabel('Quality checks description').fill('Local account test');
+  await page.getByLabel('Quality checks description').press('Tab');
+  await page.getByRole('button', { name: 'Move Quality checks up' }).click();
   await row.getByRole('checkbox').uncheck();
   await expect(row).toContainText('Archived');
   await page.reload();
-  row = accountTable.getByRole('row').filter({ has: page.getByText('V2QA', { exact: true }) });
-  await expect(page.getByLabel('V2QA display name')).toHaveValue('Quality check');
-  await expect(page.getByLabel('V2QA description')).toHaveValue('Local account test');
-  await expect(page.getByLabel('V2QA color')).toHaveValue('#176b63');
-  await expect(row).toContainText('Quality Alias');
+  row = accountTable.getByRole('row').filter({ has: page.getByLabel('Quality checks name') });
+  await expect(page.getByLabel('Quality checks name')).toHaveValue('Quality checks');
+  await expect(page.getByLabel('Quality checks description')).toHaveValue('Local account test');
+  await expect(page.getByLabel('Quality checks color')).toHaveCount(0);
   await expect(row.getByRole('checkbox')).not.toBeChecked();
   await row.getByRole('checkbox').check();
-  await row.getByRole('button', { name: 'Remove alias Quality Alias' }).click();
-  await page.getByRole('dialog', { name: 'Please confirm' }).getByRole('button', { name: 'Cancel' }).click();
-  await expect(row).toContainText('Quality Alias');
-  await row.getByRole('button', { name: 'Remove alias Quality Alias' }).click();
-  await page.getByRole('dialog', { name: 'Please confirm' }).getByRole('button', { name: 'Confirm' }).click();
-  await expect(row).not.toContainText('Quality Alias');
-  await page.getByRole('button', { name: 'Delete V2QA' }).click();
+  await page.getByRole('button', { name: 'Delete Quality checks' }).click();
   await page.getByRole('dialog', { name: 'Please confirm' }).getByRole('button', { name: 'Delete' }).click();
   await expect(row).toHaveCount(0);
   await page.getByRole('button', { name: /Undo: Delete account/ }).click();
-  await expect(accountTable).toContainText('V2QA');
+  await expect(page.getByLabel('Quality checks name')).toHaveValue('Quality checks');
 });
 
 test('dashboard summaries and history links reach their destinations', async ({ page }) => {
@@ -256,7 +246,10 @@ test('dashboard summaries and history links reach their destinations', async ({ 
   await page.goBack();
   await page.getByRole('button', { name: 'Open debts' }).click();
   await expect(page).toHaveURL(/#\/debts/);
-  await page.goto(`${BASE}history`);
+  await page.getByRole('link', { name: 'Budget History' }).click();
+  await expect(page.getByRole('heading', { name: 'Budget History' })).toBeVisible();
+  await expect(page.getByRole('table', { name: 'Budget versions' })).toContainText('Spring plan');
+  await page.goto(`${BASE}monthly`);
   await page
     .getByRole('table', { name: 'Month history' })
     .getByRole('button', { name: 'September 2026' })
@@ -299,8 +292,8 @@ test('debt filters, search, date bounds, CSV and reset change visible rows', asy
   await page.getByLabel('Opened by').fill('1900-01-01');
   await expect(detail).toContainText('No debts match these filters');
   await page.getByRole('button', { name: 'Reset', exact: true }).click();
-  await page.getByLabel('Account filter').selectOption({ label: 'HH' });
-  await expect(page.getByRole('region', { name: 'Debt detail' })).toContainText('involving HH');
+  await page.getByLabel('Account filter').selectOption({ label: 'Household' });
+  await expect(page.getByRole('region', { name: 'Debt detail' })).toContainText('involving Household');
   await page.getByRole('button', { name: 'Reset', exact: true }).click();
   await page
     .getByRole('group', { name: 'Debt summary' })
@@ -323,30 +316,30 @@ test('debt create, payment, correction, adjustment, delete and undo roll balance
   await expect(create).toContainText('This Loan ID already exists');
   await create.getByLabel('Loan ID').fill('V2-LOAN');
   await create.getByLabel('Debt description').fill('Fictional test loan');
-  await create.getByLabel('Debtor account').fill('HH');
-  await create.getByLabel('Creditor account').fill('PETC');
+  await create.getByLabel('Debtor account').fill('Household');
+  await create.getByLabel('Creditor account').fill('Pets etc.');
   await create.getByLabel('Opening amount').fill('10.25');
   await expect(create.getByRole('button', { name: 'Create debt' })).toBeEnabled();
   await create.getByRole('button', { name: 'Create debt' }).click();
   const drawer = page.getByRole('complementary', { name: 'Loan V2-LOAN' });
-  await expect(drawer).toContainText('HH owes PETC $10.25');
+  await expect(drawer).toContainText('Household owes Pets etc. $10.25');
   await drawer.getByRole('button', { name: 'Record payment' }).click();
   const payment = page.getByRole('dialog', { name: 'Record payment' });
   await payment.getByLabel('Payment amount').fill('3.25');
   await payment.getByRole('button', { name: 'Save payment' }).click();
-  await expect(drawer).toContainText('HH owes PETC $7.00');
+  await expect(drawer).toContainText('Household owes Pets etc. $7.00');
   const events = drawer.getByRole('table', { name: 'Debt events' });
   await events.getByRole('row').filter({ hasText: 'pmt' }).getByRole('button', { name: 'Correct' }).click();
   await events.getByLabel('Signed change').fill('-4.25');
   await events.getByRole('button', { name: 'Save', exact: true }).click();
-  await expect(drawer).toContainText('HH owes PETC $6.00');
+  await expect(drawer).toContainText('Household owes Pets etc. $6.00');
   await drawer.getByRole('button', { name: 'Record payment' }).click();
   const adjustment = page.getByRole('dialog', { name: 'Record payment' });
   await adjustment.getByRole('checkbox', { name: 'Advanced: signed adjustment' }).check();
   const signedAdjustment = page.getByRole('dialog', { name: 'Record adjustment' });
   await signedAdjustment.getByLabel('Signed change').fill('-1.25');
   await signedAdjustment.getByRole('button', { name: 'Save adjustment' }).click();
-  await expect(drawer).toContainText('HH owes PETC $4.75');
+  await expect(drawer).toContainText('Household owes Pets etc. $4.75');
   await events
     .getByRole('row')
     .filter({ hasText: 'pmt' })
@@ -357,9 +350,9 @@ test('debt create, payment, correction, adjustment, delete and undo roll balance
     .getByRole('dialog', { name: 'Please confirm' })
     .getByRole('button', { name: 'Delete event' })
     .click();
-  await expect(drawer).toContainText('HH owes PETC $9.00');
+  await expect(drawer).toContainText('Household owes Pets etc. $9.00');
   await page.getByRole('button', { name: /Undo: Delete debt event/ }).click();
-  await expect(drawer).toContainText('HH owes PETC $4.75');
+  await expect(drawer).toContainText('Household owes Pets etc. $4.75');
   await drawer.getByRole('button', { name: 'Delete debt…' }).click();
   await page
     .getByRole('dialog', { name: 'Please confirm' })
@@ -380,12 +373,12 @@ test('monthly journal create, validation, edit, CSV, delete and undo preserve po
   const entry = page.getByRole('row', { name: 'New transfer' });
   await entry.getByLabel('Date').fill('2026-09-24');
   await entry.getByLabel('Description').fill('V2 transfer');
-  await entry.getByLabel('From account').fill('HH');
-  await entry.getByLabel('To account').fill('HH');
+  await entry.getByLabel('From account').fill('Household');
+  await entry.getByLabel('To account').fill('Household');
   await entry.getByLabel('Amount').fill('1.25');
   await entry.getByRole('button', { name: 'Add' }).click();
   await expect(journal.getByRole('alert')).toBeVisible();
-  await entry.getByLabel('To account').fill('PETC');
+  await entry.getByLabel('To account').fill('Pets etc.');
   await entry.getByRole('button', { name: 'Add' }).click();
   let row = journal.getByRole('row').filter({ hasText: 'V2 transfer' });
   await expect(row).toContainText('$1.25');
@@ -456,7 +449,7 @@ test('budget duplication, activation, draft deletion and navigation retain versi
   await page.getByRole('button', { name: 'Delete draft' }).click();
   await page
     .getByRole('dialog', { name: 'Please confirm' })
-    .getByRole('button', { name: 'Delete draft' })
+    .getByRole('button', { name: 'Delete budget' })
     .click();
   await expect(page.getByRole('table', { name: 'Budget versions' })).not.toContainText('V2 disposable draft');
   await page.reload();
@@ -494,8 +487,8 @@ test('key dialogs and debt drawer fit and render at every review width', async (
     await fitsViewport(page, 'dialog[open]');
     await page.screenshot({ path: testInfo.outputPath(`v2-new-month-${width}.png`) });
     await page.keyboard.press('Escape');
-    await page.getByLabel('HH budget allocation').fill('3200');
-    await page.getByLabel('HH budget allocation').press('Enter');
+    await page.getByLabel('Household budget allocation').fill('3200');
+    await page.getByLabel('Household budget allocation').press('Enter');
     await page
       .getByRole('note', { name: 'Budget overrides' })
       .getByRole('button', { name: 'Review' })
@@ -523,14 +516,8 @@ test('key dialogs and debt drawer fit and render at every review width', async (
     await page.screenshot({ path: testInfo.outputPath(`v2-loan-drawer-${width}-bottom.png`) });
 
     await page.goto(`${BASE}accounts`);
-    await page
-      .getByRole('table', { name: 'Accounts' })
-      .getByRole('button', { name: '+ alias' })
-      .first()
-      .click();
-    await fitsViewport(page, 'dialog[open]');
-    await page.screenshot({ path: testInfo.outputPath(`v2-add-alias-${width}.png`) });
-    await page.keyboard.press('Escape');
+    await expect(page.getByRole('table', { name: 'Accounts' })).toBeVisible();
+    await page.screenshot({ path: testInfo.outputPath(`v2-accounts-${width}.png`) });
 
     await page.goto(`${BASE}budget`);
     await page

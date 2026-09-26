@@ -43,7 +43,7 @@ export function BudgetPage() {
           refresh them.
         </span>
       </div>
-      {tab === 'tax' ? <TaxRules /> : <Versions />}
+      {tab === 'tax' ? <TaxRules /> : <BudgetVersions />}
     </>
   );
 }
@@ -52,7 +52,7 @@ export function BudgetPage() {
 // Versions
 // ---------------------------------------------------------------------------
 
-function Versions() {
+export function BudgetVersions() {
   const { t, route, navigate, run } = useTreasury();
   const versions = t.budget.versions();
   const [newOpen, setNewOpen] = useState(false);
@@ -83,6 +83,8 @@ function Versions() {
       ? route.version
       : (t.budget.activeVersion()?.id ?? versions[0].version.id);
   const view = t.budget.versionView(selectedId);
+  const openVersion = (id: string) =>
+    navigate({ page: route.page === 'history' ? 'history' : 'budget', version: id });
 
   return (
     <>
@@ -112,14 +114,14 @@ function Versions() {
               <tr
                 key={v.version.id}
                 className={`clickable${v.version.id === selectedId ? ' sel' : ''}`}
-                onClick={() => navigate({ page: 'budget', version: v.version.id })}
+                onClick={() => openVersion(v.version.id)}
               >
                 <td>
                   <button
                     className="btn link"
                     onClick={(e) => {
                       e.stopPropagation();
-                      navigate({ page: 'budget', version: v.version.id });
+                      openVersion(v.version.id);
                     }}
                   >
                     {v.version.label}
@@ -231,8 +233,13 @@ function VersionDetail({ view }: { view: VersionView }) {
     if (id) navigate({ page: 'budget', version: id });
   };
   const del = async () => {
-    if (await confirm.ask(`Delete draft ${v.label}?`, { danger: true, confirmLabel: 'Delete draft' })) {
-      if (run(() => t.budget.deleteVersion(v.id), 'Draft deleted') !== undefined)
+    if (
+      await confirm.ask(`Delete ${v.status} budget ${v.label}? This removes its plan and payroll details.`, {
+        danger: true,
+        confirmLabel: 'Delete budget',
+      })
+    ) {
+      if (run(() => t.budget.deleteVersion(v.id), 'Budget deleted') !== undefined)
         navigate({ page: 'budget' });
     }
   };
@@ -257,9 +264,9 @@ function VersionDetail({ view }: { view: VersionView }) {
                 Activate…
               </button>
             )}
-            {v.status === 'draft' && (
+            {v.status !== 'active' && view.monthsUsed.length === 0 && (
               <button className="btn small danger" onClick={del}>
-                Delete draft
+                Delete {v.status === 'archived' ? 'archived budget' : 'draft'}
               </button>
             )}
           </span>
@@ -856,7 +863,7 @@ function LinesPanel({ view, editable }: { view: VersionView; editable: boolean }
     residual: boolean;
   } | null>(null);
   const [newCat, setNewCat] = useState('');
-  const code = t.codeOf;
+  const code = t.nameOf;
   const catName = (id: string) => categories.find((c) => c.id === id)?.name ?? '?';
   // Groups follow category order (not line order), so split lines sit with their category.
   const used = new Set(view.lines.map((l) => l.categoryId));
@@ -955,7 +962,7 @@ function LinesPanel({ view, editable }: { view: VersionView; editable: boolean }
                       >
                         {accounts.map((a) => (
                           <option key={a.id} value={a.id}>
-                            {a.code}
+                            {a.displayName || a.code}
                           </option>
                         ))}
                       </select>
@@ -1065,7 +1072,7 @@ function LinesPanel({ view, editable }: { view: VersionView; editable: boolean }
                   .filter((a) => a.active)
                   .map((a) => (
                     <option key={a.id} value={a.id}>
-                      {a.code}
+                      {a.displayName || a.code}
                     </option>
                   ))}
               </select>

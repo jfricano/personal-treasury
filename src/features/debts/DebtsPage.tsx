@@ -32,7 +32,7 @@ export function DebtsPage() {
 
   const board = t.debtBoard();
   const s = board.summary;
-  const code = t.codeOf;
+  const code = t.nameOf;
   const accountFilter = route.account ?? null;
   const role = route.role ?? null;
   const setAccount = (account: string | null, r: 'to' | 'by' | null = null) =>
@@ -285,7 +285,7 @@ export function DebtsPage() {
               <option value="">All accounts</option>
               {t.accounts().map((a) => (
                 <option key={a.id} value={a.id}>
-                  {a.code}
+                  {a.displayName || a.code}
                 </option>
               ))}
             </select>
@@ -426,7 +426,7 @@ function DebtDrawer({
   const confirm = useConfirm();
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState({ eventDate: '', changeAmount: '', description: '', notes: '' });
-  const code = t.codeOf;
+  const code = t.nameOf;
   const detail = t.debtDetail(p.debt.id);
   const imported = !!p.debt.importRunId;
 
@@ -754,7 +754,7 @@ function PaymentDialog({
   );
   const debt = board.positions.find((p) => p.debt.id === form.debtId);
   const amount = parseMoneyInput(form.amount);
-  const code = t.codeOf;
+  const code = t.nameOf;
   let preview: ReturnType<typeof t.previewPayment> | null = null;
   let error: string | null = null;
   if (debt && amount !== null) {
@@ -959,7 +959,7 @@ function NewDebtDialog({ open, onClose }: { open: boolean; onClose: () => void }
       </Dialog>
     );
   const amount = parseMoneyInput(form.amount);
-  const code = t.codeOf;
+  const code = t.nameOf;
   const exists = form.loanId.trim() && t.repos.getDebtByLoanId(form.loanId.trim());
   const ready =
     form.loanId.trim() &&
