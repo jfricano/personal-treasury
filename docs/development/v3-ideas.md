@@ -25,9 +25,13 @@ Tauri's [Windows installer guide](https://v2.tauri.app/distribute/windows-instal
 
 Let people request access with first name, last name, and email. An administrator reviews pending requests in a restricted dashboard, either within the main app or in a separate admin app. Prefer a familiar username or email plus password sign-in over v2.2's manually entered access token and sync passphrase. Approval could issue a one-time activation token so the user can create their credentials; the app would manage session tokens behind the scenes. The admin can see request and account status, revoke access, and review a minimal audit trail.
 
+Make the web and desktop apps feel like two ways into the same account. A single hosted service supports multiple users; the administrator configures its deployment, storage, domain, and operational settings. Users should not need to create a cloud service or enter its URL in the app. Distribute a desktop build that knows the service endpoint (or discovers it from a trusted app configuration), so opening it leads to the same account sign-in and treasury as the private website. After sign-in, sync should connect automatically and show clear progress, offline status, and conflicts without making users set up a separate desktop connection. Keep a local working copy for offline use, with an explicit and safe first sign-in path if that device already has local treasury data.
+
 This needs more than an admin screen:
 
 - Give each user a separate account and encrypted snapshot history. Replace v2.2's one shared service token with user-scoped authentication and enforce account isolation on every API request, version lookup, backup, and restore.
+- Keep service configuration in the hosted deployment and admin workflow, while clients receive only the public endpoint and their own session credentials. Do not expose hosting secrets, other users' settings, or administrator controls through the ordinary app.
+- Decide how desktop sign-in persists across restarts, how users sign out or revoke a lost device, and how an offline launch works when a session cannot be refreshed. A sign-in on either platform should select the same account data; switching accounts must not mix local copies.
 - Show the admin only the identity and operational details needed to approve and support accounts. Treasury contents, sync passphrases, encryption keys, and plaintext backups must remain unavailable to the admin and server. Make that boundary clear in the request form: the admin will see the submitted name and email.
 - Generate activation and session tokens securely, deliver activation tokens only once, store verifiers rather than raw tokens or passwords on the server, and support expiration, rotation, revocation, and lost-device recovery. Let users see and end active device sessions.
 - Verify email ownership and protect the request form against spam and repeated requests. Record approvals, denials, token changes, and admin actions without logging secrets or financial data.
@@ -35,7 +39,7 @@ This needs more than an admin screen:
 - Design password reset and token recovery for a verified user, including lost-device and revoked-token cases. An admin may help restore account access but must not gain the ability to decrypt treasury data. If a forgotten password also protects the encryption key, resetting account access alone cannot unlock old snapshots; recovery would need a user-held recovery key, another signed-in device, or an explicitly chosen recovery design. Explain that limit before users rely on the service.
 - Plan migration of the existing single-person v2.2 service and its snapshot history into one user account, plus tests that try cross-user reads, writes, restores, and token misuse.
 
-Open design choices include where to host the admin interface, how to deliver activation credentials safely, which account metadata an admin may see, whether invitation-only onboarding is preferable to public access requests, and how one sign-in can unlock client-encrypted data without giving the server or admin the key. Scope these before implementation.
+Open design choices include where to host the admin interface, how desktop builds learn a changed service endpoint, how to deliver activation credentials safely, which account metadata an admin may see, whether invitation-only onboarding is preferable to public access requests, and how one sign-in can unlock client-encrypted data without giving the server or admin the key. Scope these before implementation.
 
 ## Ideas to discuss later
 
