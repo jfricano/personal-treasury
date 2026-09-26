@@ -10,6 +10,15 @@ A local-first desktop and private web app for running a household's money as a s
 
 ![Monthly reconciliation in the demo](docs/images/demo-monthly.png)
 
+## New in v2.2
+
+- Use one treasury in the Mac app and a separate private website on a phone or computer. The public Pages demo still uses only fictional data.
+- Sync client-encrypted snapshots through a provider-independent service while each device keeps a local working copy.
+- Review conflicts instead of silently overwriting another device, and restore an older cloud version if needed.
+- Reload the private website without signing in again; use **Log out** or let its 30-minute inactivity limit end the tab session.
+
+See [what v2.2 adds](docs/release-notes-v0.2.2.md) for setup, limits and backup guidance.
+
 ## What it does
 
 - **Budget → treasury.** A budget version turns gross pay, payroll deductions and actual withholding into take-home pay, then funds each account bucket from explicit budget lines. Versions lock once used, so history stays intact.
@@ -60,6 +69,7 @@ Or run the demo container: `docker run --rm -p 8080:8080 ghcr.io/jfricano/person
 ## Documentation
 
 - **Using it:** [Getting started](docs/guide/getting-started.md), [private cloud sync](docs/guide/cloud-sync.md), and the [user guide](docs/guide/user-guide.md), which uses the demo household as its example.
+- **What's new:** [v0.2.2 release notes](docs/release-notes-v0.2.2.md) summarize private web access and guarded cross-device sync.
 - **Sharing it:** [Distribution plan](docs/distribution-plan.md) and the [demo walkthrough](docs/guide/demo-walkthrough.md).
 - **Building it:** [Development](docs/development/development.md), [architecture](docs/development/architecture.md), the [calculation rules](docs/development/data-and-rules.md), [workbook import](docs/development/workbook-import.md), [acceptance tests](docs/development/acceptance-tests.md), [testing](docs/development/testing.md) and [decisions](docs/development/decisions/).
 
