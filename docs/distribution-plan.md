@@ -40,11 +40,12 @@ Suggested category: personal finance. Describe it as a private household cash-al
 | Item | Status |
 | --- | --- |
 | V2.1 implementation and local acceptance report | Complete; V2.1 was merged into remote `main`. See [V2 release report](development/v2-release-report.md). |
-| Public walkthrough and launch copy | Prepared in this repository. |
+| Public walkthrough and launch copy | Published on `main` in the README and this repository. External launch post waits for the Mac release. |
 | Local v0.2.1 build and tests | 169 Vitest tests, 26 Chrome tests, privacy check, app signature and ad-hoc DMG checksum passed. |
 | Developer ID signing and Apple notarization | Pending credentials and external-install verification. |
 | GitHub repository metadata | Demo website and six discovery topics are set. |
-| GitHub Release and public v0.2.1 demo update | Pending release artifact and source publication. |
+| GitHub source and public v0.2.1 demo | Published from `main`; the Pages deployment succeeded. |
+| GitHub Release with Mac download | Pending Developer ID signing, notarization, and clean-install verification. |
 | AlternativeTo and MacUpdate submissions | Orca Solutions after the release. |
 
 ## Sources
