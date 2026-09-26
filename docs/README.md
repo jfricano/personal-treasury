@@ -18,4 +18,5 @@
 | [Acceptance tests](development/acceptance-tests.md) | See the behaviors every release must pass and the release gate. |
 | [Testing](development/testing.md) | See what each test suite covers and how to run it. |
 | [V2 plan and builder handoff](development/v2-plan.md) | Review confirmed issues, design direction, exhaustive test scope, release gates, and the next-phase prompt. |
+| [V3 ideas](development/v3-ideas.md) | Collect possible future improvements, starting with a Windows desktop installer. |
 | [Decisions](development/decisions/) | Read why things are the way they are, where the specification left a choice open. |
