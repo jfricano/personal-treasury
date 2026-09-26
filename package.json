@@ -1,7 +1,7 @@
 {
   "name": "personal-treasury",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.1",
   "description": "Local-first personal treasury: budget-driven monthly cash allocation, transfer journal and interaccount debts.",
   "license": "MIT",
   "repository": {

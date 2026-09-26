@@ -1,8 +1,12 @@
 # Personal Treasury
 
+By Orca Solutions.
+
 A local-first desktop app for running a household's money as a set of **virtual account buckets**: plan how each paycheck is split, record transfers between buckets, reconcile every month to the cent, and keep an event-sourced ledger of what the buckets owe each other.
 
 **[Try the live demo →](https://jfricano.github.io/personal-treasury/)** It runs entirely in your browser with sample data for a made-up family, starts with a one-minute guided tour, and includes a sample workbook to import. Nothing is sent anywhere, and your changes disappear when you close the tab.
+
+**[Follow the one-minute walkthrough →](docs/guide/demo-walkthrough.md)** See how one paycheck becomes account allocations, monthly transfers, reconciliation and debt history.
 
 ![Monthly reconciliation in the demo](docs/images/demo-monthly.png)
 
@@ -55,6 +59,7 @@ Or run the demo container: `docker run --rm -p 8080:8080 ghcr.io/jfricano/person
 ## Documentation
 
 - **Using it:** [Getting started](docs/guide/getting-started.md) and the [user guide](docs/guide/user-guide.md), which uses the demo household as its example.
+- **Sharing it:** [Distribution plan](docs/distribution-plan.md) and the [demo walkthrough](docs/guide/demo-walkthrough.md).
 - **Building it:** [Development](docs/development/development.md), [architecture](docs/development/architecture.md), the [calculation rules](docs/development/data-and-rules.md), [workbook import](docs/development/workbook-import.md), [acceptance tests](docs/development/acceptance-tests.md), [testing](docs/development/testing.md) and [decisions](docs/development/decisions/).
 
 [docs/README.md](docs/README.md) lists every document and what it's for.
