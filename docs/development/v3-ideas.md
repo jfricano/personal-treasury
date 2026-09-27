@@ -2,6 +2,8 @@
 
 Started 2026-09-25. This is a place to collect possibilities, not a release commitment. V2.2 is the current baseline; a new feature should earn its place by making an existing task easier or making the app available to someone who cannot use it today.
 
+**Update 2026-09-26:** v3 is now specified in [docs/development/v3/](v3/README.md): a single-user release with User ID and password sign-in, Budget vs actual from institution data, and an assets and liabilities snapshot. The multi-user section below is **abandoned** and kept only as a record. The Windows installer continues as a separate track.
+
 ## Keep from v2.2
 
 - Calculations stay on the user's device. The optional v2.2 private sync service stores client-encrypted snapshots; the public demo continues to use fictional data.
@@ -21,7 +23,9 @@ Before calling it ready:
 
 Tauri's [Windows installer guide](https://v2.tauri.app/distribute/windows-installer/) and [GitHub Actions guide](https://v2.tauri.app/distribute/pipelines/github/) are the starting references.
 
-## Candidate: multi-user access and administration
+## Abandoned: multi-user access and administration
+
+> **Status: abandoned for v3 (2026-09-26).** The owner chose a single-user design. V3 keeps the useful parts, a familiar User ID and password sign-in and a key the server cannot read, without accounts for other people. See the [v3 security design](v3/security.md) and [ADR 0008](decisions/0008-single-user-sign-in.md). The text below is the original proposal, unchanged.
 
 Let people request access with first name, last name, and email. An administrator reviews pending requests in a restricted dashboard, either within the main app or in a separate admin app. Prefer a familiar username or email plus password sign-in over v2.2's manually entered access token and sync passphrase. Approval could issue a one-time activation token so the user can create their credentials; the app would manage session tokens behind the scenes. The admin can see request and account status, revoke access, and review a minimal audit trail.
 
