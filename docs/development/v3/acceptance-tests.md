@@ -4,10 +4,14 @@ These extend the [existing acceptance tests](../acceptance-tests.md), which all 
 
 Unless stated otherwise, the fixture budget version for 2026-08 has take-home $6,000.00 and these lines: Groceries $600.00 (Household and personal, funded by HH); Fuel and parking $200.00 (Transportation, HH); Car maintenance $150.00 (Pets etc., PETC); Summer trip fund $250.00 (Travel, TRV, role set-aside); Everything else as the residual (Discretionary, ENT). Institution accounts: Checking ••1111 (in review, linked to HH), Savings ••2222 (in review, linked to PETC), Card ••3333 (in review, Shared), Brokerage ••4444 (snapshot only), Student loan ••5555 (snapshot only).
 
-## 1. List of Accounts (V3-AT1)
+## 1. Navigation (V3-AT1)
 
-- The navigation shows **List of Accounts** where it showed **Accounts**, and the route, deep links and account editing behave as before.
-- The account table's accessible name is **List of Accounts**.
+1. The rail lists, in order: Dashboard; **Budgeting**: Budget and Tax, Budget History, Budget Analysis; **Treasury**: Monthly Reconciliation, Interaccount Debts, Accounts, Connected Accounts; then Import and Export, Settings. Every existing route and deep link still works.
+2. Each label is identical to its page's title and window title. No navigation link contains a badge.
+3. At 1280 px with default text size, every label fits on one line. With text enlarged to 200%, labels wrap and none is truncated.
+4. Section labels are not focusable and are not headings; Tab visits the ten links in visual order; exactly one link has `aria-current="page"`; the focus ring has at least 3:1 contrast on the rail and on the active item.
+5. At 390 px, a **Menu** button shows the current page's name; it opens the grouped list with `aria-expanded="true"`; Escape closes it and returns focus to the button; choosing a page closes it and focuses that page's `h1`. It starts closed after every page load.
+6. Each page has exactly one `h1`.
 
 ## 2. Month membership and signs (V3-AT2)
 
@@ -102,7 +106,7 @@ Unless stated otherwise, the fixture budget version for 2026-08 has take-home $6
 
 ## 11. Treasury and budget isolation (V3-AT11)
 
-For a full gather-classify-clear cycle, the `journal_entries`, `journal_postings`, `monthly_allocations`, `monthly_cycles`, `debts`, `debt_events` and every budget table are unchanged, row for row. Treasury hints link to Monthly reconciliation and write nothing.
+For a full gather-classify-clear cycle, the `journal_entries`, `journal_postings`, `monthly_allocations`, `monthly_cycles`, `debts`, `debt_events` and every budget table are unchanged, row for row. Treasury hints link to Monthly Reconciliation and write nothing.
 
 ## 12. Sign-in and security (V3-AT12)
 
@@ -135,7 +139,7 @@ Automate with Playwright in the demo (files) and the private build against a loc
 1. A Plaid Sandbox purchase of 12.34 (Plaid's positive outflow) becomes canonical −12.34; a refund becomes positive. A SimpleFIN deposit string `"100.00"` stays +100.00.
 2. With 9 of 10 Trial Items recorded as used, **Add connection** shows "1 of 10 remaining" before opening Hosted Link. Linking an institution that already has an Item is blocked with a pointer to **Reconnect**.
 3. **Reconnect** on a Sandbox Item in a login-required state uses update mode: the access token and the Item count are unchanged.
-4. A consent expiry 25 days away shows **Reconnect soon** on Connections and the Dashboard.
+4. A consent expiry 25 days away shows **Reconnect soon** on Connected Accounts and the Dashboard.
 5. A provider response that repeats a transaction under a new ID (same account, date, amount and description) produces one **possible duplicate** flag, not a silent double count.
 6. A malformed provider response (an amount of `"abc"`) fails that connection's gather with `malformed_response` and adds no transactions.
 7. No request from the service process reaches a provider host during any of the above (checked by the service's egress log and SEC-VAULT-6).

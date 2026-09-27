@@ -2,7 +2,7 @@
 
 Started 2026-09-25. This is a place to collect possibilities, not a release commitment. V2.2 is the current baseline; a new feature should earn its place by making an existing task easier or making the app available to someone who cannot use it today.
 
-**Update 2026-09-26:** v3 is now specified in [docs/development/v3/](v3/README.md): a single-user release with User ID and password sign-in, Budget vs actual from institution data, and an assets and liabilities snapshot. The multi-user section below is **abandoned** and kept only as a record. The Windows installer continues as a separate track.
+**Update 2026-09-26:** v3 is now specified in [docs/development/v3/](v3/README.md): a single-user release with User ID and password sign-in, Budget Analysis from institution data, and an assets and liabilities snapshot. The multi-user section below is **abandoned** and kept only as a record. The Windows installer continues as a separate track.
 
 ## Keep from v2.2
 

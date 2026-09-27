@@ -2,7 +2,7 @@
 
 Status: approved for implementation · 2026-09-26
 
-This is the calculation and data contract for **Budget vs actual**, the balance snapshot, and their storage. It has the same authority for v3 that [Data model and calculation rules](../data-and-rules.md) has for the treasury. When the product spec and this document disagree, this document wins and the disagreement is a bug in the spec. All money uses `domain/money.ts` (decimal strings, `decimal.js`); nothing here uses binary floating point.
+This is the calculation and data contract for **Budget Analysis**, the balance snapshot, and their storage. It has the same authority for v3 that [Data model and calculation rules](../data-and-rules.md) has for the treasury. When the product spec and this document disagree, this document wins and the disagreement is a bug in the spec. All money uses `domain/money.ts` (decimal strings, `decimal.js`); nothing here uses binary floating point.
 
 ## 1. Principles
 
@@ -83,7 +83,7 @@ Every posted, in-month transaction on an in-scope account has exactly one dispos
 
 If the owner changes the review's budget version, any `budget` part whose `lineKey` is missing from the new version becomes unclassified and is listed as a blocker.
 
-**Loan and investment accounts** are out of spending review by default. A payment from checking to a loan is then classified against the budget line that plans it, which is what the budget compares. If the owner puts a loan or investment account in scope, its incoming payments must also be classified, normally as the other half of a transfer; the Connections page warns that this moves the payment out of budget spending.
+**Loan and investment accounts** are out of spending review by default. A payment from checking to a loan is then classified against the budget line that plans it, which is what the budget compares. If the owner puts a loan or investment account in scope, its incoming payments must also be classified, normally as the other half of a transfer; the Connected Accounts page warns that this moves the payment out of budget spending.
 
 ## 6. Internal transfers and pairing
 
@@ -271,7 +271,7 @@ There is **no** review-index table: the index of open and cleared reviews lives 
 
 Hints are read-only suggestions that link to existing treasury screens. They never write.
 
-- **Funding mismatch** (FR-REV-12): budget spending on lines funded by treasury account A, paid from an institution account linked to a different treasury account B, totalled per (A, B). It links to Monthly reconciliation for a transfer the owner may choose to enter.
+- **Funding mismatch** (FR-REV-12): budget spending on lines funded by treasury account A, paid from an institution account linked to a different treasury account B, totalled per (A, B). It links to Monthly Reconciliation for a transfer the owner may choose to enter.
 - **Transfer confirmation** (FR-REV-13): an inflow into an institution account linked to treasury account A that equals A's final transfer for the same treasury month, while A is still **Pending**. It links to that account's **Done** control using the existing deep link.
 
 ## 16. Undo inside a review
@@ -279,6 +279,6 @@ Hints are read-only suggestions that link to existing treasury screens. They nev
 Review edits (classifications, splits, pairs, waivers, bulk acceptance) live in the review store, not the database, so the database undo in [ADR 0005](../decisions/0005-undo-audit-persistence.md) does not cover them.
 
 - Each open review keeps its own undo history of its last 100 edits, in memory. **Accept all suggestions** and other bulk actions are one step.
-- **Cmd-Z** on Budget vs actual undoes the latest review edit while the review has undo history; anywhere else it undoes the latest database change, as today. The page shows which one the next undo will affect.
+- **Cmd-Z** on Budget Analysis undoes the latest review edit while the review has undo history; anywhere else it undoes the latest database change, as today. The page shows which one the next undo will affect.
 - Review undo history does not survive a reload or a switch to another device; the review's saved state does.
 - Database actions on the page (clearing, deleting or replacing a report, rule changes, line roles) use the database undo.

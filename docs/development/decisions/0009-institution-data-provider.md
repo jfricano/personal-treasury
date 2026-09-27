@@ -4,7 +4,7 @@ Status: proposed · 2026-09-26. Becomes accepted when the owner confirms the pro
 
 ## Context
 
-Budget vs actual needs posted transactions and balances from the owner's checking, savings, credit card, brokerage, retirement and loan accounts. The owner asked to use a service that simplifies connecting institutions, and asked for a non-Plaid option with its trade-offs. The full comparison is in [Institution data](../v3/aggregation.md).
+Budget Analysis needs posted transactions and balances from the owner's checking, savings, credit card, brokerage, retirement and loan accounts. The owner asked to use a service that simplifies connecting institutions, and asked for a non-Plaid option with its trade-offs. The full comparison is in [Institution data](../v3/aggregation.md).
 
 For an individual in 2026, the realistic providers are Plaid's Trial plan (free, rich data, a lifetime cap of 10 institution logins that removal does not free) and SimpleFIN Bridge ($15 a year through MX, up to 25 institutions, no liability details, one credential for every linked institution). Teller covers banks and cards only; MX, Finicity, Akoya and Yodlee are contract-only.
 

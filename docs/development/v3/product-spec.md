@@ -21,13 +21,13 @@ Recorded 2026-09-26. These supersede the multi-user section of [v3 ideas](../v3-
 2. **User ID and password.** The v2.2 "access token + sync passphrase" pair becomes a User ID and password on both the private website and the desktop app. The password still protects the encryption key, so the server cannot read treasury data.
 3. **No password recovery.** If the password is lost, the owner restores a JSON backup into a new profile. The app says so plainly when the password is set.
 4. **Security first.** Where convenience and security conflict, security wins, and the trade-off is written down.
-5. **Budget vs actual by calendar month**, shown as an interactive view and exportable to `.xlsx`.
+5. **Budget Analysis by calendar month**, shown as an interactive view and exportable to `.xlsx`.
 6. **Account types:** checking, savings, credit card, brokerage, retirement, and student, auto and mortgage loans.
 7. **Assets and liabilities** are reported alongside the budget analysis, from the same data pull.
 8. **Keep raw transactions temporary.** A month's transactions exist only while that month is being reviewed. The permanent record is a cleared **spending report**, one per month. Reports can be deleted, and can be replaced by clearing a new review; re-running an already cleared month asks for confirmation first.
 9. **Incomplete data is normal.** A review stays open until every account is complete or explicitly waived, and in-progress work must survive a browser crash, reload or device switch.
 10. **Use a connection service** to reach the institutions if one fits, rather than building per-bank integrations.
-11. The **Accounts** navigation item becomes **List of Accounts**.
+11. **Navigation is reorganized** into Budgeting and Treasury sections, and the new pages are named **Budget Analysis** and **Connected Accounts** (2026-09-27). The treasury buckets page keeps the name **Accounts**: the owner withdrew the earlier "List of Accounts" rename so every label fits on one line. The owner left the choice between static section labels and collapsible or drop-down menus to a design review, which chose static labels (§6, Navigation).
 
 ## 2. Goals and non-goals
 
@@ -55,7 +55,7 @@ Existing words keep their meaning. V3 needs several new ones, and "account" and 
 
 | Term | Meaning |
 | --- | --- |
-| **Treasury account** | An existing virtual bucket such as HH or PETC. Listed on **List of Accounts**. Unchanged. |
+| **Treasury account** | An existing virtual bucket such as HH or PETC. Listed on **Accounts**. Unchanged. |
 | **Institution** | A bank, credit union, card issuer, brokerage or loan servicer. |
 | **Connection** | The app's link to one institution: through a data provider, or through files the owner downloads and imports. |
 | **Institution account** | One real account at an institution, such as a checking account or a credit card. Identified to the owner by name and last four digits. |
@@ -69,7 +69,7 @@ Existing words keep their meaning. V3 needs several new ones, and "account" and 
 | **Spending report** | The permanent monthly summary: planned vs actual by line, income, coverage, totals of transfers and exclusions, and the balance snapshot. No individual transactions. |
 | **Balance snapshot** | Assets and liabilities by institution account, captured during the review and saved with the report. |
 
-The treasury's **Monthly reconciliation** is unchanged, and remains the only thing the app calls a reconciliation. The new page is **Budget vs actual**.
+The treasury's **Monthly Reconciliation** is unchanged, and remains the only thing the app calls a reconciliation. The new page is **Budget Analysis**.
 
 ## 4. Workflows
 
@@ -83,7 +83,7 @@ The treasury's **Monthly reconciliation** is unchanged, and remains the only thi
 
 ### 4.2 Connecting institutions
 
-1. **Connections** lists each institution with its accounts, status and last successful refresh.
+1. **Connected Accounts** lists each institution with its accounts, status and last successful refresh.
 2. **Add connection** is done in the **desktop app**, the only place provider credentials are used (see [Institution data §4](aggregation.md#4-where-gathering-runs)). The app opens the provider's own linking page in the system browser (with the recommended provider, Plaid Hosted Link), where the owner signs in to the institution; the app never sees those credentials. The resulting access credential goes straight into the encrypted credential vault. Before each link, the app shows how many of the provider's lifetime connection slots remain and blocks a duplicate link. The website shows connections and their accounts but cannot add them or gather from them.
 3. For each new institution account the owner confirms:
    - the **kind** (checking, savings, credit card, brokerage, retirement, student loan, auto loan, mortgage, other asset, other liability);
@@ -96,7 +96,7 @@ The treasury's **Monthly reconciliation** is unchanged, and remains the only thi
 
 ### 4.3 The monthly spending review
 
-1. On **Budget vs actual**, choose a month. The default is the most recent calendar month without a cleared report.
+1. On **Budget Analysis**, choose a month. The default is the most recent calendar month without a cleared report.
 2. **Gather** (provider accounts on the desktop app; files on any device). The app requests posted transactions for each in-scope account, from seven days before the month through today (at most 60 days after it), plus current balances for accounts in the snapshot. File connections prompt for a file. Progress is shown per account. Anything that fails is listed with its reason and a next step: **Retry**, **Reconnect**, **Import file**, or **Waive**.
 3. **Coverage.** Each in-scope account is **Complete**, **Partial**, **Missing**, **Needs reconnect**, **Error** or **Waived**. A newly linked account asks the owner once to confirm that its history covers the month. See [Spending review rules §4](spending-review-rules.md#4-coverage-and-completeness).
 4. **Classify.** The transaction table shows only the month's posted transactions. Neighboring-month and pending items are available for context but never counted. Rules pre-fill suggested dispositions; the owner accepts them in bulk or one at a time, splits a transaction across budget lines, pairs internal transfers, and marks exclusions with a reason. Every change autosaves.
@@ -110,7 +110,7 @@ The treasury's **Monthly reconciliation** is unchanged, and remains the only thi
 - The review stays open for as long as it is needed. Its temporary data is encrypted and saved after every change, locally and to the service, so a crash, reload or switch from phone to Mac resumes where the owner left off (see [ADR 0010](../decisions/0010-temporary-spending-review.md)).
 - A partially gathered account can be re-gathered later. A new gather merges with the existing data by transaction identity and keeps every classification already made.
 - If an institution is down or needs re-authentication, the owner can **Import file** for that account, or **Waive** it with a reason (for example, "no activity" or "account closed"). Waivers appear on the report.
-- An open review expires 14 days after its last change, and never later than 45 days after it was started; its temporary data is then deleted everywhere (§10, Q4). The Dashboard and Budget vs actual warn after 7 days without a change and 3 days before the 45-day limit. Any change, including **Keep open**, restarts the 14 days.
+- An open review expires 14 days after its last change, and never later than 45 days after it was started; its temporary data is then deleted everywhere (§10, Q4). The Dashboard and Budget Analysis warn after 7 days without a change and 3 days before the 45-day limit. Any change, including **Keep open**, restarts the 14 days.
 - The Dashboard shows the most recent month that has not been cleared and the review's state.
 
 ### 4.5 Re-running, replacing and deleting reports
@@ -153,7 +153,7 @@ IDs are referenced by the [implementation plan](implementation-plan.md) and the 
 | FR-AUTH-9 | **Security activity** view and last-sign-in notice, from the service's security log. Must. |
 | FR-AUTH-10 | Snapshot retention as in [Security §5.8](security.md#58-snapshots), with pinned versions. Must. |
 
-### Connections (FR-CONN)
+### Connected Accounts (FR-CONN)
 
 | ID | Requirement |
 | --- | --- |
@@ -180,7 +180,7 @@ IDs are referenced by the [implementation plan](implementation-plan.md) and the 
 | FR-REV-10 | Keyboard entry: move between rows, accept a suggestion, choose a budget line by typing, split, and mark transfer or exclusion without the mouse. Must. |
 | FR-REV-11 | Possible duplicates are flagged and must be resolved before clearing: the same account, date and amount from different sources, or the same account, date, amount and description from one provider under different IDs. Must. |
 | FR-REV-12 | Funding-mismatch hints: spending on lines funded by one treasury account but paid from an institution account linked to another. Hints only. Should. |
-| FR-REV-13 | Transfer-confirmation hints: a deposit into an institution account linked to a treasury account that matches that account's final transfer in the treasury month. Hints only; the owner marks **Done** on Monthly reconciliation. Should. |
+| FR-REV-13 | Transfer-confirmation hints: a deposit into an institution account linked to a treasury account that matches that account's final transfer in the treasury month. Hints only; the owner marks **Done** on Monthly Reconciliation. Should. |
 
 ### Reports and export (FR-RPT)
 
@@ -207,12 +207,15 @@ IDs are referenced by the [implementation plan](implementation-plan.md) and the 
 
 | ID | Requirement |
 | --- | --- |
-| FR-UI-1 | Rename the **Accounts** navigation item to **List of Accounts**, and the page's table name to match. Must. |
-| FR-UI-2 | Add **Budget vs actual** after **Monthly reconciliation** and **Connections** after **List of Accounts**. Must. |
+| FR-UI-1 | Reorganize the navigation exactly as in §6, Navigation: static **Budgeting** and **Treasury** section labels, the order shown, and Title Case labels that match each page's title. Must. |
+| FR-UI-2 | Add **Budget Analysis** to Budgeting and **Connected Accounts** to Treasury. New pages are announced once on the Dashboard and in their own page header, never with badges inside navigation links. Must. |
 | FR-UI-3 | Dashboard: a spending-review panel (latest uncleared month, review state, blockers) and the latest cleared net worth with its date. Must. |
 | FR-UI-4 | Every figure in the review and the report drills down: to transactions while a review is open, and to report rows after it is cleared. Must. |
 | FR-UI-5 | Visual language as in v2: navy headings, pale blue bands, red only for genuine exceptions, green only for completed actions. Must. |
 | FR-UI-6 | Phone width: the review can be completed on a 390 px screen, with tables scrolling inside their panels. Must. |
+| FR-UI-7 | Below 760 px wide, the navigation becomes a **Menu** button that shows the current page and opens the same grouped list, replacing the horizontal scroller. Must. |
+| FR-UI-8 | Navigation meets the accessibility rules in §6, Navigation. Must. |
+| FR-UI-9 | The desktop app enables its browser zoom shortcuts (Cmd + and Cmd −). Should. |
 
 ### Public demo (FR-DEMO)
 
@@ -223,15 +226,43 @@ IDs are referenced by the [implementation plan](implementation-plan.md) and the 
 
 ## 6. Screens
 
+### Navigation
+
+Decided 2026-09-27 from a design review (information architecture, accessibility and phone layout):
+
+```text
+Dashboard
+BUDGETING
+  Budget and Tax
+  Budget History
+  Budget Analysis
+TREASURY
+  Monthly Reconciliation
+  Interaccount Debts
+  Accounts
+  Connected Accounts
+────────
+Import and Export
+Settings
+```
+
+- **Static section labels, not collapsible or drop-down menus.** About ten items fit a 13-inch window without scrolling. Collapsing would add a click to pages used every month, hide the new pages, and need saved state; fly-outs depend on hover and fail on touch and keyboard. Revisit if the menu grows past about 15 items, a section passes 6 items, or pages gain a second level; even then, collapse only a rarely used section and keep it open by default.
+- **Labels:** Title Case for navigation labels, page titles and the window title, with each label identical to its page title ("and" and "of" stay lowercase). Everything inside a page stays sentence case.
+- **Accounts vs Connected Accounts:** the plain noun means the app's own buckets; "Connected" marks real outside accounts. Each page's subtitle says so: *Your treasury buckets, such as HH and PETC* and *Bank, card, brokerage and loan accounts, each mapped to a treasury account*. If the two are still confused in use, rename the new page, not the buckets.
+- **Monthly Reconciliation** leads Treasury; it was left out of the owner's list by oversight and stays. A design reviewer suggested placing Budget Analysis above Budget History (plan, compare, archive); the owner's order is kept.
+- **Style:** a section label is plain text in 11 px, weight 600, uppercase with 0.06 em letter-spacing, colour #9fb2d3 (at least 4.5:1 on navy), with 14 px above and 4 px below; it replaces the divider above its section. One divider remains above Import and Export. The active item keeps its left bar, light fill, white text and bold weight.
+- **Accessibility:** one `nav` landmark named "Main"; each section is a list labelled by its visible label, which is plain text, never a heading or button, and never takes focus; Tab visits the links in visual order; exactly one link has `aria-current="page"`; the active state is not shown by colour alone; the rail has its own focus ring (2 px #9fc0ef, inset 2 px) with at least 3:1 contrast on the navy and on the active item; every link is at least 24 × 24 px; labels wrap as a safety net and are never truncated. The rail's product name is not an `h1`, so each page has one `h1`.
+- **Phone (under 760 px):** the top bar shows the product name and a **Menu** button whose visible text is the current page (for example "Interaccount Debts"), with `aria-expanded` and `aria-controls`. It opens the same grouped list inline (no overlay or focus trap) with 44 px rows. Escape closes it and returns focus to the button; choosing a page closes it and moves focus to the page's `h1`. It always starts closed, and its state is not saved.
+
 ### Sign-in
 
 User ID and password, then a passkey prompt (or an authenticator or recovery code) on the website, or the authenticator code on a new desktop install. One generic failure message for every wrong combination. After repeated failures, a visible wait time. No "forgot password" link; a short line explains that a lost password means restoring an encrypted backup.
 
-### Connections
+### Connected Accounts
 
-One panel per institution: name, provider or **Files**, status, last successful refresh, **Reconnect**, **Remove**. A table of its accounts: name and last four digits, kind, in review, in snapshot, treasury account, active. **Add connection** and **Add file connection** in the page header.
+Subtitle: *Bank, card, brokerage and loan accounts, each mapped to a treasury account.* One panel per institution: name, provider or **Files**, status, last successful refresh, **Reconnect**, **Remove**. A table of its accounts: name and last four digits, kind, in review, in snapshot, treasury account, active. **Add connection** and **Add file connection** in the page header.
 
-### Budget vs actual
+### Budget Analysis
 
 - **Header:** month selector, review state badge (**Not started**, **Gathering**, **Reviewing**, **Ready to clear**, **Cleared**), **Gather**, **Clear month**, **Export**, and a **Discard review** action in a menu.
 - **Coverage:** one row per in-scope account: source, window gathered, status, transaction count, last attempt, and the next action.
@@ -240,9 +271,9 @@ One panel per institution: name, provider or **Files**, status, last successful 
 - **Assets and liabilities:** accounts by kind with balance, as-of time, month-end estimate where available, and totals.
 - **Reports:** cleared months with cleared date, planned, actual, net worth, and **Open**, **Export**, **Re-run**, **Delete**.
 
-### List of Accounts
+### Accounts
 
-The existing Accounts page, renamed. It gains a read-only column showing which institution accounts represent each treasury account.
+The existing page, with the subtitle *Your treasury buckets, such as HH and PETC*. It gains a read-only column showing which connected accounts represent each treasury account.
 
 ### Settings → Security
 

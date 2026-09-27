@@ -44,11 +44,12 @@ Each slice lists its requirements, what it must deliver, and what may run beside
 - Gate: server tests for the headers on every response type; the private E2E suite passing under the new policy; deployed to Railway after a JSON backup.
 - A hotfix on `main`, merged forward into `release/v3`. It does not change the sign-in model.
 
-### S1 — List of Accounts (`v3/list-of-accounts`)
+### S1 — Navigation and development safety (`v3/navigation`)
 
-- FR-UI-1. Rename the navigation label, the page's table accessible name, the user guide, the demo tour text, and the Playwright selectors that find them.
+- FR-UI-1, FR-UI-7, FR-UI-8, FR-UI-9: the navigation in [Product spec §6, Navigation](product-spec.md#navigation) for the existing pages: static Budgeting and Treasury section labels, the new order, Title Case labels matching page titles, the phone **Menu** disclosure replacing the horizontal scroller, the rail focus ring, the rail's product name demoted from `h1`, and desktop zoom shortcuts. Budget Analysis and Connected Accounts take their places when S7 adds them. Update the demo tour text, the user guide's page names, and the Playwright selectors that find navigation links.
+- Give development builds their own app identifier (`com.personaltreasury.app.dev`), so a v3 dev build can never open, and migrate forward, the profiles of the installed app.
 - Make `scripts/privacy-check.mjs` locate `reference/privacy-terms.txt` from the main checkout (via `git rev-parse --git-common-dir`) and exit with an error when it cannot, unless `PRIVACY_CHECK_OPTIONAL=1` is set (for public clones and CI).
-- Gate: `npm run check`, `npm run test:e2e:demo`, private E2E selectors updated, `privacy:check` failing in a worktree without the terms file and passing with it.
+- Gate: V3-AT1; `npm run check`, `npm run test:e2e:demo`, private E2E selectors updated; a keyboard and VoiceOver pass of the rail and the phone menu; a dev build shown to use its own app-data folder; `privacy:check` failing in a worktree without the terms file and passing with it.
 - Runs first; no dependencies.
 
 ### S2 — Sign-in and encryption foundation (`v3/sign-in`)
@@ -92,9 +93,9 @@ Split so the review interface does not wait for the sign-in work:
 - **S6a (`v3/review-store-local`)**: the store interface in `src/review-store/`; the review index and tombstones kept outside the database; autosave with a **Saved** indicator; expiry logic; the in-memory review undo history ([Spending review rules §16](spending-review-rules.md#16-undo-inside-a-review)); backends for the demo (tab session) and local-only desktop profiles (app-data file). Gate: crash and reload tests, expiry with a fixed clock, SEC-REV-5, and the canary scan from [Spending review rules §14](spending-review-rules.md#14-invariants-and-where-they-are-enforced). After S3.
 - **S6b (`v3/review-store-sync`)**: encryption under the data key; the encrypted IndexedDB and desktop backends for signed-in profiles; the service endpoints (`GET /api/review`, and `PUT`, `GET`, `DELETE /api/review/:ref`) with conditional writes, 8 MiB limit, at most three open, the expiry sweep, and 90-day tombstones ([Security §5.7](security.md#57-temporary-review-storage)); the clearing sequence that waits for the upload. Gate: SEC-REV-1 to SEC-REV-4; cross-device resume in the private E2E; tombstone clean-up on a stale device. After S2a and S2b.
 
-### S7 — Budget vs actual interface (`v3/review-ui`)
+### S7 — Budget Analysis interface (`v3/review-ui`)
 
-- Pages and components in `src/features/spending/` and `src/features/connections/`: Connections (file connections first), Budget vs actual with its Coverage, Transactions, Summary, Assets and liabilities, and Reports views, keyboard entry, drill-downs, the Dashboard panel, and the `.xlsx` export in `src/export/spendingReport.ts`.
+- Pages and components in `src/features/spending/` and `src/features/connections/`: Connected Accounts (file connections first), Budget Analysis with its Coverage, Transactions, Summary, Assets and liabilities, and Reports views, keyboard entry, drill-downs, the Dashboard panel, and the `.xlsx` export in `src/export/spendingReport.ts`.
 - Demo: fictional statement files and a guided exercise that runs a complete review (FR-DEMO-1, FR-DEMO-2).
 - Gate: E2E for a complete file-based review in the demo and private builds at 390, 768, 1280 and 1440 px; keyboard-only review; screenshot review of every new view; export opened and checked.
 - After S4, S5 and S6a: the demo and local-only desktop profiles can run complete file-based reviews before sign-in work finishes. Signed-in profiles gain reviews when S6b merges. **At that point v3 works end to end with files and no provider.** Consider a v0.3.0-beta on staging for the owner's first real month, using downloaded files.
@@ -119,7 +120,7 @@ Documentation is part of the release, not a follow-up. This slice runs after S7�
 
 **Release-specific documents (new):**
 
-- `docs/release-notes-v0.3.0.md`: what v3 adds and removes (User ID and password replace the token and passphrase; Budget vs actual; Connections; Assets and liabilities; List of Accounts), the one-time migration from v2.2, limits, and backup guidance. Same voice and length as the v0.2.2 notes.
+- `docs/release-notes-v0.3.0.md`: what v3 adds and removes (User ID and password replace the token and passphrase; Budget Analysis; Connected Accounts; Assets and liabilities; the reorganized navigation), the one-time migration from v2.2, limits, and backup guidance. Same voice and length as the v0.2.2 notes.
 - `docs/development/v3-release-report.md`: scope implemented, test commands with counts, security verification evidence, native macOS results, deployment status, and remaining limitations, in the style of the [v2.2 report](../v2.2-release-report.md). Private figures stay out.
 
 **Standing documents (update in place, so a reader of `main` never needs the v3 folder to understand the current app):**
@@ -129,13 +130,13 @@ Documentation is part of the release, not a follow-up. This slice runs after S7�
 | `README.md` | Replace "New in v2.2" with "New in v0.3.0"; update **What it does**, **Privacy** (sign-in, encryption, provider access, temporary transactions), **Screenshots**, **Documentation** and **Stack**. |
 | `docs/README.md` | Index every new and renamed document; move the v3 planning documents under a "History and plans" heading. |
 | `docs/guide/getting-started.md` | Setup of the service account, first sign-in, desktop sign-in, and the local-only desktop option. |
-| `docs/guide/user-guide.md` | New sections: Signing in and locking, Connections, Budget vs actual (the monthly review, rules, waivers, clearing, reports, export), Assets and liabilities. Rename **Accounts** to **List of Accounts** throughout. |
+| `docs/guide/user-guide.md` | New sections: Signing in and locking, Connected Accounts, Budget Analysis (the monthly review, rules, waivers, clearing, reports, export), Assets and liabilities. Update page names and the Budgeting and Treasury navigation sections throughout. |
 | `docs/guide/demo-walkthrough.md` | Add the sample spending-review exercise. |
 | `docs/guide/cloud-sync.md` | Rewrite for v3 as the private service guide: sign-in, sessions, lock, sync and conflicts, temporary review storage, retention, what the server can and cannot see, and the no-recovery rule. Keep the file name or leave a pointer from it. |
 | `docs/guide/railway-sync.md` | New variables (setup secret, pepper, at-rest, device-cookie and log keys), sealed variables, custom domain, staging environment, backup guidance. No provider keys: the service never contacts providers. |
 | `sync-server/README.md` | The v3 API: setup and migration, authentication, second factors, sessions, temporary review storage, the credential vault, retention, headers and variables. |
 | `docs/development/architecture.md` | New modules and layers, schema tables and migrations, service endpoints, key hierarchy summary, demo additions, updated known limitations. |
-| `docs/development/data-and-rules.md` | Link to the spending review rules as the contract for Budget vs actual. |
+| `docs/development/data-and-rules.md` | Link to the spending review rules as the contract for Budget Analysis. |
 | `docs/development/spending-review-rules.md` | Promote `v3/spending-review-rules.md` to a standing document once implemented, and leave the v3 copy as a pointer. Do the same for `security.md` as `docs/development/security.md`. |
 | `docs/development/acceptance-tests.md` | Fold in the v3 acceptance tests, so the release gate lists one set. |
 | `docs/development/development.md`, `testing.md` | New commands, suites, environment variables, worktree practice, and the screenshot script. |
@@ -148,7 +149,7 @@ Documentation is part of the release, not a follow-up. This slice runs after S7�
 
 - The images in `docs/images/` date from the first public release and predate the budget, tax and sync features. Replace all of them, and add images for the new features.
 - Add `npm run docs:screenshots`, a Playwright script with a fixed clock, fixed viewport sizes, reduced motion and the tour dismissed except for its own image, so images are reproducible and contain no personal data. Every image comes from the **demo build** (the fictional Harper household) except the sign-in image, which comes from a private build running against a local service with a fictional account.
-- Required set, at 1440 px unless noted: Dashboard; Monthly reconciliation; Budget and tax; Budget vs actual (Summary); Budget vs actual (Transactions with suggestions and a split); Assets and liabilities; Connections (demo notice with sample files); List of Accounts; Interaccount debts with a reversed loan; Sign-in; the guided tour; and Budget vs actual on a phone at 390 px.
+- Required set, at 1440 px unless noted: Dashboard; Monthly Reconciliation; Budget and Tax; Budget Analysis (Summary); Budget Analysis (Transactions with suggestions and a split); Assets and liabilities; Connected Accounts (demo notice with sample files); Accounts; Interaccount Debts with a reversed loan; Sign-in; the guided tour; and, at 390 px, Budget Analysis and the open navigation menu.
 - Update every document that embeds or links an image (at least `README.md`, `docs/guide/user-guide.md`, `docs/guide/demo-walkthrough.md`), and give each image descriptive alt text.
 - A person reviews every new image before merge: correct version, no clipped panels, no browser chrome, no personal data.
 
@@ -190,7 +191,7 @@ Several build sessions can run at once if they never share a working tree or a b
 | Parsers | Vitest | OFX, QFX, QBO and CSV fixtures, manual entry, signs per account kind, malformed files, and exact amounts. |
 | Crypto | Vitest | KDF and HKDF test vectors, envelope v2 round trip, wrong-password and tamper failures, re-wrap on password change, v2.2 migration. |
 | Service | `node --test` | Every endpoint's authentication, authorization, rate limits, CSRF, headers, size limits, If-Match behavior, retention, expiry, tombstones, and absence of secrets and bodies in logs. |
-| End to end | Playwright (Chromium and WebKit) | Demo: complete file-based review, export, List of Accounts. Private: sign-in, lock, unlock, cross-device review resume, conflict handling. Passkey steps run in Chromium only, because virtual authenticators exist only there; Safari and iOS passkeys are checked by hand. |
+| End to end | Playwright (Chromium and WebKit) | Demo: complete file-based review, export, navigation (desktop rail and phone menu). Private: sign-in, lock, unlock, cross-device review resume, conflict handling. Passkey steps run in Chromium only, because virtual authenticators exist only there; Safari and iOS passkeys are checked by hand. |
 | Native | Manual, recorded | Packaged macOS app: setup, v2.2 migration, sign-in, password change, lock on idle, sleep and screen lock, encrypted profile on disk, provider Sandbox flows, file dialogs for statement import and report export. |
 | External | Scanners and manual checks | [Security §8](security.md#8-verification). |
 
@@ -220,4 +221,4 @@ V3 releases only with a report that shows:
 
 ## 9. Builder handoff prompt
 
-> Implement Personal Treasury v3 from `docs/development/v3/`. It is a single-user app: do not build multi-user, administration or recovery features. Work on slice branches cut from `release/v3`, in the order and with the gates in `implementation-plan.md`, one git worktree per concurrent session. Author commits as the repository's configured owner with no co-author trailers or tool attribution. Start with S0 (security headers for the running v2.2 service, a hotfix on `main`) and S1 (List of Accounts), then S2 (sign-in and encryption) and S3 (spending review domain) in parallel. Provider credentials are used only by the desktop app; the service never contacts a provider. Treat `spending-review-rules.md` as the calculation contract and `security.md` as the security contract; add a test for every numbered rule and SEC requirement you implement. Keep raw transactions out of the synced database, snapshots, logs, backups and treasury exports, and prove it with the scan test. Keep every existing treasury, budget, import, export, undo and backup behavior and test unchanged. Use only synthetic data in committed tests; run `npm run privacy:check` before every push. Each PR names the requirements it satisfies and includes its evidence; S2, S6b and S8 also need an independent security review before merge. Finish with S10: release notes and a release report, every standing guide and development document updated to describe the shipped app, and all screenshots regenerated from the demo build with `npm run docs:screenshots`.
+> Implement Personal Treasury v3 from `docs/development/v3/`. It is a single-user app: do not build multi-user, administration or recovery features. Work on slice branches cut from `release/v3`, in the order and with the gates in `implementation-plan.md`, one git worktree per concurrent session. Author commits as the repository's configured owner with no co-author trailers or tool attribution. Start with S0 (security headers for the running v2.2 service, a hotfix on `main`) and S1 (navigation and development safety), then S2 (sign-in and encryption) and S3 (spending review domain) in parallel. Provider credentials are used only by the desktop app; the service never contacts a provider. Treat `spending-review-rules.md` as the calculation contract and `security.md` as the security contract; add a test for every numbered rule and SEC requirement you implement. Keep raw transactions out of the synced database, snapshots, logs, backups and treasury exports, and prove it with the scan test. Keep every existing treasury, budget, import, export, undo and backup behavior and test unchanged. Use only synthetic data in committed tests; run `npm run privacy:check` before every push. Each PR names the requirements it satisfies and includes its evidence; S2, S6b and S8 also need an independent security review before merge. Finish with S10: release notes and a release report, every standing guide and development document updated to describe the shipped app, and all screenshots regenerated from the demo build with `npm run docs:screenshots`.
