@@ -1,6 +1,6 @@
 # ADR 0009 — Institution data: Plaid Trial, statement files, and desktop-only gathering
 
-Status: proposed · 2026-09-26. Becomes accepted when the owner confirms the provider (Product spec §10, Q2).
+Status: accepted · the owner chose Plaid Trial on 2026-09-27.
 
 ## Context
 
@@ -12,7 +12,7 @@ A private coverage check of the owner's roughly nine institution logins found th
 
 ## Decision
 
-1. **Plaid Trial is the recommended v3.0 provider**, used for the logins it reaches, within a guarded budget of about seven of its ten lifetime Items.
+1. **Plaid Trial is the v3.0 provider**, used for the logins it reaches, within a guarded budget of about seven of its ten lifetime Items.
 2. **SimpleFIN Bridge is the supported non-Plaid alternative.** If the owner prefers not to use Plaid, v3.0 ships the SimpleFIN adapter instead, with more months relying on files. Either way, the other adapter can be added later without changing any rule, table or screen.
 3. **Statement files (OFX, QFX, QBO, CSV) and manual entry** cover institutions neither provider reaches, local-only profiles, and the demo.
 4. **Linking and gathering run only in the signed-in desktop app.** Every provider credential, including Plaid's client ID and secret, lives only in the encrypted credential vault and is used by a Rust command with a host allowlist. The service never contacts a provider and never holds a credential or a raw transaction in plaintext. Plaid's guidance keeps these secrets off untrusted clients; in this single-user design the owner's desktop app, running only local code, is the trusted side. The owner confirms this reading against Plaid's terms when applying for the Trial.

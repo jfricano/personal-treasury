@@ -1,6 +1,6 @@
 # Institution data: providers, gathering and statement files
 
-Status: approved for implementation; provider choice pending owner confirmation (Product spec §10, Q2) · 2026-09-26
+Status: approved for implementation · 2026-09-26; the owner chose Plaid (Option A) on 2026-09-27
 
 The spending review needs posted transactions and balances from the owner's checking, savings, credit card, brokerage, retirement and loan accounts. This document compares the ways to get them, including an option without Plaid, recommends one, and specifies where gathering runs, the adapter contract, and statement-file import. It names none of the owner's institutions: their coverage, quirks and connection plan are in the private notes (`reference/v3-institutions.md`). Research date 2026-09-26; every material claim has a source in §12.
 
@@ -79,7 +79,7 @@ The private coverage check looked up each of the owner's institution logins in P
 | Vendor assurance | SOC 2 II, ISO 27001 | Pentested; no certification found | n/a |
 | Build effort in this app | Moderate: Hosted Link, polling, token exchange, update mode, cap guard, liabilities | Low: token claim, one `GET` | Parsers only (needed in every option) |
 
-**Recommendation: Option A, Plaid Trial, for v3.0, with statement files for the institutions it cannot reach. Option B remains a supported alternative behind the same adapter contract.**
+**Decision (owner, 2026-09-27): Option A, Plaid Trial, for v3.0, with statement files for the institutions it cannot reach. Option B remains a supported alternative behind the same adapter contract.**
 
 1. Plaid reaches roughly twice as many of the owner's logins as SimpleFIN does reliably, which is the difference between a mostly automatic month and a month of downloads.
 2. It supplies liability details the balance snapshot would otherwise need typed in, and each credential exposes one login rather than all of them.
@@ -90,7 +90,7 @@ The private coverage check looked up each of the owner's institution logins in P
 
 **Choose C** for any institution neither provider reaches, and whenever the owner prefers no third party.
 
-The owner confirms the choice (Product spec §10, Q2) before slice S8 starts. The private notes list the open questions that affect it, such as which loan servicer and which card products are involved.
+The owner confirmed Option A on 2026-09-27 (Product spec §10, Q2). The private notes list the open questions that affect it, such as which loan servicer and which card products are involved.
 
 ## 4. Where gathering runs
 
@@ -139,7 +139,7 @@ interface GatherResult {
 - A `kindHint` pre-fills the account kind; the owner still confirms it.
 - Each adapter has fixture tests for every account kind, both signs, pending and posted items, removed items, and each error code.
 
-### Plaid adapter (v3.0, if Q2 confirms Option A)
+### Plaid adapter (v3.0)
 
 - **Keys:** the owner enters the Plaid client ID and secret once in the desktop app (step-up); they go into the vault. Production and Sandbox keys are kept apart, and Sandbox is used for every test.
 - **Link:** `/link/token/create` with `hosted_link`, the Transactions product with `days_requested = 730` (it cannot be raised later) [P17], and Liabilities and Investments where the account kinds need them; open the returned URL in the system browser; poll `/link/token/get` for the `public_token` (available for 6 hours) [P6]; exchange it for an access token, which goes straight into the vault.
@@ -150,7 +150,7 @@ interface GatherResult {
 - **Mapping:** negate `amount` (Plaid's positive is an outflow); `date` → posted date; `authorized_date` → authorized date; `name`, `merchant_name`, `personal_finance_category` → description fields; `pending` items and `pending_transaction_id` are context only; account `type`/`subtype` → `kindHint`.
 - **Remove:** `/item/remove`, then delete the vault entry. The owner is told that removing does not free a Trial slot.
 
-### SimpleFIN adapter (Option B, or v3.x fallback)
+### SimpleFIN adapter (v3.x fallback)
 
 - **Link:** the owner pastes a Setup Token; the desktop app base64-decodes it to a claim URL, confirms it is HTTPS on the Bridge host, and `POST`s once. The Access URL goes straight into the vault as **one credential record** that covers every institution the owner linked at SimpleFIN; each institution (`conn_id`) becomes a connection referring to that record. The Setup Token is discarded [S2, S4]. A claim that fails with HTTP 403 means the token may have been used by someone else.
 - **Gather:** `GET {access URL}/accounts?version=2&start-date=…&end-date=…&pending=1`, **one request per credential** per gather (covering all its institutions), split into 90-day windows only if needed [S2, S4]. The app refuses more than 20 requests a day.

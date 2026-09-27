@@ -1,6 +1,6 @@
 # Security design
 
-Status: approved for implementation; the second-factor requirement awaits owner confirmation (Product spec §10, Q1) · 2026-09-26
+Status: approved for implementation · 2026-09-26; passkey second factor confirmed by the owner 2026-09-27
 
 V3 puts one person's complete financial picture behind an internet-facing sign-in and adds read access to their institutions. This document is the security contract: the threat model, the design, and the testable requirements (SEC-…) that the [implementation plan](implementation-plan.md) turns into tests. It was prepared from a review of the v2.2 code and current guidance from OWASP, NIST SP 800-63B-4, RFC 9106 and the providers' documentation (§10), then checked by an independent review of the whole v3 document set.
 
@@ -8,7 +8,7 @@ V3 puts one person's complete financial picture behind an internet-facing sign-i
 
 - **Sign-in:** a User ID and a password of at least 15 characters. The password never leaves the device. The device derives two keys from it: one proves the password to the server, which stores only a keyed hash of it; the other unwraps the data key.
 - **Encryption:** a random data key encrypts every snapshot, every local working copy, every temporary review and the provider credentials. Changing the password re-wraps the data key; nothing else is re-encrypted.
-- **Second factor** (recommended, pending Q1): a passkey on the website, with an authenticator code as fallback; on the desktop, an authenticator code once per install, then a key bound to that install.
+- **Second factor** (confirmed by the owner): a passkey on the website, with an authenticator code as fallback; on the desktop, an authenticator code once per install, then a key bound to that install.
 - **Sessions:** enforced by the server. After 15 minutes idle a session **locks**; after 12 hours it **expires**. Unlocking needs the password; an expired session needs a full sign-in. Nothing secret is kept in web storage.
 - **Attack resistance:** rate limits and lockouts partitioned so a stranger cannot lock out the owner's known devices, identical responses for every credential failure, strict security headers and content policy, CSRF checks on cookie sessions, and logs that never contain secrets or financial data.
 - **Institution access:** provider credentials are encrypted with the owner's key and used only by the desktop app. The service never contacts a provider.
@@ -104,7 +104,7 @@ DEK ──HKDF with a random per-object salt──► K_snapshot · K_review · 
 ### 5.1 Account setup
 
 - The service starts in **setup mode** only when no account record exists and a one-time `PT_SETUP_SECRET` (32 random bytes) is set; for a v2.2 service, the existing `PT_SYNC_TOKEN` serves as the setup secret and also authorizes migration (§5.8). While in setup mode, the service still serves the v2.2 API unchanged, so v2.2 devices keep working until migration commits.
-- Setup runs from the **desktop app**, whose code is local rather than served by the host. The owner enters the service URL, the setup secret, a User ID and a password, then (if Q1 confirms a second factor) enrolls an authenticator app and saves ten recovery codes.
+- Setup runs from the **desktop app**, whose code is local rather than served by the host. The owner enters the service URL, the setup secret, a User ID and a password, then enrolls an authenticator app and saves ten recovery codes.
 - The **User ID** is 3–64 characters, normalized (NFKC, trimmed, lowercased). It is not a secret, and nothing depends on it staying hidden.
 - The **password** is at least 15 characters (up to 256, any Unicode, NFKC-normalized), checked against a bundled list of common passwords and against the User ID, with no composition rules. The app recommends a password-manager-generated value or five or more random words, and says plainly that a forgotten password cannot be recovered.
 - After setup, the setup path is disabled permanently and the owner deletes the setup variable.
@@ -124,7 +124,7 @@ DEK ──HKDF with a random per-object salt──► K_snapshot · K_review · 
 
 ### 5.3 Second factor
 
-Recommended default, pending the owner's decision (Product spec §10, Q1). If the owner declines, sign-in is User ID and password only, and every other control in this document still applies.
+Confirmed by the owner on 2026-09-27 (Product spec §10, Q1).
 
 - **Website:** every new session needs a passkey assertion with user verification (a Face ID or Touch ID tap), or an authenticator code, or a recovery code. Passkeys use `userVerification: required`, `attestation: none`, and the private site's domain as the relying party. WebAuthn requires a user gesture, so the prompt appears behind a button.
 - **Desktop app:** the first sign-in on an install needs an authenticator code. It then registers a **device key**, a non-extractable ECDSA P-256 key held by the app, whose public key the service records. Later desktop sign-ins are the password plus a signature over a single-use challenge. (Passkeys cannot work inside the desktop webview, whose origin cannot be a relying party.)
@@ -338,7 +338,7 @@ Each requirement is covered by a unit test (U), an integration test with the rea
 - SEC-RL-6 (S): A pending sign-in allows at most 5 second-factor attempts and expires after 5 minutes.
 - SEC-RL-7 (S/U): The client uploads snapshots at most once a minute while editing and backs off on 429; the service answers more than 90 snapshot writes an hour per session with 429, and exceeding the data quota with 507.
 
-**Second factor** (if Q1 confirms it)
+**Second factor**
 
 - SEC-MFA-1 (S/E): No web session exists without a passkey assertion with user verification, an authenticator code or a recovery code.
 - SEC-MFA-2 (S): Passkey and device-key challenges are 32 random bytes, single-use and valid for 120 seconds; a replayed assertion is rejected.
@@ -419,7 +419,7 @@ Before release, in addition to the automated requirements:
 ## 9. Owner operations
 
 - **Before v3 goes live:** set up a custom domain; secure the Railway and GitHub accounts with passkeys; protect `main` and turn on **Wait for CI**; generate the four service secrets with `openssl rand -base64 32`, save copies in the password manager, and set them as sealed variables; export a JSON backup and an encrypted backup.
-- **Setup:** run setup and migration from the desktop app; choose a new password; register two passkeys and an authenticator (if Q1 confirms); store the recovery codes offline; after verifying, delete the legacy files and `PT_SYNC_TOKEN`.
+- **Setup:** run setup and migration from the desktop app; choose a new password; register two passkeys and an authenticator; store the recovery codes offline; after verifying, delete the legacy files and `PT_SYNC_TOKEN`.
 - **Rotation:** change the password only on suspicion of exposure. Rotate the at-rest key yearly (add a new key ID; the service re-wraps at start-up). Rotate the pepper or device-cookie key on suspicion. Rotate provider credentials yearly and on suspicion.
 - **Backups:** an encrypted backup monthly and after large imports, stored offline outside Railway; a test restore into a fresh profile every quarter.
 - **Monitoring:** review **Security activity** monthly and whenever the previous sign-in looks wrong; check the provider's connected-apps list.

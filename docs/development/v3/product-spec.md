@@ -1,6 +1,6 @@
 # Personal Treasury v3: product specification
 
-Status: approved direction, pending owner review of the open questions in §10 · 2026-09-26
+Status: approved direction; Q1 (passkeys) and Q2 (Plaid) decided 2026-09-27; remaining questions in §10 · 2026-09-26
 
 V3 turns the private web app and the desktop app into one signed-in treasury for a **single owner**. It adds a monthly comparison of the budget with actual spending, drawn from the owner's own financial institutions, and a month-end snapshot of assets and liabilities. The treasury rules in [Data model and calculation rules](../data-and-rules.md) and the budget model in [Architecture §7](../architecture.md) do not change.
 
@@ -312,8 +312,8 @@ Each has a recommended default that the plan assumes unless the owner decides ot
 
 | # | Question | Recommended default |
 | --- | --- | --- |
-| Q1 | Require a second factor? You asked for User ID and password; the site will also guard institution access. | **Yes.** On the website, a passkey tap after the password at each sign-in (authenticator code as fallback); on the desktop, an authenticator code once per install. If you decline, sign-in is User ID and password only and every other protection stays. See [Security §5.3](security.md#53-second-factor). |
-| Q2 | Which provider: Plaid, or the non-Plaid option? | **Plaid Trial**, which reaches about twice as many of your institution logins as the non-Plaid option (about 7 of its 10 lifetime slots), with statement files or manual entry for the rest. **SimpleFIN Bridge** is the supported non-Plaid alternative: it works, but more months rely on downloads and it has no liability details. See [Institution data §3](aggregation.md#3-comparison-and-recommendation) and [ADR 0009](../decisions/0009-institution-data-provider.md). Confirm before slice S8. |
+| Q1 | Require a second factor? | **Decided 2026-09-27: yes, passkeys.** A passkey tap after the password on the website (authenticator code and recovery codes as fallbacks); on the desktop, an authenticator code once per install, then that install's device key. See [Security §5.3](security.md#53-second-factor). |
+| Q2 | Which provider: Plaid, or the non-Plaid option? | **Decided 2026-09-27: Plaid Trial**, with statement files or manual entry for institutions it can't reach. SimpleFIN Bridge stays documented as the fallback adapter. See [Institution data §3](aggregation.md#3-comparison-and-recommendation) and [ADR 0009](../decisions/0009-institution-data-provider.md). |
 | Q3 | Institution-specific questions (exact servicers, card products and logins) | Listed in the private coverage notes; they affect the provider plan, not the design. |
 | Q4 | How long may an untouched review stay open? | 14 days after its last change, never more than 45 days after it started. |
 | Q5 | Should budget lines such as savings funds default to **set-aside** in the summary? | No default by name. The owner marks set-aside lines once; the choice is remembered by line. |

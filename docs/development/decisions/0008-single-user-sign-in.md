@@ -1,6 +1,6 @@
 # ADR 0008 — Single-user sign-in with a key the server cannot use
 
-Status: accepted for v3, except item 4 (second factor), which is proposed until the owner confirms it (Product spec §10, Q1) · 2026-09-26. Supersedes the credential parts of [ADR 0007](0007-guarded-cloud-snapshots.md) and the multi-user proposal in [v3 ideas](../v3-ideas.md).
+Status: accepted for v3 · 2026-09-26; the owner confirmed the passkey second factor (item 4) on 2026-09-27. Supersedes the credential parts of [ADR 0007](0007-guarded-cloud-snapshots.md) and the multi-user proposal in [v3 ideas](../v3-ideas.md).
 
 ## Context
 
