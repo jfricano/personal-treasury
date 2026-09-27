@@ -117,7 +117,7 @@ export function DebtsPage() {
   return (
     <>
       <div className="page-head">
-        <h2>Interaccount debts</h2>
+        <h1>Interaccount Debts</h1>
         <span className="spacer" />
         <button className="btn primary" onClick={() => setNewDebt(true)}>
           New debt

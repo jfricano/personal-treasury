@@ -314,6 +314,29 @@ export async function createSyncServer({ token, dataDirectory, allowedOrigins = 
 }
 
 export async function startFromEnv(environment = process.env) {
+  if (environment.PT_AUTH_PEPPER) {
+    const { createV3Server } = await import('./v3.mjs');
+    const server = await createV3Server({
+      dataDirectory: environment.PT_SYNC_DATA_DIR,
+      staticDirectory: environment.PT_STATIC_DIR,
+      origin: environment.PT_PUBLIC_ORIGIN,
+      pepper: environment.PT_AUTH_PEPPER,
+      atRestKey: environment.PT_AT_REST_KEY,
+      deviceCookieKey: environment.PT_DEVICE_COOKIE_KEY,
+      logKey: environment.PT_LOG_KEY,
+      setupSecret: environment.PT_SETUP_SECRET,
+      legacyToken: environment.PT_SYNC_TOKEN,
+    });
+    await new Promise((resolve, reject) => {
+      server.once('error', reject);
+      server.listen(
+        Number(environment.PORT ?? environment.PT_SYNC_PORT ?? 8787),
+        environment.PT_SYNC_HOST ?? '127.0.0.1',
+        resolve,
+      );
+    });
+    return server;
+  }
   const server = await createSyncServer({
     token: environment.PT_SYNC_TOKEN,
     dataDirectory: environment.PT_SYNC_DATA_DIR,

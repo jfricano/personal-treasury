@@ -13,7 +13,7 @@ export default defineConfig({
   workers: 1,
   use: { baseURL: 'http://127.0.0.1:8787', channel: 'chrome', viewport: { width: 1440, height: 900 } },
   webServer: {
-    command: 'npm run build:private && node sync-server/server.mjs',
+    command: 'npx tsc -b && npx vite build --mode private-legacy && node sync-server/server.mjs',
     port: 8787,
     reuseExistingServer: false,
     timeout: 180_000,

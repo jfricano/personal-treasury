@@ -16,6 +16,7 @@ import type { AllocationOrigin, TransferState } from './types';
  * Budget lines are plans only: they never create journal entries or postings.
  */
 export interface BudgetLine {
+  lineKey?: string;
   id: string;
   categoryId: string;
   label: string;

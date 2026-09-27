@@ -3,12 +3,16 @@
 // The terms file is personal and gitignored, so this check runs on the owner's machine only
 // (for example before a push); on a clone without it, it reports that and exits cleanly.
 import { execFileSync } from 'node:child_process';
+import path from 'node:path';
 import { existsSync, readFileSync } from 'node:fs';
 
-const TERMS = 'reference/privacy-terms.txt';
+const common = execFileSync('git', ['rev-parse', '--path-format=absolute', '--git-common-dir'], {
+  encoding: 'utf8',
+}).trim();
+const TERMS = path.join(path.dirname(common), 'reference/privacy-terms.txt');
 if (!existsSync(TERMS)) {
   console.log(`privacy:check skipped: ${TERMS} not found (it is personal and never committed).`);
-  process.exit(0);
+  process.exit(process.env.PRIVACY_CHECK_OPTIONAL === '1' ? 0 : 1);
 }
 
 const terms = readFileSync(TERMS, 'utf8')

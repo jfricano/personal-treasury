@@ -37,7 +37,7 @@ const privateHtml = (): Plugin => ({
 // Tauri expects a fixed port and no clearing of the screen during `tauri dev`.
 export default defineConfig(({ mode }) => {
   const demo = mode === 'demo';
-  const privateWeb = mode === 'private';
+  const privateWeb = mode === 'private' || mode === 'private-legacy';
   return {
     plugins: [react(), ...(demo ? [demoHtml()] : []), ...(privateWeb ? [privateHtml()] : [])],
     base: demo ? './' : '/',
@@ -46,10 +46,10 @@ export default defineConfig(({ mode }) => {
     server: {
       port: 1420,
       strictPort: true,
-      ...(privateWeb ? { proxy: { '/api/sync': 'http://127.0.0.1:8787' } } : {}),
+      ...(privateWeb ? { proxy: { '/api': 'http://127.0.0.1:8787' } } : {}),
     },
     preview: demo ? { port: 4174, strictPort: true } : undefined,
-    envPrefix: ['VITE_', 'TAURI_ENV_'],
+    envPrefix: ['VITE_', 'TAURI_ENV_', 'PT_SERVICE_ORIGIN'],
     build: {
       target: 'safari15',
       outDir: demo ? 'dist-demo' : privateWeb ? 'dist-private' : 'dist',

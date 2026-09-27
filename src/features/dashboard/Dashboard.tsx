@@ -13,7 +13,7 @@ export function Dashboard() {
   if (t.isEmpty()) {
     return (
       <div className="empty">
-        <h3>Welcome to Personal Treasury</h3>
+        <h1>Welcome to Personal Treasury</h1>
         <p className="subtle">
           {t.storage.kind === 'session'
             ? 'All data stays in this browser tab.'
@@ -65,7 +65,7 @@ export function Dashboard() {
   return (
     <>
       <div className="page-head">
-        <h2>Dashboard</h2>
+        <h1>Dashboard</h1>
         {m && (
           <MonthSelect value={m.cycle.id} onChange={(id) => navigate({ page: 'dashboard', monthId: id })} />
         )}

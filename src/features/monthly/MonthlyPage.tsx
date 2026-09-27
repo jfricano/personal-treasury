@@ -52,7 +52,7 @@ export function MonthlyPage() {
     return (
       <>
         <div className="page-head">
-          <h2>Monthly reconciliation</h2>
+          <h1>Monthly Reconciliation</h1>
         </div>
         <div className="empty">
           <h3>No months yet</h3>
@@ -128,7 +128,7 @@ export function MonthlyPage() {
   return (
     <>
       <div className="page-head monthly-head">
-        <h2>Monthly reconciliation</h2>
+        <h1>Monthly Reconciliation</h1>
         <MonthSelect value={monthId} onChange={(id) => navigate({ page: 'monthly', monthId: id })} />
         <MonthStatusBadge status={r.status} closed={v.closed} />
         {monthBudget ? (

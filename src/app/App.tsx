@@ -1,4 +1,4 @@
-import { useEffect, useRef, useSyncExternalStore } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import type { Treasury } from '@/api/treasury';
 import { AppProvider, useApp, useTreasuryVersion, type AppExtras, type Page } from './context';
 import { Dashboard } from '@/features/dashboard/Dashboard';
@@ -9,6 +9,8 @@ import { HistoryPage } from '@/features/history/HistoryPage';
 import { AccountsPage } from '@/features/accounts/AccountsPage';
 import { ImportExportPage } from '@/features/importExport/ImportExportPage';
 import { SettingsPage } from '@/features/settings/SettingsPage';
+import { SpendingPage } from '@/features/spending/SpendingPage';
+import { ConnectionsPage } from '@/features/connections/ConnectionsPage';
 import type { CloudSyncSession } from '@/sync/session';
 
 function SyncNotice({ session }: { session: CloudSyncSession }) {
@@ -25,33 +27,60 @@ function SyncNotice({ session }: { session: CloudSyncSession }) {
   );
 }
 
-const NAV_GROUPS: { page: Page; label: string }[][] = [
-  [{ page: 'dashboard', label: 'Dashboard' }],
-  [
-    { page: 'budget', label: 'Budget and tax' },
-    { page: 'history', label: 'Budget History' },
-    { page: 'monthly', label: 'Monthly reconciliation' },
-  ],
-  [
-    { page: 'debts', label: 'Interaccount debts' },
-    { page: 'accounts', label: 'Accounts' },
-  ],
-  [
-    { page: 'import', label: 'Import and export' },
-    { page: 'settings', label: 'Settings' },
-  ],
+const NAV_GROUPS: { label: string; links: { page: Page; label: string }[] }[] = [
+  { label: '', links: [{ page: 'dashboard', label: 'Dashboard' }] },
+  {
+    label: 'Budgeting',
+    links: [
+      { page: 'budget', label: 'Budget and Tax' },
+      { page: 'analysis', label: 'Budget Analysis' },
+      { page: 'history', label: 'Budget History' },
+    ],
+  },
+  {
+    label: 'Treasury',
+    links: [
+      { page: 'monthly', label: 'Monthly Reconciliation' },
+      { page: 'debts', label: 'Interaccount Debts' },
+      { page: 'accounts', label: 'Accounts' },
+      { page: 'connections', label: 'Connected Accounts' },
+    ],
+  },
+  {
+    label: '',
+    links: [
+      { page: 'import', label: 'Import and Export' },
+      { page: 'settings', label: 'Settings' },
+    ],
+  },
 ];
 
 function Shell({ onLogout }: { onLogout?: () => void }) {
   const { route, navigate, treasury, toasts, dismissToast, toast, extras, syncSession } = useApp();
-  const navRef = useRef<HTMLElement>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLButtonElement>(null);
+  const currentLabel =
+    NAV_GROUPS.flatMap((g) => g.links).find((n) => n.page === route.page)?.label ?? 'Dashboard';
   useTreasuryVersion();
-
   useEffect(() => {
-    const nav = navRef.current;
-    if (!nav || window.matchMedia('(min-width: 761px)').matches) return;
-    nav.querySelector('[aria-current="page"]')?.scrollIntoView({ block: 'nearest', inline: 'center' });
-  }, [route.page]);
+    document.title = `${currentLabel} · Personal Treasury`;
+    setMenuOpen(false);
+    const heading = document.querySelector<HTMLElement>('main h1');
+    if (heading) {
+      heading.tabIndex = -1;
+      heading.focus({ preventScroll: true });
+    }
+  }, [route.page, currentLabel]);
+  useEffect(() => {
+    const close = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && menuOpen) {
+        setMenuOpen(false);
+        menuRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', close);
+    return () => window.removeEventListener('keydown', close);
+  }, [menuOpen]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -69,6 +98,10 @@ function Shell({ onLogout }: { onLogout?: () => void }) {
 
   const page = (() => {
     switch (route.page) {
+      case 'analysis':
+        return <SpendingPage />;
+      case 'connections':
+        return <ConnectionsPage />;
       case 'monthly':
         return <MonthlyPage />;
       case 'budget':
@@ -92,45 +125,51 @@ function Shell({ onLogout }: { onLogout?: () => void }) {
     <div className="shell">
       <aside className="rail">
         <div className="rail-title">
-          <h1>Personal Treasury</h1>
+          <div className="product-name">Personal Treasury</div>
           {onLogout && (
             <button className="mobile-logout" type="button" onClick={onLogout}>
-              Log out
+              Sign out
             </button>
           )}
         </div>
-        <nav aria-label="Main" ref={navRef}>
-          {NAV_GROUPS.flatMap((group, index) => [
-            ...(index ? [<span key={`divider-${index}`} className="nav-divider" aria-hidden="true" />] : []),
-            ...group.map((n) => (
-              <a
-                key={n.page}
-                href={`#/${n.page}`}
-                aria-current={route.page === n.page ? 'page' : undefined}
-                onClick={(e) => {
-                  e.preventDefault();
-                  navigate({
-                    page: n.page,
-                    monthId: n.page === 'monthly' || n.page === 'dashboard' ? route.monthId : null,
-                  });
-                }}
-              >
-                {n.label}
-              </a>
-            )),
-          ])}
+        <button
+          ref={menuRef}
+          className="mobile-menu"
+          aria-expanded={menuOpen}
+          aria-controls="main-navigation"
+          onClick={() => setMenuOpen(!menuOpen)}
+        >
+          Menu · {currentLabel}
+        </button>
+        <nav id="main-navigation" aria-label="Main" className={menuOpen ? 'is-open' : ''}>
+          {NAV_GROUPS.map((group, index) => (
+            <div key={index} className="nav-group">
+              {group.label && <span className="nav-section">{group.label}</span>}
+              {group.links.map((n) => (
+                <a
+                  key={n.page}
+                  href={`#/${n.page}`}
+                  aria-current={route.page === n.page ? 'page' : undefined}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setMenuOpen(false);
+                    navigate({
+                      page: n.page,
+                      monthId: n.page === 'monthly' || n.page === 'dashboard' ? route.monthId : null,
+                    });
+                  }}
+                >
+                  {n.label}
+                </a>
+              ))}
+            </div>
+          ))}
           {onLogout && (
-            <>
-              <span className="nav-divider logout-divider" aria-hidden="true" />
-              <button className="nav-logout" type="button" onClick={onLogout}>
-                Log out
-              </button>
-            </>
+            <button className="nav-logout" type="button" onClick={onLogout}>
+              Sign out
+            </button>
           )}
         </nav>
-        <span className="nav-hint" aria-hidden="true">
-          Swipe for more sections ↔
-        </span>
         <div className="foot">
           <button
             disabled={!treasury.undoLabel}

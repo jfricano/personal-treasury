@@ -343,6 +343,7 @@ export class BudgetService {
       const id = uuid();
       const line: BudgetLine = {
         id,
+        lineKey: uuid(),
         position: this.repos.nextLinePosition(versionId),
         ...l,
         fundingAccountId: l.fundingAccountId!,

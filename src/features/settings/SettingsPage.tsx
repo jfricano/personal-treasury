@@ -20,7 +20,7 @@ export function SettingsPage() {
   return (
     <>
       <div className="page-head">
-        <h2>Settings</h2>
+        <h1>Settings</h1>
       </div>
       <CloudPanel />
       <div className="grid-2">

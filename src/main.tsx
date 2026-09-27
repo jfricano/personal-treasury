@@ -2,7 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import wasmUrl from 'sql.js/dist/sql-wasm.wasm?url';
 import { Treasury } from '@/api/treasury';
-import { defaultStorage } from '@/db/storage';
+import { defaultStorage, isTauri } from '@/db/storage';
 import { App } from '@/app/App';
 import type { AppExtras } from '@/app/context';
 import '@/app/styles.css';
@@ -36,8 +36,17 @@ function switchProfile(name: string) {
 async function boot() {
   const root = createRoot(document.getElementById('root')!);
   try {
-    if (import.meta.env.MODE === 'private') {
+    if (import.meta.env.MODE === 'private-legacy') {
       const { PrivateBoot } = await import('@/sync/PrivateBoot');
+      root.render(
+        <StrictMode>
+          <PrivateBoot wasmUrl={wasmUrl} />
+        </StrictMode>,
+      );
+      return;
+    }
+    if (import.meta.env.MODE === 'private' || (isTauri() && import.meta.env.PT_SERVICE_ORIGIN)) {
+      const { PrivateBoot } = await import('@/security/PrivateBoot');
       root.render(
         <StrictMode>
           <PrivateBoot wasmUrl={wasmUrl} />

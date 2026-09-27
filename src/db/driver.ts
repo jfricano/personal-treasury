@@ -40,7 +40,7 @@ export class SqlJsDriver implements SqlDriver {
   }
 
   private configure() {
-    this.db.run('PRAGMA foreign_keys = ON;');
+    this.db.run('PRAGMA foreign_keys = ON; PRAGMA secure_delete = ON;');
   }
 
   get inTransaction() {

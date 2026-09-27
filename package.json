@@ -1,7 +1,7 @@
 {
   "name": "personal-treasury",
   "private": true,
-  "version": "0.2.2",
+  "version": "0.3.0-preview.1",
   "description": "Local-first personal treasury: budget-driven monthly cash allocation, transfer journal and interaccount debts.",
   "license": "MIT",
   "repository": {
@@ -31,13 +31,21 @@
     "tauri": "tauri",
     "db:check": "vitest run tests/integration/database.test.ts",
     "check": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run test:server && npm run build && npm run build:demo && npm run build:private",
-    "privacy:check": "node scripts/privacy-check.mjs"
+    "privacy:check": "node scripts/privacy-check.mjs",
+    "tauri:dev": "node scripts/desktop.mjs dev",
+    "desktop:build": "node scripts/desktop.mjs build",
+    "test:e2e:v3-private": "playwright test --config playwright.v3-private.config.ts",
+    "preview:private:fixture": "npm run build:private && node scripts/preview-private.mjs"
   },
   "dependencies": {
+    "@simplewebauthn/browser": "14.0.0",
+    "@simplewebauthn/server": "14.0.3",
     "@tauri-apps/api": "^2.11.1",
     "@tauri-apps/plugin-dialog": "^2.7.3",
     "@tauri-apps/plugin-fs": "^2.5.2",
     "decimal.js": "^10.6.0",
+    "hash-wasm": "4.12.0",
+    "lossless-json": "4.3.1",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "sql.js": "^1.14.2",

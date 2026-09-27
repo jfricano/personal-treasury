@@ -10,6 +10,10 @@ A local-first desktop and private web app for running a household's money as a s
 
 ![Monthly reconciliation in the demo](docs/images/demo-monthly.png)
 
+## v3 development preview
+
+This branch adds monthly spending reviews, report exports, connected-account metadata and a private authentication/encryption implementation. **It is a preview, not a production-ready v3 release.** See the [local walkthrough, validation and remaining release work](docs/development/v3/preview-status.md). The public demo link above still points to the existing deployment.
+
 ## New in v2.2
 
 - Use one treasury in the Mac app and a separate private website on a phone or computer. The public Pages demo still uses only fictional data.
