@@ -97,12 +97,12 @@ The treasury's **Monthly reconciliation** is unchanged, and remains the only thi
 ### 4.3 The monthly spending review
 
 1. On **Budget vs actual**, choose a month. The default is the most recent calendar month without a cleared report.
-2. **Gather** (provider accounts on the desktop app; files on any device). The app requests posted transactions for each in-scope account, from seven days before the month through seven days after it (or through today), plus current balances for accounts in the snapshot. File connections prompt for a file. Progress is shown per account. Anything that fails is listed with its reason and a next step: **Retry**, **Reconnect**, **Import file**, or **Waive**.
-3. **Coverage.** Each in-scope account is **Complete**, **Partial**, **Missing**, **Needs reconnect** or **Waived**. See [Spending review rules §4](spending-review-rules.md#4-coverage-and-completeness).
+2. **Gather** (provider accounts on the desktop app; files on any device). The app requests posted transactions for each in-scope account, from seven days before the month through today (at most 60 days after it), plus current balances for accounts in the snapshot. File connections prompt for a file. Progress is shown per account. Anything that fails is listed with its reason and a next step: **Retry**, **Reconnect**, **Import file**, or **Waive**.
+3. **Coverage.** Each in-scope account is **Complete**, **Partial**, **Missing**, **Needs reconnect**, **Error** or **Waived**. A newly linked account asks the owner once to confirm that its history covers the month. See [Spending review rules §4](spending-review-rules.md#4-coverage-and-completeness).
 4. **Classify.** The transaction table shows only the month's posted transactions. Neighboring-month and pending items are available for context but never counted. Rules pre-fill suggested dispositions; the owner accepts them in bulk or one at a time, splits a transaction across budget lines, pairs internal transfers, and marks exclusions with a reason. Every change autosaves.
 5. **Resolve.** A checklist names what prevents clearing: unclassified or unaccepted transactions, unbalanced splits, accounts not complete or waived, a missing budget version, or unresolved possible duplicates. Each item links to the affected row or account.
 6. **Summary.** Planned vs actual by budget line, category and funding treasury account, with income, unbudgeted spending, set-aside lines, transfers and exclusions, year-to-date figures, and the balance snapshot. This view is live while the owner classifies.
-7. **Clear.** The owner reviews the summary and confirms. The app writes the spending report in one transaction, records it in the audit log, offers to save any new rules, then deletes the review's transactions from every place they were held. The report appears under **Reports**.
+7. **Clear.** The owner reviews the summary and confirms, after a reminder that clearing deletes the month's transactions and that **Undo** restores the previous report but not the transactions. The app writes the spending report in one transaction, records it in the audit log, waits until it is saved (and uploaded, when signed in), offers to save any new rules, then deletes the review's transactions from every place they were held. The report appears under **Reports**.
 8. **Export** a cleared report to `.xlsx` at any time. During a review, the owner can also export a working copy that includes individual transactions; the app warns that this file contains transaction detail and saves it only where the owner chooses.
 
 ### 4.4 When data is incomplete
@@ -118,7 +118,7 @@ The treasury's **Monthly reconciliation** is unchanged, and remains the only thi
 - Starting a review for a month that already has a cleared report requires confirmation: *"September 2026 was cleared on 3 October. Re-running is rarely needed. The existing report stays until you clear the new review, which then replaces it."*
 - Clearing the new review replaces the old report atomically. The replacement is audited and can be undone in the same session.
 - **Delete report** requires confirmation, is audited, and can be undone in the same session. Deleting a report never deletes rules or connections.
-- If a later review finds posted transactions dated in an already-cleared month that were not in its report, it says how many and offers to re-run that month.
+- If a later review finds that the posted transactions dated in the final week of an already-cleared month no longer match that month's report (an institution posted something late), it says how many and how much, and offers to re-run that month. Earlier late postings are not detected.
 
 ### 4.6 Assets and liabilities
 
@@ -130,9 +130,9 @@ The treasury's **Monthly reconciliation** is unchanged, and remains the only thi
 ### 4.7 Signing out and locking
 
 - **Sign out** ends the session and removes the decrypted data from the page. **Sign out everywhere** ends every session. **Sign out and remove this device's data** also clears the device's encrypted copy.
-- The private website locks after 15 minutes without activity and signs out after 12 hours regardless of activity. Within those 12 hours, unlocking after idle takes one passkey tap; a reload needs no password. See [Security §5.4](security.md#54-sessions-idle-lock-and-sign-out).
+- The private website locks after 15 minutes without activity and signs out after 12 hours regardless of activity. Unlocking after idle, or after a reload, needs the password (a password manager fills it) but not the second factor again. A passkey tap may replace the password for unlocking if the optional passkey unlock is built (§10, Q7). See [Security §5.4](security.md#54-sessions-lock-and-sign-out).
 - The desktop app asks for the password at launch, and again after 15 minutes idle or whenever the Mac sleeps or the screen locks. It never stores the password.
-- **Security activity** in Settings lists recent sign-ins, failures, lockouts and security changes, and the sign-in screen shows the last successful sign-in.
+- **Security activity** in Settings lists recent sign-ins, failures, lockouts and security changes. After each sign-in, the app shows when and from which device the previous sign-in happened.
 
 ## 5. Functional requirements
 
@@ -178,7 +178,7 @@ IDs are referenced by the [implementation plan](implementation-plan.md) and the 
 | FR-REV-8 | Clearing is blocked, with a named and linked reason for each blocker, until [the clear conditions](spending-review-rules.md#8-clearing) hold. Must. |
 | FR-REV-9 | Clearing writes the report and deletes the review's temporary data everywhere; **Discard review** deletes it without a report. Must. |
 | FR-REV-10 | Keyboard entry: move between rows, accept a suggestion, choose a budget line by typing, split, and mark transfer or exclusion without the mouse. Must. |
-| FR-REV-11 | Possible duplicates (same account, date, amount and description from different sources) are flagged and must be resolved before clearing. Must. |
+| FR-REV-11 | Possible duplicates are flagged and must be resolved before clearing: the same account, date and amount from different sources, or the same account, date, amount and description from one provider under different IDs. Must. |
 | FR-REV-12 | Funding-mismatch hints: spending on lines funded by one treasury account but paid from an institution account linked to another. Hints only. Should. |
 | FR-REV-13 | Transfer-confirmation hints: a deposit into an institution account linked to a treasury account that matches that account's final transfer in the treasury month. Hints only; the owner marks **Done** on Monthly reconciliation. Should. |
 
@@ -225,7 +225,7 @@ IDs are referenced by the [implementation plan](implementation-plan.md) and the 
 
 ### Sign-in
 
-User ID and password, then a passkey prompt (or an authenticator or recovery code) on the website, or the authenticator code on a new desktop install. One generic failure message for every wrong combination. After repeated failures, a visible wait time. The last successful sign-in is shown. No "forgot password" link; a short line explains that a lost password means restoring an encrypted backup.
+User ID and password, then a passkey prompt (or an authenticator or recovery code) on the website, or the authenticator code on a new desktop install. One generic failure message for every wrong combination. After repeated failures, a visible wait time. No "forgot password" link; a short line explains that a lost password means restoring an encrypted backup.
 
 ### Connections
 
@@ -259,7 +259,7 @@ Change password; passkeys, authenticator and recovery codes; desktop device keys
 | Gather from providers | No | Yes, directly from the app | No | No |
 | File-based gather, classify, clear, export | Yes | Yes | Yes | Sample files only |
 | Temporary review storage | Encrypted in the browser and on the service | Encrypted on disk and on the service | Local file only (see [Security §5.7](security.md#57-temporary-review-storage)) | Tab session only |
-| Windows installer | n/a | Separate track (`codex/v3-windows-build`) | Same | n/a |
+| Windows installer | n/a | Separate track (see the [implementation plan](implementation-plan.md#4-other-tracks)) | Same | n/a |
 
 ## 8. What changes from v2.2
 
@@ -281,9 +281,11 @@ Each has a recommended default that the plan assumes unless the owner decides ot
 
 | # | Question | Recommended default |
 | --- | --- | --- |
-| Q1 | Require a second factor? You asked for User ID and password; the site will also guard institution access. | **Yes.** On the website, a passkey tap after the password (authenticator code as fallback); on the desktop, an authenticator code once per install. About one to three biometric taps a day. See [Security §5.3](security.md#53-second-factor). |
+| Q1 | Require a second factor? You asked for User ID and password; the site will also guard institution access. | **Yes.** On the website, a passkey tap after the password at each sign-in (authenticator code as fallback); on the desktop, an authenticator code once per install. If you decline, sign-in is User ID and password only and every other protection stays. See [Security §5.3](security.md#53-second-factor). |
 | Q2 | Which provider: Plaid, or the non-Plaid option? | **Plaid Trial**, which reaches about twice as many of your institution logins as the non-Plaid option (about 7 of its 10 lifetime slots), with statement files or manual entry for the rest. **SimpleFIN Bridge** is the supported non-Plaid alternative: it works, but more months rely on downloads and it has no liability details. See [Institution data §3](aggregation.md#3-comparison-and-recommendation) and [ADR 0009](../decisions/0009-institution-data-provider.md). Confirm before slice S8. |
-| Q3 | Which student-loan servicer? | Needed to confirm coverage. Recorded only in the private coverage notes. |
+| Q3 | Institution-specific questions (exact servicers, card products and logins) | Listed in the private coverage notes; they affect the provider plan, not the design. |
 | Q4 | How long may an untouched review stay open? | 14 days after its last change, never more than 45 days after it started. |
 | Q5 | Should budget lines such as savings funds default to **set-aside** in the summary? | No default by name. The owner marks set-aside lines once; the choice is remembered by line. |
 | Q6 | Custom domain for the private site? | **Required before passkeys are registered**, because passkeys are bound to the domain and would have to be re-registered if the Railway hostname changed. |
+| Q7 | Unlock after idle or reload with a passkey tap instead of the password? | **Not in v3.0.** The password (autofilled) unlocks; the passkey unlock in [Security §5.4](security.md#54-sessions-lock-and-sign-out) is an optional addition because it adds a stored, escrowed copy of the key. |
+| Q8 | Give the encrypted backup its own passphrase? | **Yes.** It is the recovery path for a lost account password, so it must not depend on that password. One more secret for the password manager. |

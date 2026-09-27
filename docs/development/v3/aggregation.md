@@ -146,17 +146,19 @@ interface GatherResult {
 - **Cap guard:** before any Production link, show "N of 10 Trial Items used", and block the link if an Item already exists for that institution. `TRIAL_CONNECTION_LIMIT` maps to `item_limit_reached` [P1, P11].
 - **Reconnect:** always **update mode** on the existing access token, never a fresh link [P12]. `/item/get` → `consent_expiration_time` drives a **Reconnect soon** notice a month ahead [P5].
 - **Gather:** `/transactions/get` for the window (stateless, so no sync cursor needs storing); `/accounts/get` for balances cached at the last update (no per-call charge); `/liabilities/get` for card and student-loan details; `/investments/holdings/get` only if account totals are missing [P14, P18, P19]. Respect Plaid's per-Item rate limits.
+- **Freshness:** the Item's last successful transactions update from `/item/get` is the source freshness time used for coverage ([Spending review rules §4](spending-review-rules.md#4-coverage-and-completeness)).
 - **Mapping:** negate `amount` (Plaid's positive is an outflow); `date` → posted date; `authorized_date` → authorized date; `name`, `merchant_name`, `personal_finance_category` → description fields; `pending` items and `pending_transaction_id` are context only; account `type`/`subtype` → `kindHint`.
 - **Remove:** `/item/remove`, then delete the vault entry. The owner is told that removing does not free a Trial slot.
 
 ### SimpleFIN adapter (Option B, or v3.x fallback)
 
-- **Link:** the owner pastes a Setup Token; the desktop app base64-decodes it to a claim URL, confirms it is HTTPS on the Bridge host, and `POST`s once. The Access URL goes straight into the vault; the Setup Token is discarded [S2, S4]. A claim that fails with HTTP 403 means the token may have been used by someone else.
-- **Gather:** `GET {access URL}/accounts?version=2&start-date=…&end-date=…&pending=1`, one request per gather, split into 90-day windows only if needed [S2, S4]. The app refuses more than 20 requests a day.
-- **Mapping:** `posted` (a timestamp) → posted date in the household time zone; `amount` (string, positive = deposit) → canonical as is; `transacted_at` → authorized date; `description`, `payee`, `memo` → description fields; `balance`, `available-balance`, `balance-date` → balance.
+- **Link:** the owner pastes a Setup Token; the desktop app base64-decodes it to a claim URL, confirms it is HTTPS on the Bridge host, and `POST`s once. The Access URL goes straight into the vault as **one credential record** that covers every institution the owner linked at SimpleFIN; each institution (`conn_id`) becomes a connection referring to that record. The Setup Token is discarded [S2, S4]. A claim that fails with HTTP 403 means the token may have been used by someone else.
+- **Gather:** `GET {access URL}/accounts?version=2&start-date=…&end-date=…&pending=1`, **one request per credential** per gather (covering all its institutions), split into 90-day windows only if needed [S2, S4]. The app refuses more than 20 requests a day.
+- **Freshness:** each account's `balance-date` is its source freshness time for coverage.
+- **Mapping:** `posted` (a timestamp) → posted date by the rule in [Spending review rules §2](spending-review-rules.md#2-months-and-dates) (a timestamp at exactly midnight UTC is a UTC date), proven with recorded fixtures that include month-end postings; `amount` (string, positive = deposit) → canonical as is; `transacted_at` → authorized date; `description`, `payee`, `memo` → description fields; `balance`, `available-balance`, `balance-date` → balance.
 - **IDs are not trusted alone:** content-based duplicate detection always runs (Spending review rules §3).
 - **Errors:** `errlist` entries map to `SourceErrorCode`; HTTP 403 means the credential was revoked.
-- **Remove:** delete the vault entry and tell the owner to disable the token on SimpleFIN's site, which the app cannot do.
+- **Remove:** removing one institution tells the owner to unlink it on SimpleFIN's site and stops gathering it; the credential record is deleted only with its last connection, and the owner is told to disable the token on SimpleFIN's site, which the app cannot do.
 
 ## 6. Statement files
 

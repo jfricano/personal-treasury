@@ -20,12 +20,14 @@ Unless stated otherwise, the fixture budget version for 2026-08 has take-home $6
 
 ## 3. Coverage (V3-AT3)
 
-1. A provider gather of Checking run on 2026-09-01 (settle delay 3 days) is **Partial: gathered too early**. The same gather run on 2026-09-04 is **Complete**.
+1. With a settle delay of 3 days, a provider gather of Checking whose source freshness (the provider's last update from the institution) is 2026-09-01 is **Partial: not fresh enough**. A later gather whose source freshness is 2026-09-04 is **Complete**, even though the institution posted nothing new.
 2. OFX files covering 2026-08-01 to 2026-08-15 and 2026-08-17 to 2026-08-31 make Savings **Partial: gap on 2026-08-16**. Adding a file covering 2026-08-16 makes it **Complete**.
 3. A CSV with a confirmed range covering the month whose last row is 2026-08-20 imports with a truncation warning and is **Complete**.
 4. Waiving Card with reason *no activity* succeeds when no posted August transactions were gathered for it, and is refused when one was.
 5. An account with **in spending review** off never appears in coverage and never blocks clearing.
 6. For a PDF-only card, entering three transactions and a closing balance with a confirmed statement period of 2026-08-01 to 2026-08-31 makes it **Complete**; the rows carry source `manual`.
+7. An account linked on 2026-08-12 whose provider does not state where its history starts is **Partial: confirm history** for August until the owner confirms; the confirmation appears on the report's source row.
+8. A gather run on 2026-10-15 for August requests posted transactions from 2026-07-25 through 2026-10-15, split into windows of at most 90 days for SimpleFIN.
 
 ## 4. Dispositions and splits (V3-AT4)
 
@@ -43,10 +45,11 @@ Unless stated otherwise, the fixture budget version for 2026-08 has take-home $6
 3. A pair whose inflow posts 2026-09-02 counts only its August side.
 4. Accepting, then unpairing, a transfer leaves all spending and income totals unchanged.
 5. Checking −$300.00 to the Student loan (out of review) classified to its budget line counts as spending on that line.
+6. A transfer whose `pairedId` points to a transaction that is not an accepted transfer paired back blocks clearing with **Unmatched transfer pair**.
 
 ## 6. Rules (V3-AT6)
 
-1. `SAFEWAY #1234 PLEASANTON` and `SAFEWAY #5678 DUBLIN` both normalize to match a rule `contains "SAFEWAY #"`.
+1. `HARBOR MARKET #1234 MAPLE VALE` and `HARBOR MARKET #5678 ELM RIDGE` both normalize to match a rule `contains "HARBOR MARKET #"`.
 2. With two matching rules, the one with the lower position wins.
 3. Rule suggestions are **suggested**, never accepted, until the owner accepts them. **Accept all suggestions** accepts every suggestion in the current filter in one undoable step.
 4. A rule pointing to a line key absent from the review's version suggests nothing and is shown as **Stale**.
@@ -58,9 +61,9 @@ Unless stated otherwise, the fixture budget version for 2026-08 has take-home $6
 2. Each clear condition in [Spending review rules §8](spending-review-rules.md#8-clearing), when violated alone, blocks clearing with its own named reason and a link to the affected row or account.
 3. The identity check: for a fixture month with every disposition kind and a split, Σ in-month amounts equals the sum of all disposition totals exactly; a fixture that bypasses validation to break it by $0.01 cannot be cleared.
 4. Starting a review for a cleared month asks for confirmation. Cancelling changes nothing. After confirming, the old report remains visible until the new review is cleared, then is replaced in one transaction.
-5. **Undo** after clearing restores the prior state (no report, or the replaced report).
+5. The clear confirmation says that **Undo** will not restore the transactions. **Undo** after clearing restores the prior report state (no report, or the replaced report); the review stays cleared and its temporary data stays deleted.
 6. Deleting a report asks for confirmation, is audited, and can be undone. Rules and connections are unchanged.
-7. A September gather that finds an August-dated posted transaction missing from August's cleared report shows a count and a **Re-run August** action, and no transaction details.
+7. August's cleared report records Checking's tail totals for 2026-08-25 to 2026-08-31. A September gather that finds one more posted transaction dated 2026-08-29 on Checking shows "1 transaction, $18.40" for August and a **Re-run August** action, with no transaction details. A late posting dated 2026-08-20 is not detected.
 
 ## 8. Report contents and export (V3-AT8)
 
@@ -71,8 +74,9 @@ Unless stated otherwise, the fixture budget version for 2026-08 has take-home $6
 5. Renaming the Groceries line or the HH account after clearing does not change the cleared report.
 6. A search of the report tables for every fixture transaction description, merchant and individual amount finds none.
 7. The `.xlsx` export contains the sheets in [Spending review rules §11](spending-review-rules.md#11-excel-export), its totals equal the app's to the cent, and it contains no transaction descriptions. The working-copy export shows a warning first and includes a Transactions sheet.
-8. JSON and encrypted backup and restore into a fresh profile reproduce every report, rule, line role, connection and institution account. Neither backup contains a provider credential, and restored provider connections show **Reconnect**.
+8. JSON and encrypted backup and restore into a fresh profile reproduce every report, rule, line role, connection and institution account. Neither backup contains a provider credential; restored provider connections use the vault on the service when it still holds their credentials, and otherwise show **Reconnect**.
 9. A transaction description of `=HYPERLINK("http://x")` appears in the working-copy export as text, not as a formula.
+10. A v0.2.2 JSON backup fixture (schema version 3) restores into v3: the budget lines receive line keys, lines with the same category and label in consecutive versions share a key, and two such lines within one version get different keys.
 
 ## 9. Balance snapshot (V3-AT9)
 
@@ -82,16 +86,19 @@ Unless stated otherwise, the fixture budget version for 2026-08 has take-home $6
 4. Card owing $812.40 is a liability of $812.40; a card with a $15.00 credit balance shows a credit, not a negative liability.
 5. Net worth equals assets minus liabilities to the cent, and the change from the previous report lists new and missing accounts.
 6. Interaccount debts do not appear in the snapshot.
+7. Clearing is blocked while a snapshot account has no balance, until the owner gathers one, enters one, or marks it **unavailable**; an unavailable account is listed and left out of the totals.
 
 ## 10. Temporary storage and no persistence (V3-AT10)
 
-1. Classify ten transactions, force-close the tab without warning, reopen and sign in: all ten classifications are present.
+1. Classify ten transactions, wait for **Saved**, force-close the tab without warning, reopen and sign in: all ten classifications are present.
 2. Classify on the private website, then sign in on the desktop app: the review resumes at the same state.
-3. After clearing: the local review store, the service's review storage, the synced SQLite file, every snapshot uploaded during the review (decrypted in the test), the audit log, a JSON backup and the service logs contain none of the fixture descriptions or amounts.
+3. After clearing: the local review store, the service's review storage, the synced SQLite file, every snapshot uploaded during the review (decrypted in the test), the audit log, a JSON backup and the service logs contain none of the canary descriptions or amounts. No rule is created from a canary description.
 4. With the service offline at clearing time, the review shows **Cleared; temporary data awaiting deletion**; when the service returns, the data is deleted and the state clears.
 5. A device holding a stale local copy deletes it after syncing the tombstone.
 6. With a fixed clock: a review untouched for 7 days shows a warning; at 14 days without a change its data is deleted on the device and the service, and the index records **expired**. A review changed every few days still expires 45 days after it started, with a warning 3 days before.
-7. **Discard review** deletes the temporary data everywhere and writes no report.
+7. **Discard review** asks for confirmation, says it cannot be undone, then deletes the temporary data everywhere and writes no report.
+8. Clearing, then **Undo**, then restoring a JSON backup taken before the review, then choosing **Keep device copy** in a sync conflict, leaves the review index and tombstones unchanged, and no device keeps or resurrects the cleared review's data.
+9. Within a review, **Cmd-Z** undoes the latest classification; after **Accept all suggestions**, one **Cmd-Z** undoes the whole bulk acceptance. Outside the review views, **Cmd-Z** undoes the latest database change.
 
 ## 11. Treasury and budget isolation (V3-AT11)
 
@@ -102,7 +109,7 @@ For a full gather-classify-clear cycle, the `journal_entries`, `journal_postings
 Every requirement in [Security §7](security.md#7-security-requirements) has a named automated test or a recorded manual check. At minimum:
 
 1. The server never receives the password: requests captured during setup, sign-in and password change contain only the derived authentication key and ciphertext.
-2. A wrong password, an unknown User ID and a wrong second-factor code produce the same response and comparable timing.
+2. A wrong password and an unknown User ID produce the same response and comparable timing. A wrong second-factor code, reachable only after a correct password, produces a generic second-factor failure.
 3. Repeated failures slow and then temporarily block sign-in as specified, and a correct sign-in after the wait succeeds.
 4. Changing the password keeps all history readable, ends other sessions, and does not re-upload snapshots.
 5. A stolen copy of the service's data directory plus the environment variables cannot decrypt any snapshot or review.
@@ -117,7 +124,7 @@ Every requirement in [Security §7](security.md#7-security-requirements) has a n
 
 Automate with Playwright in the demo (files) and the private build against a local service, and record a native pass for the desktop-only steps:
 
-- Sign in with password and a virtual passkey authenticator, reload without the password, lock after idle, unlock with the passkey, sign out.
+- In Chromium with a virtual passkey authenticator: sign in with the password and a passkey, reload and unlock with the password, lock after idle and unlock with the password, sign out. (Safari and iOS passkeys are checked by hand.)
 - Add a file connection → import statements → classify with rules, a split and a pair → waive an account → clear → export `.xlsx`.
 - Provider path (desktop, Plaid Sandbox): add a connection through Hosted Link → gather → force a login-required error → **Reconnect** in update mode → clear. If the owner chooses the non-Plaid option, the same path uses SimpleFIN's public demo token.
 - Re-run a cleared month with confirmation → clear → the report is replaced.
