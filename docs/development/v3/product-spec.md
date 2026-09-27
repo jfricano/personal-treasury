@@ -234,8 +234,8 @@ Decided 2026-09-27 from a design review (information architecture, accessibility
 Dashboard
 BUDGETING
   Budget and Tax
-  Budget History
   Budget Analysis
+  Budget History
 TREASURY
   Monthly Reconciliation
   Interaccount Debts
@@ -249,7 +249,7 @@ Settings
 - **Static section labels, not collapsible or drop-down menus.** About ten items fit a 13-inch window without scrolling. Collapsing would add a click to pages used every month, hide the new pages, and need saved state; fly-outs depend on hover and fail on touch and keyboard. Revisit if the menu grows past about 15 items, a section passes 6 items, or pages gain a second level; even then, collapse only a rarely used section and keep it open by default.
 - **Labels:** Title Case for navigation labels, page titles and the window title, with each label identical to its page title ("and" and "of" stay lowercase). Everything inside a page stays sentence case.
 - **Accounts vs Connected Accounts:** the plain noun means the app's own buckets; "Connected" marks real outside accounts. Each page's subtitle says so: *Your treasury buckets, such as HH and PETC* and *Bank, card, brokerage and loan accounts, each mapped to a treasury account*. If the two are still confused in use, rename the new page, not the buckets.
-- **Monthly Reconciliation** leads Treasury; it was left out of the owner's list by oversight and stays. A design reviewer suggested placing Budget Analysis above Budget History (plan, compare, archive); the owner's order is kept.
+- **Monthly Reconciliation** leads Treasury; it was left out of the owner's list by oversight and stays. Budget Analysis sits above Budget History (plan, compare, archive), as a design reviewer recommended and the owner approved.
 - **Style:** a section label is plain text in 11 px, weight 600, uppercase with 0.06 em letter-spacing, colour #9fb2d3 (at least 4.5:1 on navy), with 14 px above and 4 px below; it replaces the divider above its section. One divider remains above Import and Export. The active item keeps its left bar, light fill, white text and bold weight.
 - **Accessibility:** one `nav` landmark named "Main"; each section is a list labelled by its visible label, which is plain text, never a heading or button, and never takes focus; Tab visits the links in visual order; exactly one link has `aria-current="page"`; the active state is not shown by colour alone; the rail has its own focus ring (2 px #9fc0ef, inset 2 px) with at least 3:1 contrast on the navy and on the active item; every link is at least 24 × 24 px; labels wrap as a safety net and are never truncated. The rail's product name is not an `h1`, so each page has one `h1`.
 - **Phone (under 760 px):** the top bar shows the product name and a **Menu** button whose visible text is the current page (for example "Interaccount Debts"), with `aria-expanded` and `aria-controls`. It opens the same grouped list inline (no overlay or focus trap) with 44 px rows. Escape closes it and returns focus to the button; choosing a page closes it and moves focus to the page's `h1`. It always starts closed, and its state is not saved.

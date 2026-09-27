@@ -6,7 +6,7 @@ Unless stated otherwise, the fixture budget version for 2026-08 has take-home $6
 
 ## 1. Navigation (V3-AT1)
 
-1. The rail lists, in order: Dashboard; **Budgeting**: Budget and Tax, Budget History, Budget Analysis; **Treasury**: Monthly Reconciliation, Interaccount Debts, Accounts, Connected Accounts; then Import and Export, Settings. Every existing route and deep link still works.
+1. The rail lists, in order: Dashboard; **Budgeting**: Budget and Tax, Budget Analysis, Budget History; **Treasury**: Monthly Reconciliation, Interaccount Debts, Accounts, Connected Accounts; then Import and Export, Settings. Every existing route and deep link still works.
 2. Each label is identical to its page's title and window title. No navigation link contains a badge.
 3. At 1280 px with default text size, every label fits on one line. With text enlarged to 200%, labels wrap and none is truncated.
 4. Section labels are not focusable and are not headings; Tab visits the ten links in visual order; exactly one link has `aria-current="page"`; the focus ring has at least 3:1 contrast on the rail and on the active item.
