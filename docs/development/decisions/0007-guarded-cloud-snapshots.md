@@ -1,6 +1,6 @@
 # ADR 0007 — Guarded encrypted cloud snapshots for v2.2
 
-Status: accepted · 2026-09-25
+Status: accepted · 2026-09-25. V3 replaces its credential model and adds temporary reviews: see [ADR 0008](0008-single-user-sign-in.md) and [ADR 0010](0010-temporary-spending-review.md).
 
 ## Context
 

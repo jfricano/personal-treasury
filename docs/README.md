@@ -22,7 +22,8 @@
 | [Acceptance tests](development/acceptance-tests.md) | See the behaviors every release must pass and the release gate. |
 | [Testing](development/testing.md) | See what each test suite covers and how to run it. |
 | [V2 plan and builder handoff](development/v2-plan.md) | Review confirmed issues, design direction, exhaustive test scope, release gates, and the next-phase prompt. |
-| [V3 ideas](development/v3-ideas.md) | Collect possible future improvements, starting with a Windows desktop installer. |
+| [V3 specification and plan](development/v3/README.md) | Build v3: single-user sign-in, Budget Analysis from institution data, assets and liabilities, and the implementation plan. |
+| [V3 ideas](development/v3-ideas.md) | Collect possible future improvements. Its multi-user proposal is abandoned. |
 | [v2.2 implementation report](development/v2.2-release-report.md) | Review cloud sync scope, test evidence, live deployment status, and remaining real-device checks. |
 | [Distribution plan](distribution-plan.md) | Track the Mac release, GitHub publication, promotion and directory submissions. |
 | [Launch post](launch-post.md) | Copy a short, example-led announcement once the Mac release is live. |
