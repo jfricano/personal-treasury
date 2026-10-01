@@ -1,10 +1,28 @@
+import { VaultOutbox } from './vaultOutbox';
+import { ReviewSyncBackend, type ReviewSyncStatus, type ConflictChoice } from './reviewSync';
+import { writeOfflineAccess } from './offline';
 import { snapshotPlaintext } from './migration';
 import type { Treasury } from '@/api/treasury';
 import { IndexedDbStorage, isTauri } from '@/db/storage';
 import { localReviewBackend } from '@/review-store/local';
 import type { ReviewBackend } from '@/review-store';
 import { sha256 } from '@/import/statements';
-import { decryptObject, encryptObject, type Envelope } from './crypto';
+import {
+  decryptObject,
+  encryptObject,
+  derivePasswordKeys,
+  validatePassword,
+  DEFAULT_KDF,
+  base64,
+  unbase64,
+  random,
+  open,
+  wrapDataKey,
+  type Sealed,
+  type KdfParameters,
+  type Envelope,
+} from './crypto';
+import { readDeviceKey } from './device';
 export class SecurityError extends Error {
   constructor(
     readonly status: number,
@@ -15,6 +33,16 @@ export class SecurityError extends Error {
   }
 }
 export class SecurityClient {
+  private invalidation = new Set<(reason: string) => void>();
+  onInvalidated(fn: (reason: string) => void) {
+    this.invalidation.add(fn);
+    return () => {
+      this.invalidation.delete(fn);
+    };
+  }
+  clearToken() {
+    this.token = undefined;
+  }
   constructor(
     readonly baseUrl = '',
     private token?: string,
@@ -41,12 +69,17 @@ export class SecurityClient {
       ...(value === undefined ? {} : { body: JSON.stringify(value) }),
     });
     const body = await response.json();
+    if (response.status === 401 && ['expired', 'locked', 'device_revoked'].includes(body.error)) {
+      if (body.error !== 'locked') this.clearToken();
+      for (const listener of this.invalidation) listener(body.error);
+    }
     if (!response.ok)
       throw new SecurityError(
         response.status,
         body.error ?? 'request_failed',
         Number(response.headers.get('Retry-After') ?? 0),
       );
+    if (path === '/api/auth/step-up' && typeof body.token === 'string') this.setToken(body.token);
     return body as T;
   }
 }
@@ -55,6 +88,20 @@ interface SyncState {
   hash: string;
 }
 export class V3Session {
+  private reviewSync: ReviewSyncBackend | undefined;
+  private idleReviewStatus: ReviewSyncStatus = {
+    phase: 'checking',
+    message: 'Reviews not opened yet',
+    conflicts: [],
+  };
+  getReviewStatus = () => this.reviewSync?.status ?? this.idleReviewStatus;
+  async resolveReviewConflict(ref: string, choice: ConflictChoice) {
+    if (!this.reviewSync) throw new Error('Open Budget Analysis first.');
+    await this.reviewSync.resolve(ref, choice);
+  }
+  async flushReviews() {
+    await this.reviewSync?.flush();
+  }
   private treasury: Treasury | null = null;
   private base: SyncState | null = null;
   private highest = 0;
@@ -64,12 +111,25 @@ export class V3Session {
   private closed = false;
   private listeners = new Set<() => void>();
   private lastUpload = 0;
+  private vaultQueue: Promise<void> = Promise.resolve();
+  private vaultOperation<T>(task: () => Promise<T>): Promise<T> {
+    const next = this.vaultQueue.then(() => {
+      if (this.closed) throw new Error('Sign in again to use the provider vault.');
+      return task();
+    });
+    this.vaultQueue = next.then(
+      () => undefined,
+      () => undefined,
+    );
+    return next;
+  }
   status = { phase: 'checking', revision: 0, message: 'Checking encrypted history' };
   constructor(
     readonly client: SecurityClient,
     private key: CryptoKey,
     readonly id: string,
     readonly kid: string,
+    readonly offline = false,
   ) {}
   subscribe = (fn: () => void) => {
     this.listeners.add(fn);
@@ -108,6 +168,10 @@ export class V3Session {
       this.base = { revision: b.revision, hash: b.hash };
       this.highest = b.highest;
     }
+    if (this.offline) {
+      this.statusChanged('offline', 'Unlocked offline. Sign in online to sync.');
+      return;
+    }
     await this.sync();
     this.stop = t.subscribe(() => {
       if (this.closed || this.status.phase === 'conflict' || this.timer) return;
@@ -121,6 +185,7 @@ export class V3Session {
     });
   }
   async sync() {
+    if (this.offline) throw new Error('Sign in online before syncing.');
     if (this.running) return this.running;
     if (this.closed) return;
     this.running = this.reconcile()
@@ -228,170 +293,128 @@ export class V3Session {
     this.closed = true;
     this.stop?.();
     if (this.timer) clearTimeout(this.timer);
+    this.reviewSync?.close();
     this.listeners.clear();
     this.treasury = null;
+    this.key = null as unknown as CryptoKey;
+  }
+  async stepUpDesktop(password: string) {
+    if (this.offline) throw new Error('Sign in online for sensitive changes.');
+    if (!isTauri()) throw new Error('Use the desktop app for device verification.');
+    const device = await readDeviceKey(this.client.baseUrl);
+    if (!device) throw new Error('Sign in again to register this device.');
+    const pre = await this.client.request<{ salt: string; params: KdfParameters }>(
+      '/api/auth/prelogin',
+      'POST',
+      { userId: this.id },
+    );
+    const { authKey } = await derivePasswordKeys(password, pre.salt, pre.params);
+    const { challenge } = await this.client.request<{ challenge: string }>(
+      '/api/auth/step-up/device',
+      'POST',
+      { userId: this.id, authKey },
+    );
+    const signature = base64(
+      new Uint8Array(
+        await crypto.subtle.sign(
+          { name: 'ECDSA', hash: 'SHA-256' },
+          device.privateKey,
+          new Uint8Array(unbase64(challenge)),
+        ),
+      ),
+    );
+    await this.client.request('/api/auth/step-up', 'POST', {
+      method: 'device',
+      deviceId: device.id,
+      signature,
+    });
+  }
+  async changePassword(current: string, next: string) {
+    if (!isTauri()) throw new Error('Change your password in the desktop app.');
+    await validatePassword(next, this.id);
+    if (current.normalize('NFKC') === next.normalize('NFKC')) throw new Error('Choose a different password.');
+    await this.flush();
+    await this.stepUpDesktop(current);
+    const pre = await this.client.request<{ salt: string; params: KdfParameters }>(
+      '/api/auth/prelogin',
+      'POST',
+      { userId: this.id },
+    );
+    const old = await derivePasswordKeys(current, pre.salt, pre.params);
+    const value = await this.client.request<{ wrapped: Sealed; kid: string }>(
+      '/api/auth/password/key',
+      'POST',
+      { userId: this.id, authKey: old.authKey },
+    );
+    const raw = await open(old.wrapKey, value.wrapped, `pt/v3/dek|${this.id}|${value.kid}`);
+    try {
+      const salt = base64(random()),
+        keys = await derivePasswordKeys(next, salt, DEFAULT_KDF),
+        wrapped = await wrapDataKey(keys.wrapKey, raw, this.id, value.kid);
+      await this.client.request('/api/auth/password', 'POST', {
+        userId: this.id,
+        currentAuthKey: old.authKey,
+        authKey: keys.authKey,
+        salt,
+        params: DEFAULT_KDF,
+        kid: value.kid,
+        wrapped,
+      });
+      try {
+        await writeOfflineAccess({
+          v: 1,
+          origin: this.client.baseUrl,
+          userId: this.id,
+          kid: value.kid,
+          salt,
+          params: DEFAULT_KDF,
+          wrapped,
+        });
+      } catch {
+        throw new Error(
+          'Password changed on the service, but offline access could not be updated. Sign in online again to refresh it.',
+        );
+      }
+    } finally {
+      raw.fill(0);
+    }
   }
   async readVault(): Promise<{ revision: number; vault: import('@/sources/plaid').ProviderVault }> {
-    const value = await this.client.request<{ revision: number; envelope?: Envelope }>('/api/vault');
-    return {
-      revision: value.revision,
-      vault: value.envelope
-        ? JSON.parse(
-            new TextDecoder().decode(
-              await decryptObject(this.key, value.envelope, {
-                purpose: 'vault',
-                ref: 'credentials',
-                rev: value.revision,
-              }),
-            ),
-          )
-        : {},
-    };
+    if (this.offline) throw new Error('Sign in online to use provider connections.');
+    return this.vaultOperation(() =>
+      new VaultOutbox(
+        this.baselineStorage,
+        this.client,
+        this.key,
+        `${this.client.baseUrl}:${this.id}`,
+        this.kid,
+      ).read(),
+    );
   }
   async writeVault(vault: import('@/sources/plaid').ProviderVault, revision: number) {
-    const envelope = await encryptObject(this.key, new TextEncoder().encode(JSON.stringify(vault)), {
-      purpose: 'vault',
-      ref: 'credentials',
-      rev: revision + 1,
-      kid: this.kid,
-    });
-    await this.client.request('/api/vault', 'PUT', { envelope }, revision);
+    if (this.offline) throw new Error('Sign in online to use provider connections.');
+    await this.vaultOperation(() =>
+      new VaultOutbox(
+        this.baselineStorage,
+        this.client,
+        this.key,
+        `${this.client.baseUrl}:${this.id}`,
+        this.kid,
+      ).write(vault, revision),
+    );
   }
   reviewBackend(profile: string): ReviewBackend {
-    const local = localReviewBackend(`v3:${this.id}:${profile}`, isTauri() ? 'tauri' : 'indexeddb'),
-      revisions = new Map<string, number>(),
-      uploaded = new Map<string, string>();
-    type State = {
-      version: 1;
-      index: {
-        ref: string;
-        month: string;
-        state: string;
-        createdAt: string;
-        updatedAt: string;
-        expiresAt: string;
-      }[];
-      reviews: Record<string, unknown>;
-    };
-    const localSave = async (s: State) => {
-      const e = await encryptObject(this.key, new TextEncoder().encode(JSON.stringify(s)), {
-        purpose: 'review-local',
-        ref: this.id,
-        rev: 1,
-        kid: this.kid,
-      });
-      await local.save(JSON.stringify(e));
-    };
-    return {
-      load: async () => {
-        let state: State = { version: 1, index: [], reviews: {} };
-        const raw = await local.load();
-        if (raw) {
-          const e = JSON.parse(raw);
-          state = JSON.parse(
-            new TextDecoder().decode(
-              await decryptObject(this.key, e, { purpose: 'review-local', ref: this.id, rev: 1 }),
-            ),
-          );
-        }
-        const remote = await this.client.request<{
-          reviews: {
-            ref: string;
-            revision: number;
-            createdAt: string;
-            updatedAt: string;
-            expiresAt: string;
-            header: Envelope;
-          }[];
-          tombstones: string[];
-        }>('/api/review');
-        for (const ref of remote.tombstones) {
-          delete state.reviews[ref];
-          const e = state.index.find((e) => e.ref === ref);
-          if (e) e.state = 'cleared';
-        }
-        for (const r of remote.reviews) {
-          const prior = state.index.find((e) => e.ref === r.ref);
-          if (prior && ['cleared', 'discarded', 'expired'].includes(prior.state)) {
-            await this.client.request(`/api/review/${r.ref}`, 'DELETE', {}, r.revision);
-            delete state.reviews[r.ref];
-            continue;
-          }
-          const response = await this.client.request<{ envelope: Envelope }>(`/api/review/${r.ref}`);
-          const value = JSON.parse(
-            new TextDecoder().decode(
-              await decryptObject(this.key, response.envelope, {
-                purpose: 'review',
-                ref: r.ref,
-                rev: r.revision,
-              }),
-            ),
-          );
-          if (prior && prior.updatedAt > r.updatedAt && state.reviews[r.ref])
-            throw new Error(
-              'This review changed on both devices. Keep this browser open and resolve the review conflict before continuing.',
-            );
-          state.reviews[r.ref] = value;
-          const header = JSON.parse(
-            new TextDecoder().decode(
-              await decryptObject(this.key, r.header, {
-                purpose: 'review-header',
-                ref: r.ref,
-                rev: r.revision,
-              }),
-            ),
-          );
-          state.index = state.index.filter((e) => e.ref !== r.ref);
-          state.index.push({ ...r, ...header });
-          revisions.set(r.ref, r.revision);
-          uploaded.set(r.ref, JSON.stringify(value));
-        }
-        await localSave(state);
-        return JSON.stringify(state);
-      },
-      save: async (raw) => {
-        const state = JSON.parse(raw) as State;
-        await localSave(state);
-        for (const entry of state.index) {
-          const revision = revisions.get(entry.ref) ?? 0;
-          if (!['open', 'awaiting_upload'].includes(entry.state)) {
-            if (revision) {
-              await this.client.request(`/api/review/${entry.ref}`, 'DELETE', {}, revision);
-              revisions.delete(entry.ref);
-              uploaded.delete(entry.ref);
-            }
-            continue;
-          }
-          const value = state.reviews[entry.ref];
-          if (!value || uploaded.get(entry.ref) === JSON.stringify(value)) continue;
-          const remote = await this.client.request<{
-            reviews: { ref: string; revision: number }[];
-            tombstones: string[];
-          }>('/api/review');
-          if (remote.tombstones.includes(entry.ref)) {
-            delete state.reviews[entry.ref];
-            entry.state = 'cleared';
-            await localSave(state);
-            throw new Error('This review was deleted on another device. Reload to remove its local copy.');
-          }
-          const next = revision + 1;
-          const envelope = await encryptObject(this.key, new TextEncoder().encode(JSON.stringify(value)), {
-              purpose: 'review',
-              ref: entry.ref,
-              rev: next,
-              kid: this.kid,
-            }),
-            header = await encryptObject(this.key, new TextEncoder().encode(JSON.stringify(entry)), {
-              purpose: 'review-header',
-              ref: entry.ref,
-              rev: next,
-              kid: this.kid,
-            });
-          await this.client.request(`/api/review/${entry.ref}`, 'PUT', { envelope, header }, revision);
-          revisions.set(entry.ref, next);
-          uploaded.set(entry.ref, JSON.stringify(value));
-        }
-      },
-    };
+    const local = localReviewBackend(`v3:${this.id}:${profile}`, isTauri() ? 'tauri' : 'indexeddb');
+    this.reviewSync = new ReviewSyncBackend(
+      local,
+      this.client,
+      this.key,
+      this.id,
+      this.kid,
+      () => this.listeners.forEach((fn) => fn()),
+      30000,
+      this.offline,
+    );
+    return this.reviewSync;
   }
 }

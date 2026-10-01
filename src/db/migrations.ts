@@ -1,3 +1,4 @@
+import { normalizeSpendingColumns } from './spendingColumns';
 import type { SqlDriver } from './driver';
 
 /**
@@ -318,6 +319,18 @@ CREATE TABLE spending_report_sources (month TEXT NOT NULL REFERENCES spending_re
 CREATE TABLE balance_snapshots (month TEXT NOT NULL REFERENCES spending_reports(month) ON DELETE CASCADE, position INTEGER NOT NULL, data TEXT NOT NULL, PRIMARY KEY(month,position));
 `,
   },
+  {
+    version: 5,
+    name: 'Dedicated spending aggregate columns',
+    sql: `
+CREATE TABLE spending_source_periods (
+  month TEXT NOT NULL, source_position INTEGER NOT NULL, position INTEGER NOT NULL,
+  start_date TEXT NOT NULL, end_date TEXT NOT NULL,
+  PRIMARY KEY(month, source_position, position),
+  FOREIGN KEY(month, source_position) REFERENCES spending_report_sources(month, position) ON DELETE CASCADE
+);
+`,
+  },
 ];
 
 export const SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version;
@@ -356,6 +369,7 @@ export function migrate(db: SqlDriver, target = SCHEMA_VERSION): { from: number;
           CREATE TRIGGER budget_line_key_insert BEFORE INSERT ON budget_lines WHEN NEW.line_key = '' BEGIN SELECT RAISE(ABORT,'line_key required'); END;
           CREATE TRIGGER budget_line_key_update BEFORE UPDATE ON budget_lines WHEN NEW.line_key = '' BEGIN SELECT RAISE(ABORT,'line_key required'); END;`);
       }
+      if (m.version === 5) normalizeSpendingColumns(db);
       db.exec(`PRAGMA user_version = ${m.version}`);
     });
   }

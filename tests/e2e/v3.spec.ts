@@ -76,3 +76,27 @@ test('demo reset discards ephemeral review details and database undo does not re
     'Harbor Market',
   );
 });
+
+test('optional liability details survive reload; working exports warn before saving transaction details', async ({
+  page,
+}) => {
+  await page.getByRole('button', { name: 'Try a sample review' }).click();
+  await page.getByRole('tab', { name: 'Assets and liabilities', exact: true }).click();
+  await page.getByText('Statement and loan details', { exact: true }).click();
+  await page.getByLabel('APR (%) for Harper Card', { exact: true }).fill('19.1234');
+  await page.getByLabel('APR (%) for Harper Card', { exact: true }).press('Enter');
+  await page.getByLabel('Next due date for Harper Card', { exact: true }).fill('2026-09-15');
+  await page.getByLabel('Next due date for Harper Card', { exact: true }).press('Enter');
+  await page.reload();
+  await page.getByRole('button', { name: /2026-08/ }).click();
+  await page.getByRole('tab', { name: 'Assets and liabilities', exact: true }).click();
+  await page.getByText('Statement and loan details', { exact: true }).click();
+  await expect(page.getByLabel('APR (%) for Harper Card', { exact: true })).toHaveValue('19.1234');
+  await expect(page.getByLabel('Next due date for Harper Card', { exact: true })).toHaveValue('2026-09-15');
+  await page.getByRole('button', { name: 'Export working copy', exact: true }).click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog).toContainText('individual transaction descriptions');
+  const download = page.waitForEvent('download');
+  await dialog.getByRole('button', { name: /Export/ }).click();
+  expect((await download).suggestedFilename()).toContain('2026-08');
+});

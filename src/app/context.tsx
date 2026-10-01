@@ -88,6 +88,7 @@ function toHash(r: Route): string {
 export interface AppExtras {
   security?: import('@/security/client').V3Session;
   onLock?: () => void;
+  onReconnect?: () => void;
   /** Shown above every page. */
   banner?: ReactNode;
   /** A ready-made workbook offered on Import and export. */

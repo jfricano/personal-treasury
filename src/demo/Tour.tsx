@@ -89,6 +89,28 @@ const STEPS: Step[] = [
     ),
   },
   {
+    title: 'Compare the plan with spending',
+    page: 'analysis',
+    body: (
+      <>
+        Budget Analysis gathers statements into a temporary monthly review. Classify, split and pair
+        transactions, then clear the month to keep an aggregate report and delete the details. Try a fictional
+        sample review here.
+      </>
+    ),
+  },
+  {
+    title: 'Real accounts and statement files',
+    page: 'connections',
+    body: (
+      <>
+        Connected Accounts keeps bank and card accounts separate from treasury buckets. Import statement files
+        in the demo. The signed-in desktop app can connect through Plaid; the public demo never contacts a
+        provider.
+      </>
+    ),
+  },
+  {
     title: 'Your turn',
     target: 'section[aria-label="Demo"]',
     body: (

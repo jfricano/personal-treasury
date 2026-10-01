@@ -1,3 +1,4 @@
+import { isTauri } from '@/db/storage';
 import { plaidRequest } from '@/sources/plaid';
 import { ProviderPanel } from './ProviderPanel';
 import { useState } from 'react';
@@ -96,7 +97,7 @@ export function ConnectionsPage() {
                   )
                     try {
                       if (c.provider === 'plaid') {
-                        if (!extras.security)
+                        if (!extras.security || !isTauri() || extras.security.offline)
                           throw new Error('Remove provider connections from the signed-in desktop app.');
                         const { vault, revision } = await extras.security.readVault();
                         const credential = vault.plaid,
@@ -203,7 +204,7 @@ export function ConnectionsPage() {
                   setEditing({
                     ...editing,
                     kind,
-                    inReview: !['brokerage', 'retirement', 'loan'].includes(kind),
+                    inReview: ['checking', 'savings', 'credit_card'].includes(kind),
                   });
                 }}
               >
@@ -214,6 +215,9 @@ export function ConnectionsPage() {
                   'brokerage',
                   'retirement',
                   'loan',
+                  'student_loan',
+                  'auto_loan',
+                  'mortgage',
                   'other_asset',
                   'other_liability',
                 ].map((k) => (
@@ -239,12 +243,15 @@ export function ConnectionsPage() {
               />{' '}
               In balance snapshot
             </label>
-            {['loan', 'brokerage', 'retirement'].includes(editing.kind) && editing.inReview && (
-              <p className="notice">
-                Including this account can turn its incoming payments into internal transfers instead of
-                budget spending.
-              </p>
-            )}
+            {['loan', 'student_loan', 'auto_loan', 'mortgage', 'brokerage', 'retirement'].includes(
+              editing.kind,
+            ) &&
+              editing.inReview && (
+                <p className="notice">
+                  Including this account can turn its incoming payments into internal transfers instead of
+                  budget spending.
+                </p>
+              )}
             <Field label="Treasury bucket">
               <select
                 className="box"

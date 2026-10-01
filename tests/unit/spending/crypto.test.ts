@@ -28,8 +28,11 @@ it('SEC-AUTH: Argon2id matches Node, key labels differ and parameter downgrades 
   });
   expect(Buffer.from(actual)).toEqual(reference);
   await expect(masterKey(password, base64(salt), { m: 8192, t: 1, p: 1 })).rejects.toThrow('Unsafe');
-  expect(() => validatePassword('short', 'owner')).toThrow();
-  expect(() => validatePassword('contains owner in this long password', 'owner')).toThrow();
+  await expect(validatePassword('short', 'owner')).rejects.toThrow();
+  await expect(validatePassword('contains owner in this long password', 'owner')).rejects.toThrow();
+  await expect(validatePassword('passwordpassword', 'owner')).rejects.toThrow('common');
+  await expect(validatePassword('😀'.repeat(8), '')).rejects.toThrow('15');
+  await expect(validatePassword('😀'.repeat(15), '')).resolves.toBe('😀'.repeat(15));
 });
 it('SEC-AUTH/SEC-SYNC: wrapped keys, object identities, revisions and every header are authenticated', async () => {
   const password = 'a synthetic password for crypto tests',
@@ -52,4 +55,44 @@ it('SEC-AUTH/SEC-SYNC: wrapped keys, object identities, revisions and every head
   await expect(
     decryptObject(await importDataKey(random()), e, { purpose: 'snapshot', ref: 'treasury', rev: 3 }),
   ).rejects.toThrow();
+});
+
+import { readOfflineRecord, unlockOffline } from '@/security/offline';
+it('SEC-OFFLINE wrapped credentials unlock only with the password and are bound to the service', async () => {
+  const password = 'five offline words make a password',
+    salt = base64(random()),
+    keys = await derivePasswordKeys(password, salt, DEFAULT_KDF),
+    raw = random(),
+    wrapped = await wrapDataKey(keys.wrapKey, raw, 'harper', '1');
+  const record = {
+    v: 1 as const,
+    origin: 'https://fixture.example',
+    userId: 'harper',
+    kid: '1',
+    salt,
+    params: DEFAULT_KDF,
+    wrapped,
+  };
+  const text = JSON.stringify(record);
+  expect(text).not.toContain(password);
+  expect(text).not.toContain(base64(raw));
+  const key = await unlockOffline(readOfflineRecord(text, record.origin), password);
+  expect(key.extractable).toBe(false);
+  const original = await importDataKey(raw);
+  raw.fill(0);
+  const envelope = await encryptObject(original, new TextEncoder().encode('offline treasury canary'), {
+    purpose: 'local',
+    ref: 'default',
+    rev: 1,
+  });
+  expect(
+    new TextDecoder().decode(
+      await decryptObject(key, envelope, { purpose: 'local', ref: 'default', rev: 1 }),
+    ),
+  ).toBe('offline treasury canary');
+  await expect(unlockOffline(record, 'a different wrong password')).rejects.toThrow();
+  expect(() => readOfflineRecord(text, 'https://other.example')).toThrow('another service');
+  expect(() =>
+    readOfflineRecord(JSON.stringify({ ...record, params: { m: 8192, t: 1, p: 1 } }), record.origin),
+  ).toThrow('Unsafe');
 });

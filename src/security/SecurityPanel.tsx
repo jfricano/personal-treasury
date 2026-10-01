@@ -1,5 +1,12 @@
+import { isTauri } from '@/db/storage';
+import { AccountSecurity } from './AccountSecurity';
 import { useEffect, useState, useSyncExternalStore } from 'react';
-import { startRegistration, type PublicKeyCredentialCreationOptionsJSON } from '@simplewebauthn/browser';
+import {
+  startAuthentication,
+  type PublicKeyCredentialRequestOptionsJSON,
+  startRegistration,
+  type PublicKeyCredentialCreationOptionsJSON,
+} from '@simplewebauthn/browser';
 import { useApp } from '@/app/context';
 import { Field, Panel, useConfirm } from '@/components/ui';
 import type { V3Session } from './client';
@@ -11,9 +18,10 @@ export function SecurityPanel({ session }: { session: V3Session }) {
   const { treasury: t, toast, extras } = useApp();
   const status = useSyncExternalStore(session.subscribe, session.getStatus),
     confirm = useConfirm();
-  const [events, setEvents] = useState<{ time: string; type: string }[]>([]),
+  const [events, setEvents] = useState<{ time: string; type: string; device?: string }[]>([]),
     [versions, setVersions] = useState<{ revision: number; createdAt: string; pinned: boolean }[]>([]),
     [code, setCode] = useState(''),
+    [verificationPassword, setVerificationPassword] = useState(''),
     [passphrase, setPassphrase] = useState(''),
     [repeat, setRepeat] = useState(''),
     [busy, setBusy] = useState(false);
@@ -38,11 +46,36 @@ export function SecurityPanel({ session }: { session: V3Session }) {
       .catch(() => undefined);
   }, [session, status.revision]);
   const step = async () => {
+    if (isTauri() && verificationPassword) {
+      try {
+        await session.stepUpDesktop(verificationPassword);
+      } finally {
+        setVerificationPassword('');
+      }
+      return;
+    }
     if (code) {
       await session.client.request('/api/auth/step-up', 'POST', { method: 'totp', code });
       setCode('');
     }
   };
+  if (session.offline)
+    return (
+      <Panel title="Private treasury · offline">
+        <p>
+          Your database and temporary reviews are encrypted on this device. Sign in online to sync, clear a
+          month, manage security or connect institutions.
+        </p>
+        <div className="btn-row">
+          <button className="btn primary" onClick={extras.onReconnect}>
+            Sign in online
+          </button>
+          <button className="btn" onClick={extras.onLock}>
+            Lock now
+          </button>
+        </div>
+      </Panel>
+    );
   return (
     <>
       <Panel
@@ -54,15 +87,52 @@ export function SecurityPanel({ session }: { session: V3Session }) {
         }
       >
         <p>Signed in as {session.id}. Passwords and data keys stay in memory while unlocked.</p>
-        <Field label="Authenticator code for sensitive changes">
-          <input
-            className="box"
-            autoComplete="one-time-code"
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-          />
-        </Field>
+        {isTauri() ? (
+          <Field label="Password for sensitive changes">
+            <input
+              className="box"
+              type="password"
+              autoComplete="current-password"
+              value={verificationPassword}
+              onChange={(e) => setVerificationPassword(e.target.value)}
+            />
+          </Field>
+        ) : (
+          <Field label="Authenticator code for sensitive changes">
+            <input
+              className="box"
+              autoComplete="one-time-code"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+            />
+          </Field>
+        )}
         <div className="btn-row">
+          <button
+            disabled={busy}
+            className="btn"
+            onClick={() =>
+              void perform(async () => {
+                if (isTauri()) {
+                  if (!verificationPassword) throw new Error('Enter your password for fresh verification.');
+                  await step();
+                } else if (code) {
+                  await step();
+                } else {
+                  const optionsJSON = await session.client.request<PublicKeyCredentialRequestOptionsJSON>(
+                    '/api/auth/step-up/options',
+                    'POST',
+                    {},
+                  );
+                  const assertion = await startAuthentication({ optionsJSON });
+                  await session.client.request('/api/auth/step-up', 'POST', { method: 'passkey', assertion });
+                }
+                toast('Identity verified for five minutes', 'success');
+              })
+            }
+          >
+            Verify for sensitive changes
+          </button>
           <button
             disabled={busy}
             className="btn"
@@ -99,6 +169,7 @@ export function SecurityPanel({ session }: { session: V3Session }) {
           </button>
         </div>
       </Panel>
+      <AccountSecurity session={session} verify={step} />
       <Panel title="Encrypted cloud sync">
         <p role="status">
           {status.message} · Version {status.revision}
@@ -251,6 +322,7 @@ export function SecurityPanel({ session }: { session: V3Session }) {
           {events.map((event, i) => (
             <li key={i}>
               {new Date(event.time).toLocaleString()} · {event.type.replaceAll('_', ' ')}
+              {event.device && ` · ${event.device}`}
             </li>
           ))}
         </ul>

@@ -219,7 +219,13 @@ test(
     await expect(tour('Budgets drive each month')).toBeVisible();
     await expect(page).toHaveURL(/#\/budget/);
     await page.keyboard.press('ArrowRight');
-    await expect(tour('Your turn')).toContainText('8 of 8');
+    await expect(tour('Compare the plan with spending')).toBeVisible();
+    await expect(page).toHaveURL(/#\/analysis/);
+    await page.keyboard.press('ArrowRight');
+    await expect(tour('Real accounts and statement files')).toBeVisible();
+    await expect(page).toHaveURL(/#\/connections/);
+    await page.keyboard.press('ArrowRight');
+    await expect(tour('Your turn')).toContainText('10 of 10');
     await page.screenshot({ path: `${SHOTS}/tour-last.png` });
     await tour('Your turn').getByRole('button', { name: 'Start exploring' }).click();
     await expect(page.locator('.tour')).toHaveCount(0);

@@ -15,7 +15,7 @@ const config = {
     : {}),
   app: {
     security: {
-      csp: `default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' ipc: http://ipc.localhost ${origin}; object-src 'none'; base-uri 'none'`,
+      csp: `default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self'; style-src 'self'; style-src-attr 'none'; img-src 'self' data:; connect-src 'self' ipc: http://ipc.localhost ${origin}; object-src 'none'; base-uri 'none'`,
     },
   },
 };

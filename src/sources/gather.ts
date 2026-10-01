@@ -1,7 +1,14 @@
 import type { Treasury } from '@/api/treasury';
 import type { V3Session } from '@/security/client';
 import { gatherWindow, type Review, type Evidence } from '@/domain/spending';
-import { parsePlaid, plaidAccounts, plaidRequest, plaidTransactions } from './plaid';
+import {
+  parsePlaid,
+  plaidAccounts,
+  plaidRequest,
+  plaidTransactions,
+  missingPlaidRows,
+  plaidLiabilities,
+} from './plaid';
 export async function gatherPlaid(t: Treasury, session: V3Session, connectionId: string, review: Review) {
   const { vault } = await session.readVault(),
     credential = vault.plaid,
@@ -46,6 +53,21 @@ export async function gatherPlaid(t: Treasury, session: V3Session, connectionId:
     status?: { transactions?: { last_successful_update?: string } };
     item?: { consent_expiration_time?: string };
   };
+  transactions.push(
+    ...missingPlaidRows(
+      review.transactions,
+      transactions,
+      new Set(accountResults.map((a) => a.account.id)),
+      window,
+    ),
+  );
+  if ((info as { item?: { billed_products?: string[] } }).item?.billed_products?.includes('liabilities')) {
+    const details = plaidLiabilities(
+      await plaidRequest(credential, '/liabilities/get', { access_token: item.accessToken }),
+      accountResults.map((a) => a.account),
+    );
+    for (const result of accountResults) result.balance.details = details[result.account.id];
+  }
   const evidence: Record<string, Evidence> = {};
   for (const { account, balance } of accountResults) {
     balance.periods = [window];

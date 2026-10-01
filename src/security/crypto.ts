@@ -1,3 +1,5 @@
+import blockedPasswordHashes from './blockedPasswords.json';
+import { kdfWorkerUrl } from './workerUrl';
 import { masterKey, validateKdf } from './kdf';
 export { masterKey, validateKdf } from './kdf';
 export interface KdfParameters {
@@ -17,21 +19,16 @@ export function unbase64(value: string): Uint8Array {
 }
 export const random = (size = 32) => crypto.getRandomValues(new Uint8Array(size));
 export const userId = (value: string) => value.normalize('NFKC').trim().toLowerCase();
-export function validatePassword(password: string, id: string) {
+const blocked = new Set(blockedPasswordHashes);
+export async function validatePassword(password: string, id: string) {
   const p = password.normalize('NFKC');
-  if (p.length < 15 || p.length > 256) throw new Error('Use a password of 15–256 characters.');
+  if ([...p].length < 15 || [...p].length > 256) throw new Error('Use a password of 15–256 characters.');
   if (id && p.toLowerCase().includes(userId(id)))
     throw new Error('The password must not contain your User ID.');
-  if (
-    [
-      'passwordpassword',
-      'password123456789',
-      '123456789012345',
-      'qwertyuiopasdfgh',
-      'letmeinletmeinletmein',
-    ].includes(p.toLowerCase())
-  )
-    throw new Error('Choose a less common password.');
+  const digest = base64(
+    new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(p.toLowerCase()))),
+  );
+  if (blocked.has(digest)) throw new Error('Choose a less common password.');
   return p;
 }
 export async function derivePasswordKeys(password: string, salt: string, params: KdfParameters) {
@@ -39,7 +36,7 @@ export async function derivePasswordKeys(password: string, salt: string, params:
   let mk: Uint8Array;
   if (typeof Worker !== 'undefined') {
     mk = await new Promise<Uint8Array>((resolve, reject) => {
-      const worker = new Worker(new URL('./kdf.worker.ts', import.meta.url), { type: 'module' });
+      const worker = new Worker(kdfWorkerUrl(), { type: 'module' });
       const timeout = setTimeout(() => {
         worker.terminate();
         reject(new Error('Password derivation timed out'));
@@ -201,7 +198,7 @@ export async function decryptObject(
   return open(await objectKey(dek, e), e, header(e));
 }
 export async function encryptedBackup(plaintext: Uint8Array, password: string) {
-  validatePassword(password, '');
+  await validatePassword(password, '');
   const salt = base64(random()),
     { wrapKey } = await derivePasswordKeys(password, salt, DEFAULT_KDF);
   return JSON.stringify({

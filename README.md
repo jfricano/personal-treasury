@@ -12,7 +12,7 @@ A local-first desktop and private web app for running a household's money as a s
 
 ## v3 development preview
 
-This branch adds monthly spending reviews, report exports, connected-account metadata and a private authentication/encryption implementation. **It is a preview, not a production-ready v3 release.** See the [local walkthrough, validation and remaining release work](docs/development/v3/preview-status.md). The public demo link above still points to the existing deployment.
+This branch adds monthly spending reviews, report exports, connected-account metadata, encrypted review sync with conflict resolution, and private authentication and account-security controls. **It is a preview, not a production-ready v3 release.** See the [local walkthrough, validation and remaining release work](docs/development/v3/preview-status.md). The public demo link above still points to the existing deployment.
 
 ## New in v2.2
 

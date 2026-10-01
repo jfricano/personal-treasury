@@ -7,7 +7,7 @@ export interface ReviewEntry {
   updatedAt: string;
   expiresAt: string;
 }
-interface State {
+export interface ReviewState {
   version: 1;
   index: ReviewEntry[];
   reviews: Record<string, Review>;
@@ -15,6 +15,10 @@ interface State {
 export interface ReviewBackend {
   load(): Promise<string | null>;
   save(value: string): Promise<void>;
+  flush?(): Promise<void>;
+  prepare?(raw: string): void;
+  finalize?(ref: string): Promise<void>;
+  onUpdate?(fn: (raw: string) => void): () => void;
 }
 export class MemoryReviewBackend implements ReviewBackend {
   value: string | null = null;
@@ -26,7 +30,7 @@ export class MemoryReviewBackend implements ReviewBackend {
   }
 }
 export class ReviewStore {
-  private state: State = { version: 1, index: [], reviews: {} };
+  private state: ReviewState = { version: 1, index: [], reviews: {} };
   private undoHistory = new Map<string, Review[]>();
   private listeners = new Set<() => void>();
   private chain: Promise<void> = Promise.resolve();
@@ -36,7 +40,16 @@ export class ReviewStore {
   constructor(
     private backend: ReviewBackend,
     private now = () => new Date(),
-  ) {}
+  ) {
+    this.backend.onUpdate?.((raw) => {
+      const next = JSON.parse(raw) as ReviewState;
+      for (const ref of this.undoHistory.keys())
+        if (JSON.stringify(this.state.reviews[ref]) !== JSON.stringify(next.reviews[ref]))
+          this.undoHistory.delete(ref);
+      this.state = next;
+      this.emit();
+    });
+  }
   subscribe = (fn: () => void) => {
     this.listeners.add(fn);
     return () => {
@@ -51,7 +64,7 @@ export class ReviewStore {
   async load() {
     const value = await this.backend.load();
     if (value) {
-      const s = JSON.parse(value) as State;
+      const s = JSON.parse(value) as ReviewState;
       if (s.version !== 1 || !Array.isArray(s.index) || !s.reviews)
         throw new Error('Review storage is invalid; recover it before continuing.');
       this.state = s;
@@ -83,7 +96,7 @@ export class ReviewStore {
   expire() {
     let changed = false;
     for (const e of this.state.index) {
-      if (e.state === 'open' && Date.parse(e.expiresAt) <= this.now().getTime()) {
+      if (['open', 'awaiting_upload'].includes(e.state) && Date.parse(e.expiresAt) <= this.now().getTime()) {
         e.state = 'expired';
         delete this.state.reviews[e.ref];
         this.undoHistory.delete(e.ref);
@@ -96,8 +109,12 @@ export class ReviewStore {
     month: string,
     budgetVersionId: string,
     timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone,
+    settings = { settleDays: 3, pairingDays: 5 },
   ): Review {
     monthPeriod(month);
+    new Intl.DateTimeFormat('en-US', { timeZone }).format();
+    if ([settings.settleDays, settings.pairingDays].some((v) => !Number.isInteger(v) || v < 0 || v > 10))
+      throw new Error('Use review delays of 0–10 days.');
     this.expire();
     if (
       this.state.index.some((e) => e.month === month && (e.state === 'open' || e.state === 'awaiting_upload'))
@@ -113,8 +130,8 @@ export class ReviewStore {
       createdAt: time,
       updatedAt: time,
       timeZone,
-      settleDays: 3,
-      pairingDays: 5,
+      settleDays: settings.settleDays,
+      pairingDays: settings.pairingDays,
       transactions: [],
       evidence: {},
       balances: {},
@@ -165,7 +182,7 @@ export class ReviewStore {
     return true;
   }
   async finish(ref: string, state: 'cleared' | 'discarded', beforeDelete?: () => Promise<void>) {
-    const entry = this.state.index.find((e) => e.ref === ref);
+    let entry = this.state.index.find((e) => e.ref === ref);
     if (!entry) throw new Error('Review not found');
     if (state === 'cleared' && beforeDelete) {
       entry.state = 'awaiting_upload';
@@ -174,6 +191,9 @@ export class ReviewStore {
       await this.flush();
       await beforeDelete();
     }
+    await this.backend.finalize?.(ref);
+    entry = this.state.index.find((e) => e.ref === ref);
+    if (!entry) throw new Error('Review disappeared before completion.');
     entry.state = state;
     delete this.state.reviews[ref];
     this.undoHistory.delete(ref);
@@ -182,6 +202,7 @@ export class ReviewStore {
   }
   private save() {
     const value = JSON.stringify(this.state);
+    this.backend.prepare?.(value);
     this.status = 'saving';
     this.emit();
     this.chain = this.chain
@@ -204,5 +225,6 @@ export class ReviewStore {
   async flush() {
     await this.chain;
     if (this.status === 'error') throw new Error(this.error ?? 'Review save failed');
+    await this.backend.flush?.();
   }
 }

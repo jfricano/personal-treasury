@@ -14,7 +14,7 @@
     "dev:demo": "vite --mode demo",
     "dev:private": "vite --mode private",
     "build": "tsc -b && vite build",
-    "build:demo": "tsc -b && vite build --mode demo",
+    "build:demo": "tsc -b && vite build --mode demo && node scripts/check-demo-provider-boundary.mjs",
     "build:private": "tsc -b && vite build --mode private",
     "preview": "vite preview",
     "preview:demo": "vite preview --mode demo",
@@ -30,12 +30,14 @@
     "test:e2e:private": "playwright test --config playwright.private.config.ts",
     "tauri": "tauri",
     "db:check": "vitest run tests/integration/database.test.ts",
-    "check": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run test:server && npm run build && npm run build:demo && npm run build:private",
+    "check": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run test:server && npm run build && npm run build:demo && npm run build:private && npm run docs:links",
     "privacy:check": "node scripts/privacy-check.mjs",
     "tauri:dev": "node scripts/desktop.mjs dev",
     "desktop:build": "node scripts/desktop.mjs build",
     "test:e2e:v3-private": "playwright test --config playwright.v3-private.config.ts",
-    "preview:private:fixture": "npm run build:private && node scripts/preview-private.mjs"
+    "preview:private:fixture": "npm run build:private && node scripts/preview-private.mjs",
+    "docs:screenshots": "node scripts/capture-v3.mjs",
+    "docs:links": "node scripts/check-doc-links.mjs"
   },
   "dependencies": {
     "@simplewebauthn/browser": "14.0.0",

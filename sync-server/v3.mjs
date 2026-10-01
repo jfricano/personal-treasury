@@ -1,7 +1,19 @@
 import http from 'node:http';
+import { isIP } from 'node:net';
 import path from 'node:path';
 import { createReadStream } from 'node:fs';
-import { mkdir, readFile, writeFile, rename, readdir, stat, unlink, realpath, rm } from 'node:fs/promises';
+import {
+  mkdir,
+  readFile,
+  writeFile,
+  appendFile,
+  rename,
+  readdir,
+  stat,
+  unlink,
+  realpath,
+  rm,
+} from 'node:fs/promises';
 import {
   createCipheriv,
   createDecipheriv,
@@ -20,6 +32,60 @@ import {
 } from '@simplewebauthn/server';
 
 const DAY = 86400000;
+const logRoutes = new Set([
+  '/api/auth/activity',
+  '/api/auth/authenticator/begin',
+  '/api/auth/authenticator/confirm',
+  '/api/auth/device/challenge',
+  '/api/auth/devices',
+  '/api/auth/devices/revoke',
+  '/api/auth/factor/device',
+  '/api/auth/factor/options',
+  '/api/auth/factor/reset/begin',
+  '/api/auth/factor/reset/confirm',
+  '/api/auth/lock',
+  '/api/auth/login',
+  '/api/auth/logout',
+  '/api/auth/logout-all',
+  '/api/auth/passkeys',
+  '/api/auth/passkeys/options',
+  '/api/auth/passkeys/revoke',
+  '/api/auth/passkeys/verify',
+  '/api/auth/password',
+  '/api/auth/password/key',
+  '/api/auth/prelogin',
+  '/api/auth/recovery/regenerate',
+  '/api/auth/session',
+  '/api/auth/sessions',
+  '/api/auth/sessions/revoke',
+  '/api/auth/step-up',
+  '/api/auth/step-up/device',
+  '/api/auth/step-up/options',
+  '/api/auth/unlock',
+  '/api/migration/cancel',
+  '/api/migration/commit',
+  '/api/migration/delete-legacy',
+  '/api/migration/start',
+  '/api/migration/status',
+  '/api/migration/verify',
+  '/api/review',
+  '/api/setup/begin',
+  '/api/setup/confirm',
+  '/api/sync/head',
+  '/api/sync/pin',
+  '/api/sync/prune',
+  '/api/sync/versions',
+  '/api/vault',
+  '/healthz',
+]);
+function logRoute(pathname) {
+  if (logRoutes.has(pathname)) return pathname;
+  if (/^\/api\/review\/[^/]+$/.test(pathname)) return '/api/review/:ref';
+  if (/^\/api\/migration\/versions\/\d+$/.test(pathname)) return '/api/migration/versions/:revision';
+  if (/^\/api\/sync\/versions\/\d+$/.test(pathname)) return '/api/sync/versions/:revision';
+  return pathname.startsWith('/api/') ? 'unmatched_api' : 'static';
+}
+
 const hash = (v) => createHash('sha256').update(v).digest('base64url');
 const equal = (a, b) =>
   timingSafeEqual(
@@ -138,17 +204,17 @@ export function securityHeaders(res) {
   );
   res.setHeader(
     'Content-Security-Policy',
-    "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'; object-src 'none'",
-  );
-  res.setHeader(
-    'Content-Security-Policy-Report-Only',
-    "require-trusted-types-for 'script'; trusted-types pt-worker; style-src 'self'",
+    "default-src 'none'; font-src 'self'; manifest-src 'self'; frame-src 'none'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self'; style-src 'self'; style-src-attr 'none'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'; object-src 'none'; require-trusted-types-for 'script'; trusted-types pt-worker",
   );
   res.setHeader('Cache-Control', 'no-store');
 }
 function json(res, status, value) {
-  res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify(value));
+  const body = JSON.stringify(value);
+  res.writeHead(status, {
+    'Content-Type': 'application/json; charset=utf-8',
+    'Content-Length': Buffer.byteLength(body),
+  });
+  res.end(body);
 }
 function cookie(req, name) {
   return String(req.headers.cookie ?? '')
@@ -166,26 +232,45 @@ export async function createV3Server({
   origin,
   pepper,
   atRestKey,
+  atRestKeyId = '1',
+  atRestKeys = {},
+  mfaReset,
   deviceCookieKey,
   logKey,
   setupSecret,
   legacyToken,
+  trustProxy = false,
+  requestLogger = (record) => console.log(JSON.stringify(record)),
   now = () => Date.now(),
 } = {}) {
   if (!dataDirectory || !origin) throw new Error('V3 needs a data directory and public origin');
   const publicUrl = new URL(origin);
   if (publicUrl.protocol !== 'https:' && !['localhost', '127.0.0.1'].includes(publicUrl.hostname))
     throw new Error('Private origin must use HTTPS');
+  atRestKey = atRestKeys[atRestKeyId] ?? atRestKey;
   const keys = { pepper, atRestKey, deviceCookieKey, logKey };
+  if (!/^[a-zA-Z0-9_-]{1,32}$/.test(atRestKeyId)) throw new Error('Invalid at-rest key ID');
+  const keyRing = { ...atRestKeys, [atRestKeyId]: atRestKey };
+  for (const value of Object.values(keyRing))
+    if (!value || Buffer.from(value, 'base64').length !== 32)
+      throw new Error('Every at-rest key must contain 32 bytes');
+  if (mfaReset && String(mfaReset).length < 32)
+    throw new Error('MFA reset requires a random value of at least 32 characters');
   for (const [name, value] of Object.entries(keys))
     if (!value || Buffer.from(value, 'base64').length !== 32)
       throw new Error(`${name} must be 32 random bytes in base64`);
   const rest = Buffer.from(atRestKey, 'base64'),
     mac = (label, value) =>
       createHmac('sha256', Buffer.from(keys[label], 'base64')).update(String(value)).digest('base64');
+  const sealRest = (value) => ({ ...seal(rest, value), kid: atRestKeyId });
+  const openRest = (value) => {
+    const encodedKey = keyRing[value.kid ?? '1'];
+    if (!encodedKey) throw new Error('Required at-rest key is missing');
+    return open(Buffer.from(encodedKey, 'base64'), value);
+  };
   const origins = new Set([origin, 'tauri://localhost', 'http://tauri.localhost', 'https://tauri.localhost']);
   await mkdir(dataDirectory, { recursive: true, mode: 0o700 });
-  for (const folder of ['snapshots', 'reviews', 'quarantine'])
+  for (const folder of ['snapshots', 'reviews', 'quarantine', 'security-events'])
     await mkdir(path.join(dataDirectory, folder), { recursive: true, mode: 0o700 });
   const accountFile = path.join(dataDirectory, 'account.json'),
     stateFile = path.join(dataDirectory, 'state.json');
@@ -201,6 +286,12 @@ export async function createV3Server({
       pinned: [],
       pruned: {},
     });
+  if (account && [account.wrapped, account.totp].some((v) => v.kid !== atRestKeyId)) {
+    const wrapped = openRest(account.wrapped),
+      secret = openRest(account.totp);
+    account = { ...account, wrapped: sealRest(wrapped), totp: sealRest(secret) };
+    await atomic(accountFile, account);
+  }
   const legacyNames = (await readdir(path.join(dataDirectory, 'versions')).catch(() => [])).filter((n) =>
     /^[1-9]\d*\.json$/.test(n),
   );
@@ -219,12 +310,26 @@ export async function createV3Server({
   const sessions = new Map(),
     pending = new Map(),
     enrollments = new Map(),
+    deviceProofs = new Map(),
     rates = new Map();
   let queue = Promise.resolve();
   const saveAccount = () => atomic(accountFile, account),
     saveState = () => atomic(stateFile, state);
-  const event = async (type) => {
-    state.events.push({ time: new Date(now()).toISOString(), type });
+  const purgeSecurityLogs = async () => {
+    for (const name of await readdir(path.join(dataDirectory, 'security-events'))) {
+      if (/^\d{4}-\d{2}-\d{2}\.jsonl$/.test(name) && Date.parse(name.slice(0, 10)) + DAY < now() - 400 * DAY)
+        await unlink(path.join(dataDirectory, 'security-events', name));
+    }
+  };
+  await purgeSecurityLogs();
+  const event = async (type, device) => {
+    const record = { time: new Date(now()).toISOString(), type, ...(device ? { device } : {}) };
+    await appendFile(
+      path.join(dataDirectory, 'security-events', `${record.time.slice(0, 10)}.jsonl`),
+      JSON.stringify(record) + '\n',
+      { mode: 0o600 },
+    );
+    state.events.push(record);
     state.events = state.events.filter((e) => Date.parse(e.time) > now() - 400 * DAY).slice(-10000);
     await saveState();
   };
@@ -240,7 +345,7 @@ export async function createV3Server({
     const [id, signature] = value.split('.');
     return signature && equal(signature, mac('deviceCookieKey', id)) ? id : null;
   };
-  const session = (req, allowLocked = false) => {
+  const session = async (req, allowLocked = false) => {
     const bearer = req.headers.authorization?.startsWith('Bearer '),
       id = bearer ? req.headers.authorization.slice(7) : cookie(req, '__Host-pt_session');
     const s = id ? sessions.get(hash(id)) : null;
@@ -251,9 +356,16 @@ export async function createV3Server({
       reject(403, 'desktop_origin_required');
     if (!s || s.desktop !== !!bearer || now() - s.created >= 12 * 3600000) {
       if (id) sessions.delete(hash(id));
+      if (s) await event('session_expired', s.desktop ? 'desktop' : 'browser');
       reject(401, 'expired');
     }
-    if ((s.locked || now() - s.active >= 15 * 60000) && !allowLocked) reject(401, 'locked');
+    if ((s.locked || now() - s.active >= 15 * 60000) && !allowLocked) {
+      if (!s.locked) {
+        s.locked = true;
+        await event('locked', s.desktop ? 'desktop' : 'browser');
+      }
+      reject(401, 'locked');
+    }
     if (!allowLocked) s.active = now();
     return { s, id, key: hash(id) };
   };
@@ -286,7 +398,7 @@ export async function createV3Server({
   const secondFactor = async (b, p) => {
     if (p.attempts++ >= 5 || now() - p.created > 5 * 60000) reject(401, 'second_factor_failed');
     if (b.method === 'totp') {
-      const secret = open(rest, account.totp);
+      const secret = openRest(account.totp);
       const step = Math.floor(now() / 30000);
       for (const n of [step - 1, step, step + 1])
         if (n > (account.lastTotp ?? -1) && equal(totp(secret, n), String(b.code))) {
@@ -319,6 +431,7 @@ export async function createV3Server({
             requireUserVerification: true,
           });
           if (result.verified) {
+            p.passkeyId = c.id;
             c.counter = result.authenticationInfo.newCounter;
             await saveAccount();
             return;
@@ -348,8 +461,10 @@ export async function createV3Server({
               Buffer.from(b.signature, 'base64'),
               Buffer.from(challenge, 'base64'),
             )
-          )
+          ) {
+            p.deviceId = device.id;
             return;
+          }
         } catch {
           /* Generic factor error. */
         }
@@ -397,7 +512,12 @@ export async function createV3Server({
   }
   await saveState();
   const interval = setInterval(() => {
-    queue = queue.then(sweep).catch(() => undefined);
+    queue = queue
+      .then(async () => {
+        await sweep();
+        await purgeSecurityLogs();
+      })
+      .catch(() => undefined);
   }, 3600000);
   interval.unref();
   async function route(req, res, url, b) {
@@ -430,8 +550,8 @@ export async function createV3Server({
             salt: b.salt,
             params: b.params,
             kid: b.kid,
-            wrapped: seal(rest, b.wrapped),
-            totp: seal(rest, secret.toString('base64')),
+            wrapped: sealRest(b.wrapped),
+            totp: sealRest(secret.toString('base64')),
             recovery: codes.map(hash),
             passkeys: [],
             devices: [],
@@ -456,15 +576,78 @@ export async function createV3Server({
       }
       reject(404, 'not_found');
     }
+    if (pathname === '/api/auth/device/challenge' && method === 'POST') {
+      if (
+        !['tauri://localhost', 'http://tauri.localhost', 'https://tauri.localhost'].includes(
+          req.headers.origin,
+        )
+      )
+        reject(403, 'desktop_origin_required');
+      for (const [key, value] of deviceProofs) if (now() - value.created > 120000) deviceProofs.delete(key);
+      if (deviceProofs.size >= 5000) reject(429, 'rate_limited');
+      const challenge = randomBytes(32).toString('base64');
+      deviceProofs.set(hash(challenge), { deviceId: String(b.deviceId ?? ''), created: now() });
+      return json(res, 200, { challenge });
+    }
     if (pathname === '/api/auth/login' && method === 'POST') {
-      const trusted = trust(req),
+      let desktopTrust = null;
+      if (b.client === 'desktop' && b.deviceProof) {
+        const proof = deviceProofs.get(hash(String(b.deviceProof.challenge)));
+        deviceProofs.delete(hash(String(b.deviceProof.challenge)));
+        const device = account?.devices.find((d) => d.id === proof?.deviceId && d.id === b.deviceId);
+        if (proof && device && now() - proof.created <= 120000) {
+          try {
+            const key = await webcrypto.subtle.importKey(
+              'spki',
+              Buffer.from(device.publicKey, 'base64'),
+              { name: 'ECDSA', namedCurve: 'P-256' },
+              false,
+              ['verify'],
+            );
+            if (
+              await webcrypto.subtle.verify(
+                { name: 'ECDSA', hash: 'SHA-256' },
+                key,
+                Buffer.from(b.deviceProof.signature, 'base64'),
+                Buffer.from(b.deviceProof.challenge, 'base64'),
+              )
+            )
+              desktopTrust = `desktop:${device.id}`;
+          } catch {
+            /* Unverified clients remain in the untrusted pool. */
+          }
+        }
+      }
+      const trusted = desktopTrust ?? trust(req),
         pool = trusted ? (state.trusted[trusted] ??= { failures: 0, lockedUntil: 0, closed: false }) : state;
-      if (pool.closed || pool.lockedUntil > now()) {
-        res.setHeader('Retry-After', String(Math.max(60, Math.ceil((pool.lockedUntil - now()) / 1000))));
+      const resetAvailable = !!mfaReset && state.mfaResetUsed !== hash(mfaReset);
+      if (
+        (pool.closed || pool.lockedUntil > now() || (!trusted && state.breakerUntil > now())) &&
+        !(resetAvailable && verifyPassword(b))
+      ) {
+        res.setHeader(
+          'Retry-After',
+          String(
+            Math.max(
+              60,
+              Math.ceil(
+                (Math.max(pool.lockedUntil, !trusted ? (state.breakerUntil ?? 0) : 0) - now()) / 1000,
+              ),
+            ),
+          ),
+        );
         reject(429, 'temporarily_locked');
       }
       if (!verifyPassword(b)) {
         pool.failures++;
+        state.hourFailures = [
+          ...(state.hourFailures ?? []).filter((time) => time > now() - 3600000),
+          now(),
+        ].slice(-1001);
+        if (state.hourFailures.length > 1000) {
+          state.breakerUntil = now() + 3600000;
+          await event('global_lockout');
+        }
         const threshold = trusted ? 10 : 5;
         if (pool.failures >= threshold)
           pool.lockedUntil =
@@ -474,16 +657,31 @@ export async function createV3Server({
               (trusted ? 300000 : 60000) * 2 ** Math.floor((pool.failures - threshold) / threshold),
             );
         if (!trusted && pool.failures >= 100) pool.closed = true;
+        if (pool.failures >= threshold && pool.failures % threshold === 0)
+          await event(trusted ? 'trusted_device_lockout' : 'untrusted_pool_lockout');
         await event('sign_in_failed');
         reject(401, 'unauthorized');
       }
       const desktop = b.client === 'desktop';
-      if (desktop && !req.headers.origin?.includes('tauri')) reject(403, 'desktop_origin_required');
+      if (
+        desktop &&
+        !['tauri://localhost', 'http://tauri.localhost', 'https://tauri.localhost'].includes(
+          req.headers.origin,
+        )
+      )
+        reject(403, 'desktop_origin_required');
       const id = randomBytes(32).toString('base64url');
-      pending.set(hash(id), { created: now(), attempts: 0, desktop, trusted });
+      pending.set(hash(id), {
+        created: now(),
+        attempts: 0,
+        desktop,
+        trusted,
+        resetAllowed: resetAvailable ? hash(mfaReset) : null,
+      });
       if (!desktop) res.setHeader('Set-Cookie', cookieValue('__Host-pt_pending', id, '; Max-Age=300'));
       return json(res, 200, {
         pending: desktop ? id : undefined,
+        resetRequired: resetAvailable,
         methods: account.passkeys.length ? ['passkey', 'totp', 'recovery'] : ['totp', 'recovery'],
       });
     }
@@ -498,6 +696,39 @@ export async function createV3Server({
         )
       )
         reject(403, 'desktop_origin_required');
+      if (pathname === '/api/auth/factor/reset/begin') {
+        if (!p.resetAllowed || p.resetAllowed === state.mfaResetUsed) reject(403, 'reset_unavailable');
+        state.mfaResetUsed = p.resetAllowed;
+        await event('mfa_break_glass_started');
+        const secret = randomBytes(20).toString('base64'),
+          codes = Array.from({ length: 10 }, () => randomBytes(10).toString('hex'));
+        p.reset = { secret, recovery: codes.map(hash) };
+        return json(res, 200, { totpSecret: base32(Buffer.from(secret, 'base64')), recoveryCodes: codes });
+      }
+      if (pathname === '/api/auth/factor/reset/confirm') {
+        if (!p.reset || p.attempts++ >= 5) reject(401, 'second_factor_failed');
+        const step = Math.floor(now() / 30000),
+          matched = [step - 1, step, step + 1].find((n) => equal(totp(p.reset.secret, n), String(b.code)));
+        if (matched === undefined) reject(401, 'second_factor_failed');
+        const next = {
+          ...account,
+          totp: sealRest(p.reset.secret),
+          recovery: p.reset.recovery,
+          lastTotp: matched,
+          passkeys: [],
+          devices: [],
+        };
+        await atomic(accountFile, next);
+        account = next;
+        sessions.clear();
+        deviceProofs.clear();
+        enrollments.clear();
+        for (const other of pending.keys()) if (other !== hash(String(id))) pending.delete(other);
+        p.reenrolled = true;
+        await event('mfa_break_glass_completed');
+      }
+      if (p.resetAllowed && !p.reenrolled && pathname !== '/api/auth/factor/reset/confirm')
+        reject(403, 'reenrollment_required');
       if (pathname === '/api/auth/factor/device') {
         if (!p.desktop) reject(403, 'desktop_required');
         p.deviceChallenge = randomBytes(32).toString('base64');
@@ -515,16 +746,21 @@ export async function createV3Server({
         p.challengeAt = now();
         return json(res, 200, options);
       }
-      await secondFactor(b, p);
+      if (!p.reenrolled && p.desktop && !['totp', 'device'].includes(b.method))
+        reject(401, 'second_factor_failed');
+      if (!p.reenrolled) await secondFactor(b, p);
       pending.delete(hash(String(id)));
       state.failures = 0;
       state.lockedUntil = 0;
       state.closed = false;
+      if (p.trusted) state.trusted[p.trusted] = { failures: 0, lockedUntil: 0, closed: false };
       const token = randomBytes(32).toString('base64url');
       sessions.set(hash(token), {
         created: now(),
         active: now(),
-        proof: now(),
+        proof: b.method === 'recovery' ? 0 : now(),
+        deviceId: p.deviceId,
+        passkeyId: p.passkeyId,
         desktop: p.desktop,
         locked: false,
         writes: [],
@@ -542,15 +778,15 @@ export async function createV3Server({
           ),
         ]);
       }
-      await event('sign_in_succeeded');
+      await event('sign_in_succeeded', p.desktop ? 'desktop' : 'browser');
       return json(res, 200, {
         token: p.desktop ? token : undefined,
-        wrapped: open(rest, account.wrapped),
+        wrapped: openRest(account.wrapped),
         kid: account.kid,
         userId: account.userId,
       });
     }
-    const { s, key } = session(
+    const { s, key } = await session(
       req,
       pathname === '/api/auth/unlock' || pathname === '/api/auth/session' || pathname === '/api/auth/logout',
     );
@@ -562,7 +798,7 @@ export async function createV3Server({
       s.active = now();
       await event('unlocked');
       return json(res, 200, {
-        wrapped: open(rest, account.wrapped),
+        wrapped: openRest(account.wrapped),
         kid: account.kid,
         userId: account.userId,
       });
@@ -579,11 +815,101 @@ export async function createV3Server({
       await event('signed_out');
       return json(res, 200, { ok: true });
     }
+    if (pathname === '/api/auth/step-up/options' && method === 'POST') {
+      if (s.desktop) reject(403, 'web_required');
+      const options = await generateAuthenticationOptions({
+        rpID: publicUrl.hostname,
+        userVerification: 'required',
+        allowCredentials: account.passkeys.map((c) => ({ id: c.id, transports: c.transports })),
+        challenge: randomBytes(32),
+      });
+      s.stepUp = { created: now(), attempts: 0, challenge: options.challenge, challengeAt: now() };
+      return json(res, 200, options);
+    }
+    if (pathname === '/api/auth/step-up/device' && method === 'POST') {
+      if (!s.desktop) reject(403, 'desktop_required');
+      if (!verifyPassword(b)) reject(401, 'unauthorized');
+      const device = account.devices.find((d) => d.id === s.deviceId);
+      if (!device) reject(401, 'device_revoked');
+      s.stepUp = {
+        created: now(),
+        attempts: 0,
+        desktop: true,
+        deviceChallenge: randomBytes(32).toString('base64'),
+        challengeAt: now(),
+      };
+      return json(res, 200, { challenge: s.stepUp.deviceChallenge });
+    }
     if (pathname === '/api/auth/step-up' && method === 'POST') {
-      const p = { created: now(), attempts: 0 };
-      await secondFactor(b, p);
+      if (s.desktop ? b.method !== 'device' : !['totp', 'passkey'].includes(b.method))
+        reject(403, 'fresh_factor_required');
+      const proof = s.stepUp ?? { created: now(), attempts: 0 };
+      delete s.stepUp;
+      if (s.desktop && b.deviceId !== s.deviceId) reject(401, 'second_factor_failed');
+      await secondFactor(b, proof);
       s.proof = now();
+      const token = randomBytes(32).toString('base64url');
+      sessions.delete(key);
+      sessions.set(hash(token), s);
+      if (!s.desktop) res.setHeader('Set-Cookie', cookieValue('__Host-pt_session', token));
+      await event('step_up_completed');
+      return json(res, 200, { ok: true, token: s.desktop ? token : undefined });
+    }
+    if (pathname === '/api/auth/recovery/regenerate' && method === 'POST') {
+      stepUp(s);
+      const codes = Array.from({ length: 10 }, () => randomBytes(10).toString('hex'));
+      const next = { ...account, recovery: codes.map(hash) };
+      await atomic(accountFile, next);
+      account = next;
+      pending.clear();
+      await event('recovery_codes_regenerated');
+      return json(res, 200, { codes });
+    }
+    if (pathname === '/api/auth/authenticator/begin' && method === 'POST') {
+      stepUp(s);
+      const secret = randomBytes(20).toString('base64');
+      s.authenticator = { secret, created: now() };
+      return json(res, 200, { secret: base32(Buffer.from(secret, 'base64')) });
+    }
+    if (pathname === '/api/auth/authenticator/confirm' && method === 'POST') {
+      stepUp(s);
+      const enrollment = s.authenticator;
+      if (!enrollment || now() - enrollment.created > 10 * 60000) reject(400, 'enrollment_expired');
+      const step = Math.floor(now() / 30000),
+        matched = [step - 1, step, step + 1].find((n) => equal(totp(enrollment.secret, n), b.code));
+      if (matched === undefined) reject(401, 'second_factor_failed');
+      const next = { ...account, totp: sealRest(enrollment.secret), lastTotp: matched };
+      await atomic(accountFile, next);
+      account = next;
+      delete s.authenticator;
+      pending.clear();
+      for (const k of sessions.keys()) if (k !== key) sessions.delete(k);
+      await event('authenticator_replaced');
       return json(res, 200, { ok: true });
+    }
+    if (pathname === '/api/auth/passkeys/revoke' && method === 'POST') {
+      stepUp(s);
+      if (!account.passkeys.some((c) => c.id === b.id)) reject(404, 'not_found');
+      const next = { ...account, passkeys: account.passkeys.filter((c) => c.id !== b.id) };
+      await atomic(accountFile, next);
+      account = next;
+      for (const [k, value] of sessions) if (value.passkeyId === b.id) sessions.delete(k);
+      pending.clear();
+      await event('passkey_revoked');
+      return json(res, 200, { ok: true });
+    }
+    if (pathname === '/api/auth/sessions/revoke' && method === 'POST') {
+      stepUp(s);
+      if (!sessions.has(b.id)) reject(404, 'not_found');
+      sessions.delete(b.id);
+      await event('session_revoked');
+      return json(res, 200, { ok: true });
+    }
+    if (pathname === '/api/auth/password/key' && method === 'POST') {
+      stepUp(s);
+      if (!s.desktop) reject(403, 'desktop_required');
+      if (!verifyPassword(b)) reject(401, 'unauthorized');
+      return json(res, 200, { wrapped: openRest(account.wrapped), kid: account.kid });
     }
     if (pathname === '/api/auth/logout-all' && method === 'POST') {
       stepUp(s);
@@ -607,7 +933,9 @@ export async function createV3Server({
       }
       const id = randomUUID();
       account.devices ??= [];
+      if (account.devices.length >= 50) reject(409, 'device_limit');
       account.devices.push({ id, publicKey: b.publicKey, createdAt: new Date(now()).toISOString() });
+      s.deviceId = id;
       await saveAccount();
       await event('device_registered');
       return json(res, 200, { id });
@@ -620,7 +948,10 @@ export async function createV3Server({
       );
     if (pathname === '/api/auth/devices/revoke' && method === 'POST') {
       stepUp(s);
+      if (!account.devices.some((d) => d.id === b.id)) reject(404, 'not_found');
       account.devices = (account.devices ?? []).filter((d) => d.id !== b.id);
+      for (const [k, value] of sessions) if (value.deviceId === b.id) sessions.delete(k);
+      pending.clear();
       await saveAccount();
       await event('device_revoked');
       return json(res, 200, { ok: true });
@@ -642,16 +973,20 @@ export async function createV3Server({
     if (pathname === '/api/auth/password' && method === 'POST') {
       stepUp(s);
       if (!s.desktop) reject(403, 'desktop_required');
-      if (!validKeys(b)) reject(400, 'invalid_keys');
-      account = {
+      if (!validKeys(b) || b.kid !== account.kid) reject(400, 'invalid_keys');
+      if (!verifyPassword({ ...b, authKey: b.currentAuthKey })) reject(401, 'unauthorized');
+      const next = {
         ...account,
         verifier: verifier(b.authKey),
         salt: b.salt,
         params: b.params,
-        wrapped: seal(rest, b.wrapped),
+        wrapped: sealRest(b.wrapped),
         kid: b.kid,
       };
-      await saveAccount();
+      await atomic(accountFile, next);
+      account = next;
+      pending.clear();
+      state.trusted = {};
       for (const k of sessions.keys()) if (k !== key) sessions.delete(k);
       await event('password_changed');
       return json(res, 200, { ok: true });
@@ -664,6 +999,7 @@ export async function createV3Server({
       );
     if (pathname === '/api/auth/passkeys/options' && method === 'POST') {
       stepUp(s);
+      if (account.passkeys.length >= 20) reject(409, 'passkey_limit');
       const options = await generateRegistrationOptions({
         rpName: 'Personal Treasury',
         rpID: publicUrl.hostname,
@@ -965,8 +1301,38 @@ export async function createV3Server({
     { maxHeaderSize: 16384, requestTimeout: 30000, headersTimeout: 15000, keepAliveTimeout: 5000 },
     async (req, res) => {
       securityHeaders(res);
+      const started = performance.now(),
+        requestId = randomBytes(16).toString('hex');
+      let routeTemplate = 'unmatched',
+        inputBytes = 0;
+      const forwarded = req.headers['x-real-ip'];
+      const clientIp =
+        trustProxy && typeof forwarded === 'string' && isIP(forwarded)
+          ? forwarded
+          : (req.socket.remoteAddress ?? 'unknown');
+      const ipTag = mac('logKey', clientIp);
+      res.once('finish', () => {
+        try {
+          requestLogger({
+            time: new Date(now()).toISOString(),
+            requestId,
+            method: ['GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'OPTIONS'].includes(req.method)
+              ? req.method
+              : 'OTHER',
+            route: routeTemplate,
+            status: res.statusCode,
+            durationMs: Math.round(performance.now() - started),
+            inputBytes,
+            outputBytes: Number(res.getHeader('Content-Length') ?? 0),
+            ipTag,
+          });
+        } catch {
+          /* Logging callbacks cannot expose request details in an error. */
+        }
+      });
       try {
         const url = new URL(req.url, 'http://localhost');
+        routeTemplate = logRoute(url.pathname);
         if (url.pathname === '/healthz' && req.method === 'GET') return json(res, 200, { status: 'ok' });
         if (!url.pathname.startsWith('/api/')) {
           if (!staticDirectory || !['GET', 'HEAD'].includes(req.method)) reject(404, 'not_found');
@@ -985,6 +1351,7 @@ export async function createV3Server({
             '.png': 'image/png',
           };
           res.setHeader('Content-Type', types[path.extname(actual)] ?? 'application/octet-stream');
+          res.setHeader('Content-Length', (await stat(actual)).size);
           if (req.method === 'HEAD') return res.end();
           createReadStream(actual).pipe(res);
           return;
@@ -1032,9 +1399,12 @@ export async function createV3Server({
             '/api/auth/factor',
             '/api/auth/step-up',
           ].includes(url.pathname) ||
+          url.pathname === '/api/auth/device/challenge' ||
+          url.pathname.startsWith('/api/auth/step-up/') ||
+          url.pathname.startsWith('/api/auth/authenticator/') ||
           url.pathname.startsWith('/api/setup/')
         ) {
-          const ip = mac('logKey', req.socket.remoteAddress ?? 'unknown');
+          const ip = ipTag;
           const r = rates.get(ip) ?? { tokens: 5, at: now() };
           r.tokens = Math.min(5, r.tokens + (now() - r.at) / 6000);
           r.at = now();
@@ -1053,6 +1423,7 @@ export async function createV3Server({
           const parts = [];
           for await (const chunk of req) {
             size += chunk.length;
+            inputBytes = size;
             if (size > 32 * 1024 * 1024) reject(413, 'payload_too_large');
             parts.push(chunk);
           }

@@ -2,7 +2,17 @@ import { useState } from 'react';
 import { useTreasury } from '@/app/context';
 import { isTauri } from '@/db/storage';
 import { Panel, Field } from '@/components/ui';
-import { guardTrial, parsePlaid, plaidAccounts, plaidRequest, type PlaidCredential } from '@/sources/plaid';
+import {
+  guardTrial,
+  countLinkAttempt,
+  abandonPendingLink,
+  hostedLinkResult,
+  parsePlaid,
+  plaidAccounts,
+  plaidRequest,
+  type PendingLink,
+  type PlaidCredential,
+} from '@/sources/plaid';
 export function ProviderPanel() {
   const { t, extras, toast } = useTreasury();
   const [clientId, setClientId] = useState(''),
@@ -12,9 +22,7 @@ export function ProviderPanel() {
     [name, setName] = useState(''),
     [remaining, setRemaining] = useState<number | null>(null),
     [busy, setBusy] = useState(false),
-    [pending, setPending] = useState<{ linkToken: string; connectionId: string; reconnect: boolean } | null>(
-      null,
-    );
+    [pending, setPending] = useState<PendingLink | null>(null);
   const perform = async (fn: () => Promise<void>) => {
     setBusy(true);
     try {
@@ -27,7 +35,7 @@ export function ProviderPanel() {
   };
   const [now] = useState(() => Date.now());
   const session = extras.security;
-  if (!isTauri() || !session)
+  if (!isTauri() || !session || session.offline)
     return (
       <Panel title="Provider connections">
         <p>
@@ -37,9 +45,11 @@ export function ProviderPanel() {
       </Panel>
     );
   const link = async (connectionId?: string) => {
-    const { vault } = await session.readVault();
+    const { vault, revision } = await session.readVault();
     const c = vault.plaid;
     if (!c) throw new Error('Save Plaid credentials first');
+    if (c.pendingLink)
+      throw new Error('Finish or abandon the pending Hosted Link before opening another connection.');
     const existing = c.items.find((i) => i.connectionId === connectionId);
     if (!existing) guardTrial(c, institution);
     setRemaining(10 - c.productionItemsUsed);
@@ -59,24 +69,74 @@ export function ProviderPanel() {
     };
     if (!response.link_token || !response.hosted_link_url)
       throw new Error('Provider did not return Hosted Link');
-    const { invoke } = await import('@tauri-apps/api/core');
-    await invoke('open_hosted_link', { url: response.hosted_link_url });
-    setPending({
+    const next: PendingLink = {
       linkToken: response.link_token,
+      hostedUrl: response.hosted_link_url,
       connectionId: connectionId ?? crypto.randomUUID(),
       reconnect: !!existing,
-    });
+      institutionId: existing?.institutionId ?? institution,
+      displayName: existing
+        ? (t.spending.connections().find((c) => c.id === connectionId)?.displayName ?? name)
+        : name,
+      reservation: !existing && c.environment === 'production',
+      counted: false,
+    };
+    const reserved = countLinkAttempt({ ...c, pendingLink: next });
+    await session.writeVault({ ...vault, plaid: reserved }, revision);
+    setPending(reserved.pendingLink!);
+    setRemaining(10 - reserved.productionItemsUsed);
+    const { invoke } = await import('@tauri-apps/api/core');
+    await invoke('open_hosted_link', { url: next.hostedUrl });
   };
   return (
     <Panel title="Plaid desktop connections">
       <p>
-        Use Sandbox for testing. Production Trial has ten lifetime Items; removal does not recover a slot.{' '}
+        Use Sandbox for testing. The configured Production Trial budget is ten lifetime Items. Pending links
+        consume a slot before opening; reopening an unfinished link may create another Item and consumes
+        another slot. Abandoning or removing a connection does not recover slots.{' '}
         {remaining !== null && <strong>{remaining} of 10 remaining.</strong>}
       </p>
       <p className="subtle">
-        If a sensitive operation asks for fresh proof, enter an authenticator code in Settings → Security
-        first.
+        If a sensitive operation asks for fresh proof, verify your password in Settings → Security first.
       </p>
+      <button
+        className="btn"
+        disabled={busy}
+        onClick={() =>
+          void perform(async () => {
+            const { vault } = await session.readVault();
+            const c = vault.plaid;
+            if (c) {
+              for (const item of c.items) {
+                const connection = t.spending.connections().find((x) => x.id === item.connectionId);
+                if (connection?.status === 'removed') continue;
+                if (!connection)
+                  t.spending.saveProviderConnection({
+                    id: item.connectionId,
+                    provider: 'plaid',
+                    displayName: item.displayName ?? item.institutionId,
+                    status: 'ready',
+                    providerRef: item.institutionId,
+                    credentialRef: 'plaid',
+                    lastSuccessAt: null,
+                    lastError: null,
+                    consentExpiresAt: null,
+                  });
+                const accounts = plaidAccounts(
+                  await plaidRequest(c, '/accounts/get', { access_token: item.accessToken }),
+                  item.connectionId,
+                  t.spending.accounts().filter((a) => a.connectionId === item.connectionId),
+                );
+                for (const { account } of accounts) t.spending.saveAccount(account);
+              }
+            }
+            setPending(c?.pendingLink ?? null);
+            setRemaining(c ? 10 - c.productionItemsUsed - (c.pendingLink?.reservation ? 1 : 0) : null);
+          })
+        }
+      >
+        Refresh provider state
+      </button>
       <details>
         <summary>Provider credentials</summary>
         <form
@@ -86,7 +146,7 @@ export function ProviderPanel() {
             void perform(async () => {
               const { vault, revision } = await session.readVault();
               const prior = vault.plaid;
-              if (prior && prior.items.length && prior.environment !== environment)
+              if (prior && (prior.items.length || prior.pendingLink) && prior.environment !== environment)
                 throw new Error('Use a separate service for Sandbox and Production');
               await session.writeVault(
                 {
@@ -97,6 +157,7 @@ export function ProviderPanel() {
                     environment,
                     items: prior?.items ?? [],
                     productionItemsUsed: prior?.productionItemsUsed ?? 0,
+                    pendingLink: prior?.pendingLink,
                   },
                 },
                 revision,
@@ -160,14 +221,46 @@ export function ProviderPanel() {
       </form>
       {pending && (
         <div className="notice">
-          <p>Complete Hosted Link in your browser, then check its result here.</p>
+          <p>
+            Complete Hosted Link in your browser, then check its result here. Pending work is kept encrypted
+            across restart.
+          </p>
+          <button
+            className="btn"
+            disabled={busy || !!pending.publicToken}
+            onClick={() =>
+              void perform(async () => {
+                if (
+                  !pending.reconnect &&
+                  !window.confirm(
+                    'Reopening may create another Item and consumes another lifetime Trial slot in Production. Continue?',
+                  )
+                )
+                  return;
+                const { vault, revision } = await session.readVault();
+                const c = vault.plaid;
+                if (!c?.pendingLink || c.pendingLink.linkToken !== pending.linkToken)
+                  throw new Error('Refresh the provider state first.');
+                const next = countLinkAttempt(c);
+                await session.writeVault({ ...vault, plaid: next }, revision);
+                setPending(next.pendingLink!);
+                setRemaining(10 - next.productionItemsUsed);
+                const { invoke } = await import('@tauri-apps/api/core');
+                await invoke('open_hosted_link', { url: pending.hostedUrl });
+              })
+            }
+          >
+            Resume Hosted Link
+          </button>
           <button
             className="btn primary"
             disabled={busy}
             onClick={() =>
               void perform(async () => {
-                const { vault, revision } = await session.readVault(),
-                  c = vault.plaid!;
+                let { vault, revision } = await session.readVault();
+                let c = vault.plaid!;
+                if (!c.pendingLink || c.pendingLink.linkToken !== pending.linkToken)
+                  throw new Error('Refresh the pending provider connection first.');
                 const response = parsePlaid(
                   await plaidRequest(c, '/link/token/get', { link_token: pending.linkToken }),
                 ) as {
@@ -176,35 +269,74 @@ export function ProviderPanel() {
                     on_success?: { public_token?: string };
                   }[];
                 };
-                const token =
-                  response.link_sessions?.flatMap((s) => s.results?.item_add_results ?? [])[0]
-                    ?.public_token ??
-                  response.link_sessions?.find((s) => s.on_success?.public_token)?.on_success?.public_token;
                 if (pending.reconnect) {
                   const existing = c.items.find((i) => i.connectionId === pending.connectionId)!;
-                  await plaidRequest(c, '/item/get', { access_token: existing.accessToken });
+                  if (
+                    !(response.link_sessions ?? []).some((s) => !!(s as { finished_at?: string }).finished_at)
+                  )
+                    throw new Error('Finish Hosted Link before checking reconnect.');
+                  const item = parsePlaid(
+                    await plaidRequest(c, '/item/get', { access_token: existing.accessToken }),
+                  ) as { item?: { error?: unknown; institution_id?: string } };
+                  if (!item.item || item.item.error || item.item.institution_id !== existing.institutionId)
+                    throw new Error('This institution still needs reconnect.');
+                  await session.writeVault({ ...vault, plaid: { ...c, pendingLink: undefined } }, revision);
                   const connection = t.spending.connections().find((c) => c.id === pending.connectionId)!;
                   t.spending.saveProviderConnection({ ...connection, status: 'ready', lastError: null });
                   setPending(null);
                   return;
                 }
-                if (!token) throw new Error('Hosted Link has not returned a completed connection yet');
-                guardTrial(c, institution);
+                const token =
+                  c.pendingLink.publicToken ??
+                  hostedLinkResult(JSON.stringify(response), pending.institutionId);
+                if (c.items.some((i) => i.institutionId === pending.institutionId))
+                  throw new Error('This institution is already connected.');
+                if (!c.pendingLink.publicToken) {
+                  await session.writeVault(
+                    {
+                      ...vault,
+                      plaid: {
+                        ...c,
+                        productionItemsUsed:
+                          c.productionItemsUsed +
+                          (c.environment === 'production' && !c.pendingLink.counted ? 1 : 0),
+                        pendingLink: {
+                          ...c.pendingLink,
+                          publicToken: token,
+                          counted: true,
+                          reservation: false,
+                        },
+                      },
+                    },
+                    revision,
+                  );
+                  ({ vault, revision } = await session.readVault());
+                  c = vault.plaid!;
+                }
                 const exchange = parsePlaid(
                   await plaidRequest(c, '/item/public_token/exchange', { public_token: token }),
                 ) as { access_token: string; item_id: string };
                 if (!exchange.access_token || !exchange.item_id)
                   throw new Error('Invalid token exchange response');
+                const itemInfo = parsePlaid(
+                  await plaidRequest(c, '/item/get', { access_token: exchange.access_token }),
+                ) as { item?: { institution_id?: string } };
+                if (itemInfo.item?.institution_id !== pending.institutionId)
+                  throw new Error(
+                    'Exchanged Item belongs to a different institution. The reserved slot remains counted.',
+                  );
                 const credential = {
                   ...c,
-                  productionItemsUsed: c.productionItemsUsed + (c.environment === 'production' ? 1 : 0),
+                  productionItemsUsed: c.productionItemsUsed,
+                  pendingLink: undefined,
                   items: [
                     ...c.items,
                     {
                       connectionId: pending.connectionId,
                       accessToken: exchange.access_token,
                       itemId: exchange.item_id,
-                      institutionId: institution,
+                      institutionId: pending.institutionId,
+                      displayName: pending.displayName,
                     },
                   ],
                 };
@@ -212,9 +344,9 @@ export function ProviderPanel() {
                 t.spending.saveProviderConnection({
                   id: pending.connectionId,
                   provider: 'plaid',
-                  displayName: name,
+                  displayName: pending.displayName,
                   status: 'ready',
-                  providerRef: institution,
+                  providerRef: pending.institutionId,
                   credentialRef: 'plaid',
                   lastSuccessAt: null,
                   lastError: null,
@@ -232,6 +364,29 @@ export function ProviderPanel() {
             }
           >
             Check connection result
+          </button>
+          <button
+            className="btn"
+            disabled={busy}
+            onClick={() =>
+              void perform(async () => {
+                if (
+                  !window.confirm(
+                    'Abandon this pending connection? Any used or uncertain Trial slots remain consumed. If an Item was created, remove it in Plaid before trying again.',
+                  )
+                )
+                  return;
+                const { vault, revision } = await session.readVault();
+                if (!vault.plaid?.pendingLink || vault.plaid.pendingLink.linkToken !== pending.linkToken)
+                  throw new Error('Refresh the provider state first.');
+                const next = abandonPendingLink(vault.plaid);
+                await session.writeVault({ ...vault, plaid: next }, revision);
+                setPending(null);
+                setRemaining(10 - next.productionItemsUsed);
+              })
+            }
+          >
+            Abandon pending connection
           </button>
         </div>
       )}

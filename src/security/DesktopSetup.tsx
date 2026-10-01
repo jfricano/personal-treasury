@@ -52,7 +52,7 @@ export function DesktopSetup({ origin, onClose }: { origin: string; onClose: () 
                 }
                 if (password !== repeat) throw new Error('Passwords do not match');
                 const normalized = userId(id);
-                validatePassword(password, normalized);
+                await validatePassword(password, normalized);
                 const salt = base64(random()),
                   keys = await derivePasswordKeys(password, salt, DEFAULT_KDF),
                   raw = random();

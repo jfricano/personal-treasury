@@ -36,6 +36,7 @@ let server = await createV3Server({
   origin,
   ...config,
   setupSecret,
+  now: () => Date.now() - 120000,
 });
 await new Promise((resolve) => server.listen(port, '127.0.0.1', resolve));
 async function request(route, value, token, method = 'POST', revision) {
@@ -81,15 +82,15 @@ await request(
   '/api/setup/confirm',
   {
     enrollment: enrollment.enrollment,
-    code: totp(decode(enrollment.totpSecret), Math.floor(Date.now() / 30000)),
+    code: totp(decode(enrollment.totpSecret), Math.floor((Date.now() - 120000) / 30000)),
   },
   setupSecret,
 );
 const pending = await request('/api/auth/login', { ...credentials, client: 'desktop' });
 const login = await request('/api/auth/factor', {
   pending: pending.pending,
-  method: 'recovery',
-  code: enrollment.recoveryCodes[0],
+  method: 'totp',
+  code: totp(decode(enrollment.totpSecret), Math.floor((Date.now() - 120000) / 30000) + 1),
 });
 const envelope = await crypto.encryptObject(dataKey, bytes, { purpose: 'snapshot', ref: 'treasury', rev: 1 });
 await request('/api/sync/head', { envelope }, login.token, 'PUT', 0);

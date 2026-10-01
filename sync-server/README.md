@@ -1,5 +1,7 @@
 # Private snapshot service
 
+For the v3 implementation, use the [preview walkthrough and v3 service configuration](../docs/development/v3/preview-status.md). It uses password/MFA, cookie and native device sessions, encrypted review storage and a separate provider vault. `npm run preview:private:fixture` starts a disposable fictional v3 service. The protocol and instructions below describe **legacy v2 mode**, selected only when `PT_AUTH_PEPPER` is absent.
+
 This small Node.js service stores client-encrypted SQLite snapshots. It does not decrypt or merge databases. A web browser and the desktop app can use the same API. Run one service instance against its data directory; write serialization is process-local. A single person should avoid making edits on two devices at once: a stale upload receives HTTP 409 and must be resolved on the client before retrying.
 
 ## Run

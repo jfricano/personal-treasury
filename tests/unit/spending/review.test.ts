@@ -1,6 +1,11 @@
+import * as XLSX from 'xlsx';
+import { exportSpendingReport } from '@/export/spendingReport';
 import { describe, it, expect } from 'vitest';
 import {
   exactAmount,
+  latePostingChanges,
+  reportGroups,
+  lineYearToDate,
   postedDate,
   coverage,
   dispositionErrors,
@@ -308,4 +313,66 @@ it('V3-AT15 preserves provider number text beyond IEEE range and canonicalizes c
       'new',
     ),
   ).toThrow('TRIAL_CONNECTION_LIMIT');
+});
+
+it('late posting comparison requires a complete prior tail and detects exact count or sum changes only', () => {
+  const original = review();
+  original.transactions = [tx({ postedDate: '2026-08-25' })];
+  const report = buildReport(original, [account], budget),
+    next = review();
+  next.month = '2026-09';
+  next.transactions = [
+    tx({ postedDate: '2026-08-25' }),
+    tx({ id: 'late', postedDate: '2026-08-31', amount: '-0.01' }),
+  ];
+  next.evidence.a.periods = [{ start: '2026-08-25', end: '2026-09-30' }];
+  expect(latePostingChanges(next, [report])).toEqual([
+    { month: '2026-08', account: 'Checking', countChange: 1, amountChange: '-0.01' },
+  ]);
+  next.evidence.a.periods = [{ start: '2026-08-26', end: '2026-09-30' }];
+  expect(latePostingChanges(next, [report])).toEqual([]);
+  next.evidence.a.periods = [{ start: '2026-08-25', end: '2026-09-30' }];
+  next.transactions = [
+    tx({ postedDate: '2026-08-25' }),
+    tx({ id: 'earlier', postedDate: '2026-08-24', amount: '-20' }),
+  ];
+  expect(latePostingChanges(next, [report])).toEqual([]);
+});
+it('cleared XLSX exports preserve text cells and aggregates; only an explicit working export includes transaction details', () => {
+  const raw = review();
+  raw.transactions[0].description = '=CANARY(1)';
+  const report = buildReport(raw, [account], budget);
+  report.lines[0].note = '=1+1';
+  const cleared = XLSX.read(exportSpendingReport(report, [report]), { type: 'array', cellNF: true });
+  expect(cleared.SheetNames).not.toContain('Transactions');
+  expect(JSON.stringify(cleared)).not.toContain('CANARY');
+  const lineRows = XLSX.utils.sheet_to_json(cleared.Sheets.Lines) as Record<string, unknown>[];
+  expect(lineRows[0]['YTD actual']).toBe(80);
+  expect(lineRows[0]['Note']).toBe('=1+1');
+  expect(cleared.Sheets.Lines.L2.t).toBe('s');
+  expect(cleared.Sheets.Lines.L2.f).toBeUndefined();
+  expect(cleared.Sheets.Lines.F2.z).toContain('0.00');
+  const detailed = XLSX.read(exportSpendingReport(report, [report], raw), { type: 'array' });
+  expect(detailed.Sheets.Transactions.C2.v).toBe('=CANARY(1)');
+  expect(detailed.Sheets.Transactions.C2.t).toBe('s');
+  expect(detailed.Sheets.Transactions.C2.f).toBeUndefined();
+  report.lines[1].role = 'set_aside';
+  expect(reportGroups(report, 'category').map((g) => g.role)).toEqual(['spending', 'set_aside']);
+  expect(lineYearToDate([report], '2026-08', 'g')).toEqual({ planned: '100', actual: '80' });
+});
+
+it('provider freshness settles in the household calendar rather than at UTC midnight', () => {
+  const evidence = {
+    source: 'plaid' as const,
+    periods: [monthPeriod('2026-08')],
+    gatheredAt: '2026-09-03T00:00:00Z',
+    historyConfirmed: true,
+  };
+  expect(coverage('2026-08', evidence, [], 3, 'UTC').status).toBe('complete');
+  expect(coverage('2026-08', evidence, [], 3, 'America/Los_Angeles').status).toBe('partial');
+  expect(
+    coverage('2026-08', { ...evidence, freshness: '2026-09-03T08:00:00Z' }, [], 3, 'America/Los_Angeles')
+      .status,
+  ).toBe('complete');
+  expect(coverage('2026-08', { ...evidence, freshness: 'invalid' }, [], 3, 'UTC').status).toBe('error');
 });

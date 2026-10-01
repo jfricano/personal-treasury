@@ -5,6 +5,9 @@ import { useTreasury } from '@/app/context';
 import { Amount, CommitInput, Dialog, Field, Panel, useConfirm } from '@/components/ui';
 import {
   buildReport,
+  latePostingChanges,
+  latestUnclearedMonth,
+  liabilityKinds,
   clearBlockers,
   coverage,
   exactAmount,
@@ -26,6 +29,9 @@ import { useReviewStore } from './useReviewStore';
 import { StatementImport } from './StatementImport';
 import { ClassificationDialog } from './ClassificationDialog';
 import { ReportView } from './ReportView';
+import { ReviewSyncPanel } from './ReviewSyncPanel';
+import { RuleEditor } from './RuleEditor';
+import { LiabilityDetails } from './LiabilityDetails';
 import { exportSpendingReport } from '@/export/spendingReport';
 import { saveFile } from '@/platform/files';
 
@@ -34,7 +40,7 @@ export function SpendingPage() {
   const { t, run, toast, navigate, syncSession, extras } = useTreasury();
   const { store, loaded, error } = useReviewStore(t);
   const confirm = useConfirm();
-  const [month, setMonth] = useState(new Date().toISOString().slice(0, 7)),
+  const [month, setMonth] = useState(() => latestUnclearedMonth(t.spending.reports())),
     [ref, setRef] = useState(''),
     [tab, setTab] = useState<Tab>('Coverage'),
     [importAccount, setImportAccount] = useState<InstitutionAccount | null>(null),
@@ -49,6 +55,9 @@ export function SpendingPage() {
     [selectedReport, setSelectedReport] = useState(''),
     [remember, setRemember] = useState<Transaction | null>(null),
     [pattern, setPattern] = useState(''),
+    [ruleEdit, setRuleEdit] = useState<Rule | null>(null),
+    [accountFilter, setAccountFilter] = useState(''),
+    [dispositionFilter, setDispositionFilter] = useState(''),
     [waive, setWaive] = useState(''),
     [waiverReason, setWaiverReason] = useState('no activity'),
     [waiverNote, setWaiverNote] = useState('');
@@ -93,16 +102,23 @@ export function SpendingPage() {
           : { ...tx, disposition: suggestRule(tx, t.spending.rules(), keys) },
       );
     });
-  const start = async () => {
+  const start = async (targetMonth = month) => {
     if (
-      reports.some((r) => r.month === month) &&
+      reports.some((r) => r.month === targetMonth) &&
       !(await confirm.ask(
         'Re-run this month? The existing report remains visible until the new review is cleared.',
       ))
     )
       return;
     try {
-      const r = store.create(month, t.spending.defaultVersion(month));
+      const settings = t.spending.reviewSettings();
+      const r = store.create(
+        targetMonth,
+        t.spending.defaultVersion(targetMonth),
+        settings.timeZone,
+        settings,
+      );
+      setMonth(targetMonth);
       setRef(r.ref);
       setTab('Coverage');
     } catch (e) {
@@ -180,6 +196,8 @@ export function SpendingPage() {
           r.balances[a.id] = {
             value: a.kind === 'credit_card' ? '-812.40' : '2400',
             asOf: '2026-08-31',
+            source: 'file',
+            capturedAt: new Date().toISOString(),
             unavailable: false,
             periods: [monthPeriod(sampleMonth)],
           };
@@ -198,6 +216,13 @@ export function SpendingPage() {
   const visible =
     review?.transactions.filter(
       (tx) =>
+        (!accountFilter || tx.institutionAccountId === accountFilter) &&
+        (!dispositionFilter ||
+          (dispositionFilter === 'suggested'
+            ? tx.disposition?.state === 'suggested'
+            : dispositionFilter === 'pairs'
+              ? pairCandidates(tx, review!.transactions, accounts, review!.pairingDays).length > 0
+              : tx.disposition?.kind === dispositionFilter)) &&
         (!onlyUnclassified || tx.disposition?.state !== 'accepted') &&
         (!lineFilter ||
           (tx.disposition?.kind === 'budget' &&
@@ -206,6 +231,36 @@ export function SpendingPage() {
     ) ?? [];
   const blockers = review ? clearBlockers(review, accounts, budget) : [];
   const preview = review && budget ? buildReport(review, accounts, budget, 'Working copy', true) : null;
+  const repeated = (review?.transactions ?? []).filter((tx, index, all) => {
+    const d = tx.disposition;
+    if (
+      d?.state !== 'accepted' ||
+      d.ruleId ||
+      tx.pending ||
+      !['budget', 'income', 'unbudgeted'].includes(d.kind) ||
+      (d.kind === 'budget' && d.parts.length !== 1)
+    )
+      return false;
+    const name = normalizedDescription(tx.description);
+    const action = (x: Transaction) =>
+      x.disposition?.kind === 'budget'
+        ? `budget:${x.disposition.parts[0]?.lineKey}`
+        : x.disposition?.kind === 'income'
+          ? `income:${x.disposition.incomeKind}`
+          : x.disposition?.kind;
+    return (
+      !!name &&
+      all.filter(
+        (x) =>
+          normalizedDescription(x.description) === name &&
+          x.disposition?.state === 'accepted' &&
+          !x.disposition.ruleId &&
+          action(x) === action(tx),
+      ).length > 1 &&
+      all.findIndex((x) => normalizedDescription(x.description) === name && action(x) === action(tx)) ===
+        index
+    );
+  });
   const report = reports.find((r) => r.month === (selectedReport || reports[0]?.month));
   return (
     <>
@@ -222,6 +277,7 @@ export function SpendingPage() {
               : `Save failed: ${store.error}`}
         </span>
       </div>
+      {extras.security && <ReviewSyncPanel session={extras.security} store={store} />}
       <Panel
         title="Monthly reviews"
         actions={
@@ -343,6 +399,23 @@ export function SpendingPage() {
             Rules suggest classifications. They never accept a transaction for you. Use Remember this on a
             classified transaction to add a rule.
           </p>
+          <button
+            className="btn"
+            onClick={() =>
+              setRuleEdit({
+                id: crypto.randomUUID(),
+                position: t.spending.rules().length,
+                enabled: true,
+                createdAt: new Date().toISOString(),
+                pattern: '',
+                match: 'contains',
+                direction: 'any',
+                action: { kind: 'unbudgeted' },
+              })
+            }
+          >
+            New rule
+          </button>
           {t.spending.rules().map((r) => (
             <div className="v3-rule" key={r.id}>
               <label>
@@ -366,6 +439,9 @@ export function SpendingPage() {
                 !budget.lines.some((l) => l.lineKey === (r.action as { lineKey: string }).lineKey) && (
                   <span className="badge warn">Stale</span>
                 )}
+              <button className="btn small" onClick={() => setRuleEdit(r)}>
+                Edit rule
+              </button>
               <button className="btn small" onClick={() => run(() => t.spending.deleteRule(r.id))}>
                 Delete
               </button>
@@ -409,6 +485,34 @@ export function SpendingPage() {
             <button className="btn" disabled={!store.canUndo(ref)} onClick={() => store.undo(ref)}>
               Undo review edit
             </button>
+            <button className="btn" disabled={entry?.state !== 'open'} onClick={() => edit(() => undefined)}>
+              Keep open
+            </button>
+            {preview && (
+              <button
+                className="btn"
+                onClick={async () => {
+                  if (
+                    !(await confirm.ask(
+                      'This working copy includes individual transaction descriptions and amounts. Save it only where you want those details kept.',
+                      { confirmLabel: 'Export working copy' },
+                    ))
+                  )
+                    return;
+                  try {
+                    await saveFile(
+                      `Working spending review ${review.month}.xlsx`,
+                      exportSpendingReport(preview, reports, review),
+                      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                    );
+                  } catch (e) {
+                    fail(e);
+                  }
+                }}
+              >
+                Export working copy
+              </button>
+            )}
             <button
               className="btn"
               onClick={async () => {
@@ -429,6 +533,20 @@ export function SpendingPage() {
               Discard review
             </button>
           </div>
+          {latePostingChanges(review, reports).map((change) => (
+            <div className="notice" key={change.account}>
+              <p>
+                {change.account}: the final week of {change.month} changed by {change.countChange}{' '}
+                transactions and {change.amountChange} dollars since clearing.
+              </p>
+              <button className="btn" onClick={() => void start(change.month)}>
+                Re-run {change.month}
+              </button>
+              <p className="subtle">
+                Only the final seven days are compared. Earlier late postings are not detected.
+              </p>
+            </div>
+          ))}
           {store.warning(ref) && <p className="notice">{store.warning(ref)}</p>}
           {entry?.state === 'awaiting_upload' && (
             <p className="notice">
@@ -465,6 +583,7 @@ export function SpendingPage() {
                     review.evidence[a.id],
                     review.transactions.filter((tx) => tx.institutionAccountId === a.id),
                     review.settleDays,
+                    review.timeZone,
                   );
                   return (
                     <Panel
@@ -572,6 +691,34 @@ export function SpendingPage() {
                   />{' '}
                   Needs classification
                 </label>
+                <Field label="Filter account">
+                  <select
+                    className="box"
+                    value={accountFilter}
+                    onChange={(e) => setAccountFilter(e.target.value)}
+                  >
+                    <option value="">All accounts</option>
+                    {accounts.map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {a.displayName}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label="Filter classification">
+                  <select
+                    className="box"
+                    value={dispositionFilter}
+                    onChange={(e) => setDispositionFilter(e.target.value)}
+                  >
+                    <option value="">All classifications</option>
+                    {['suggested', 'budget', 'income', 'transfer', 'excluded', 'unbudgeted', 'pairs'].map(
+                      (d) => (
+                        <option key={d}>{d}</option>
+                      ),
+                    )}
+                  </select>
+                </Field>
                 <button className="btn" onClick={applyRules}>
                   Apply rules
                 </button>
@@ -796,6 +943,8 @@ export function SpendingPage() {
                                 r.balances[a.id] = {
                                   ...r.balances[a.id],
                                   value: exactAmount(value),
+                                  source: 'manual',
+                                  capturedAt: new Date().toISOString(),
                                   asOf: b?.asOf ?? monthPeriod(review.month).end,
                                   unavailable: false,
                                   periods: b?.periods ?? [],
@@ -814,6 +963,8 @@ export function SpendingPage() {
                                 r.balances[a.id] = {
                                   ...r.balances[a.id],
                                   value: b?.value ?? null,
+                                  source: 'manual',
+                                  capturedAt: new Date().toISOString(),
                                   unavailable: false,
                                   periods: b?.periods ?? [],
                                   asOf: calendarDate(e.target.value),
@@ -841,6 +992,24 @@ export function SpendingPage() {
                           Unavailable this month
                         </label>
                       </div>
+                      {liabilityKinds.includes(a.kind) && (
+                        <LiabilityDetails
+                          details={b?.details}
+                          label={a.displayName}
+                          onChange={(details) =>
+                            edit((r) => {
+                              r.balances[a.id] = {
+                                ...b,
+                                value: b?.value ?? null,
+                                asOf: b?.asOf ?? monthPeriod(review.month).end,
+                                unavailable: b?.unavailable ?? false,
+                                periods: b?.periods ?? [],
+                                details,
+                              };
+                            })
+                          }
+                        />
+                      )}
                     </Panel>
                   );
                 })}
@@ -851,6 +1020,18 @@ export function SpendingPage() {
               {preview && (
                 <>
                   <p className="notice">Working summary. Only accepted classifications count.</p>
+                  <Field label="Review note">
+                    <CommitInput
+                      multiline
+                      value={review.note}
+                      ariaLabel="Review note"
+                      onCommit={(value) =>
+                        edit((r) => {
+                          r.note = safeText(value);
+                        })
+                      }
+                    />
+                  </Field>
                   <ReportView
                     report={preview}
                     reports={reports}
@@ -902,9 +1083,29 @@ export function SpendingPage() {
                     </li>
                   ))}
                 </ul>
+                {repeated.length > 0 && (
+                  <div className="notice">
+                    <p>
+                      These repeated manual classifications could become rules for future months. Saving a
+                      rule keeps its chosen pattern after transactions are deleted.
+                    </p>
+                    {repeated.map((tx) => (
+                      <button
+                        key={tx.id}
+                        className="btn small"
+                        onClick={() => {
+                          setRemember(tx);
+                          setPattern('');
+                        }}
+                      >
+                        Remember {normalizedDescription(tx.description)}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 <button
                   className="btn primary"
-                  disabled={blockers.length > 0 || entry?.state !== 'open'}
+                  disabled={blockers.length > 0 || entry?.state !== 'open' || extras.security?.offline}
                   onClick={async () => {
                     if (
                       !(await confirm.ask(
@@ -918,12 +1119,17 @@ export function SpendingPage() {
                         throw new Error(
                           'Complete v3 encrypted sync setup before clearing a connected profile.',
                         );
-                      t.spending.clear(review);
+                      await store.flush();
+                      const latest = store.get(ref);
+                      if (!latest) throw new Error('This review was deleted on another device.');
+                      t.spending.clear(latest);
                       await store.finish(ref, 'cleared', async () => {
                         await t.flush();
                         if (extras.security) await extras.security.flush();
                       });
                       setSelectedReport(review.month);
+                      setRemember(null);
+                      setPattern('');
                       setTab('Reports');
                       toast('Month cleared. Temporary transactions deleted.', 'success');
                     } catch (e) {
@@ -966,6 +1172,11 @@ export function SpendingPage() {
       {classify && budget && review && (
         <ClassificationDialog
           transaction={classify}
+          fundingAccountId={
+            accounts.find((a) => a.id === classify.institutionAccountId)?.shared === false
+              ? accounts.find((a) => a.id === classify.institutionAccountId)?.treasuryAccountId
+              : null
+          }
           budget={budget}
           transactions={review.transactions}
           onClose={() => setClassify(null)}
@@ -1137,6 +1348,18 @@ export function SpendingPage() {
           <button className="btn primary">Save rule</button>
         </form>
       </Dialog>
+      {ruleEdit && (
+        <RuleEditor
+          rule={ruleEdit}
+          accounts={accounts}
+          lines={(budget ?? t.spending.budget(t.spending.defaultVersion(month)))?.lines ?? []}
+          onClose={() => setRuleEdit(null)}
+          onSave={(r) => {
+            t.spending.saveRule(r);
+            setRuleEdit(null);
+          }}
+        />
+      )}
       {confirm.element}
     </>
   );

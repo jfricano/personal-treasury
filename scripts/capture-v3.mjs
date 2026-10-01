@@ -3,7 +3,12 @@ import { chromium } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 const browser = await chromium.launch({ channel: 'chrome' });
 try {
-  const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+  const page = await browser.newPage({
+    viewport: { width: 1440, height: 1000 },
+    reducedMotion: 'reduce',
+    timezoneId: 'America/Los_Angeles',
+  });
+  await page.clock.setFixedTime(new Date('2026-09-24T19:00:00Z'));
   await page.addInitScript(() => localStorage.setItem('pt.demo.tourSeen', '1'));
   await page.goto('http://127.0.0.1:1430/#/analysis');
   await page.getByRole('button', { name: 'Try a sample review' }).click();

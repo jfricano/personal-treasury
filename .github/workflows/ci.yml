@@ -18,6 +18,8 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      - run: npm audit signatures
+      - run: npm audit --omit=dev --audit-level=high
       # Format, lint, types, unit + integration tests, desktop build and demo build.
       - run: npm run check
       # Playwright against the demo build, using the runner's installed Google Chrome.
@@ -30,3 +32,12 @@ jobs:
           name: playwright-results
           path: test-results
           retention-days: 7
+
+  private-container:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 24
+      - run: node scripts/smoke-private-container.mjs

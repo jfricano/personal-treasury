@@ -5,6 +5,9 @@ export type AccountKind =
   | 'brokerage'
   | 'retirement'
   | 'loan'
+  | 'student_loan'
+  | 'auto_loan'
+  | 'mortgage'
   | 'other_asset'
   | 'other_liability';
 export type Provider = 'file' | 'plaid' | 'simplefin';
@@ -95,6 +98,8 @@ export interface Evidence {
 export interface Balance {
   value: string | null;
   asOf: string;
+  capturedAt?: string;
+  source?: string;
   unavailable: boolean;
   periods: Period[];
   details?: {
@@ -179,6 +184,8 @@ export interface Snapshot {
   kind: AccountKind;
   value: string | null;
   asOf: string;
+  capturedAt?: string;
+  source?: string;
   estimate: boolean;
   unavailable: boolean;
   details?: Balance['details'];

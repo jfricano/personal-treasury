@@ -1,3 +1,4 @@
+import { installDesktopZoom } from '@/platform/zoom';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import wasmUrl from 'sql.js/dist/sql-wasm.wasm?url';
@@ -34,6 +35,7 @@ function switchProfile(name: string) {
 }
 
 async function boot() {
+  await installDesktopZoom();
   const root = createRoot(document.getElementById('root')!);
   try {
     if (import.meta.env.MODE === 'private-legacy') {

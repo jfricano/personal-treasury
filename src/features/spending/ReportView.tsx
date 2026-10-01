@@ -1,5 +1,12 @@
 import { Amount, CommitInput, Panel } from '@/components/ui';
-import { reportTotals, variance, yearToDate, type Report } from '@/domain/spending';
+import {
+  reportTotals,
+  reportGroups,
+  lineYearToDate,
+  variance,
+  yearToDate,
+  type Report,
+} from '@/domain/spending';
 import { formatUSD, sub } from '@/domain/money';
 export function ReportView({
   report,
@@ -48,6 +55,7 @@ export function ReportView({
                 <th className="num">Planned</th>
                 <th className="num">Actual</th>
                 <th>Status</th>
+                <th>YTD planned / actual</th>
                 <th>Note</th>
               </tr>
             </thead>
@@ -82,6 +90,10 @@ export function ReportView({
                       </span>
                     </td>
                     <td>
+                      <Amount value={lineYearToDate(reports, report.month, l.lineKey).planned} /> /{' '}
+                      <Amount value={lineYearToDate(reports, report.month, l.lineKey).actual} />
+                    </td>
+                    <td>
                       {onNote ? (
                         <CommitInput
                           value={l.note}
@@ -103,11 +115,61 @@ export function ReportView({
                 <td className="num">
                   <Amount value={report.unbudgeted.actual} />
                 </td>
-                <td colSpan={2}>{report.unbudgeted.count} transactions</td>
+                <td colSpan={3}>{report.unbudgeted.count} transactions</td>
               </tr>
             </tbody>
           </table>
         </div>
+      </Panel>
+      {(['category', 'fundingAccount'] as const).map((field) => (
+        <Panel key={field} title={field === 'category' ? 'Categories' : 'Funding accounts'}>
+          <div className="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Role</th>
+                  <th>Planned</th>
+                  <th>Actual</th>
+                  <th>Over / under</th>
+                </tr>
+              </thead>
+              <tbody>
+                {reportGroups(report, field).map((g) => (
+                  <tr key={`${g.role}|${g.label}`}>
+                    <td>{g.label}</td>
+                    <td>{g.role === 'set_aside' ? 'Set-aside' : 'Spending'}</td>
+                    <td>
+                      <Amount value={g.planned} />
+                    </td>
+                    <td>
+                      <Amount value={g.actual} />
+                    </td>
+                    <td>
+                      <Amount value={sub(g.actual, g.planned)} signed />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Panel>
+      ))}
+      <Panel title="Report coverage">
+        {report.sources.map((s) => (
+          <div key={s.accountId} className="v3-rule">
+            <strong>{s.label}</strong>
+            <span>
+              {s.status} · {s.source}
+            </span>
+            <span>{s.periods.map((p) => `${p.start} to ${p.end}`).join(', ') || 'No gathered window'}</span>
+            {s.waiver && <span>{s.waiver}</span>}
+            <span>
+              {s.count} transactions; inflows <Amount value={s.inflows} />, outflows{' '}
+              <Amount value={s.outflows} />
+            </span>
+          </div>
+        ))}
       </Panel>
       <div className="grid-2">
         <Panel title="Income">
@@ -149,7 +211,8 @@ export function ReportView({
                 <th>Kind</th>
                 <th>Value</th>
                 <th>As of</th>
-                <th>Method</th>
+                <th>Method / source / captured</th>
+                <th>Statement / loan details</th>
               </tr>
             </thead>
             <tbody>
@@ -159,7 +222,43 @@ export function ReportView({
                   <td>{b.kind.replaceAll('_', ' ')}</td>
                   <td>{b.value === null ? 'Unavailable' : <Amount value={b.value} />}</td>
                   <td>{b.asOf}</td>
-                  <td>{b.unavailable ? 'Unavailable' : b.estimate ? 'Month-end estimate' : 'As-of value'}</td>
+                  <td>
+                    {b.unavailable ? 'Unavailable' : b.estimate ? 'Month-end estimate' : 'As-of value'}
+                    <div className="subtle small">
+                      {b.source ?? ''}
+                      {b.capturedAt && ` · ${new Date(b.capturedAt).toLocaleString()}`}
+                    </div>
+                  </td>
+                  <td>
+                    {b.details && (
+                      <dl>
+                        {(
+                          [
+                            ['statementBalance', 'Statement balance'],
+                            ['minimumPayment', 'Minimum payment'],
+                            ['originalPrincipal', 'Original principal'],
+                            ['apr', 'APR (%)'],
+                            ['dueDate', 'Next due date'],
+                          ] as const
+                        )
+                          .filter(([key]) => b.details?.[key] !== undefined)
+                          .map(([key, title]) => (
+                            <div key={key}>
+                              <dt>{title}</dt>
+                              <dd>
+                                {key === 'dueDate' || key === 'apr' ? (
+                                  b.details![key]
+                                ) : (
+                                  <Amount value={b.details![key]!} />
+                                )}
+                              </dd>
+                            </div>
+                          ))}
+                        <dt>Source</dt>
+                        <dd>{b.details.source}</dd>
+                      </dl>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>

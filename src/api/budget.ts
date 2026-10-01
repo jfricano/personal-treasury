@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from '@/security/schema';
 import { computeBudget, type BudgetLine, type BudgetResult } from '@/domain/budget';
 import { isMoney, normalize } from '@/domain/money';
 import {

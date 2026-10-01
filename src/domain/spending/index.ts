@@ -85,6 +85,7 @@ export function coverage(
   evidence: Evidence | undefined,
   transactions: Transaction[],
   settleDays: number,
+  timeZone = 'UTC',
 ) {
   const period = monthPeriod(month);
   if (!evidence) return { status: 'missing', reason: 'Nothing gathered' };
@@ -100,7 +101,22 @@ export function coverage(
   const gap = firstGap(evidence.periods, period);
   if (gap) return { status: 'partial', reason: `Gap on ${gap}` };
   if (evidence.source !== 'file' && evidence.source !== 'manual') {
-    if ((evidence.freshness ?? evidence.gatheredAt).slice(0, 10) < dayAfter(period.end, settleDays))
+    const freshness = evidence.freshness ?? evidence.gatheredAt;
+    let freshDate: string;
+    try {
+      const date = new Date(freshness);
+      if (!Number.isFinite(date.getTime())) throw new Error('Invalid freshness');
+      const parts = new Intl.DateTimeFormat('en-CA', {
+        timeZone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      }).formatToParts(date);
+      freshDate = ['year', 'month', 'day'].map((k) => parts.find((p) => p.type === k)!.value).join('-');
+    } catch {
+      return { status: 'error', reason: 'Source freshness or household time zone is invalid' };
+    }
+    if (freshDate < dayAfter(period.end, settleDays))
       return { status: 'partial', reason: 'Not fresh enough' };
     if (
       !evidence.historyConfirmed &&
@@ -272,6 +288,8 @@ export function balanceSnapshot(
     label: account.displayName,
     kind: account.kind,
     asOf: balance?.asOf ?? '',
+    capturedAt: balance?.capturedAt,
+    source: balance?.source,
     unavailable: balance?.unavailable ?? false,
     estimate: false,
     value: balance?.value ?? null,
@@ -324,6 +342,7 @@ export function clearBlockers(
         review.evidence[a.id],
         rows.filter((t) => t.institutionAccountId === a.id),
         review.settleDays,
+        review.timeZone,
       );
       if (!['complete', 'waived'].includes(c.status)) add(`${a.displayName}: ${c.reason}`, a.id);
     }
@@ -436,7 +455,7 @@ export function buildReport(
           label: a.displayName,
           kind: a.kind,
           source: e.source,
-          status: coverage(review.month, e, ts, review.settleDays).status,
+          status: coverage(review.month, e, ts, review.settleDays, review.timeZone).status,
           waiver: e.waiver ? `${e.waiver.reason}: ${e.waiver.note}` : '',
           historyConfirmed: !!e.historyConfirmed,
           count: ts.length,
@@ -480,4 +499,80 @@ export function yearToDate(reports: Report[], through: string) {
     planned: sum(selected.map((r) => reportTotals(r).planned)),
     actual: sum(selected.map((r) => reportTotals(r).actual)),
   };
+}
+
+/** Compare only the prior month's final week when this gather actually covers it. No transaction details persist. */
+export function latePostingChanges(review: Review, reports: Report[]) {
+  const previousMonth = dayAfter(monthPeriod(review.month).start, -1).slice(0, 7);
+  const report = reports.find((r) => r.month === previousMonth);
+  if (!report) return [];
+  const end = monthPeriod(previousMonth).end,
+    start = dayAfter(end, -6);
+  return report.sources.flatMap((source) => {
+    const evidence = review.evidence[source.accountId];
+    if (!evidence || evidence.error || evidence.reconnect || firstGap(evidence.periods, { start, end }))
+      return [];
+    const rows = review.transactions.filter(
+      (t) =>
+        t.institutionAccountId === source.accountId &&
+        !t.pending &&
+        !t.removedAtSource &&
+        t.postedDate >= start &&
+        t.postedDate <= end,
+    );
+    const total = sum(rows.map((t) => t.amount));
+    return rows.length === source.tailCount && cmp(total, source.tailSum) === 0
+      ? []
+      : [
+          {
+            month: previousMonth,
+            account: source.label,
+            countChange: rows.length - source.tailCount,
+            amountChange: sub(total, source.tailSum),
+          },
+        ];
+  });
+}
+export function reportGroups(report: Report, field: 'category' | 'fundingAccount') {
+  const groups = new Map<string, { label: string; role: string; planned: string[]; actual: string[] }>();
+  for (const line of report.lines) {
+    const label = line[field] || 'No funding account',
+      key = `${line.role}|${label}`;
+    const group = groups.get(key) ?? { label, role: line.role, planned: [], actual: [] };
+    group.planned.push(line.planned);
+    group.actual.push(line.actual);
+    groups.set(key, group);
+  }
+  return [...groups.values()].map((g) => ({
+    label: g.label,
+    role: g.role,
+    planned: sum(g.planned),
+    actual: sum(g.actual),
+  }));
+}
+export function lineYearToDate(reports: Report[], through: string, lineKey: string) {
+  const lines = reports
+    .filter((r) => r.month <= through && r.month.slice(0, 4) === through.slice(0, 4))
+    .flatMap((r) => r.lines.filter((l) => l.lineKey === lineKey));
+  return { planned: sum(lines.map((l) => l.planned)), actual: sum(lines.map((l) => l.actual)) };
+}
+
+export const liabilityKinds = [
+  'credit_card',
+  'loan',
+  'student_loan',
+  'auto_loan',
+  'mortgage',
+  'other_liability',
+];
+/** Previous complete calendar month, walking past reports already cleared. */
+export function latestUnclearedMonth(reports: Pick<Report, 'month'>[], today = new Date()) {
+  const date = new Date(today.getFullYear(), today.getMonth() - 1, 1, 12);
+  const cleared = new Set(reports.map((r) => r.month));
+  for (let attempt = 0; attempt <= cleared.size; attempt++) {
+    const month = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    if (!cleared.has(month)) return month;
+    date.setMonth(date.getMonth() - 1);
+  }
+  throw new Error('Could not determine the next review month.');
 }

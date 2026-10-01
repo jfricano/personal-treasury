@@ -14,10 +14,12 @@ export function ClassificationDialog({
   transactions,
   onClose,
   onSave,
+  fundingAccountId,
 }: {
   transaction: Transaction;
   budget: ReviewBudget;
   transactions: Transaction[];
+  fundingAccountId?: string | null;
   onClose: () => void;
   onSave: (d: Disposition) => void;
 }) {
@@ -81,6 +83,12 @@ export function ClassificationDialog({
             ))}
           </select>
         </Field>
+        {fundingAccountId && (
+          <p className="subtle">
+            Lines that fund the mapped treasury account are marked as hints. Choose the line that describes
+            this purchase.
+          </p>
+        )}
         {kind === 'budget' && (
           <>
             {parts.map((p, i) => (
@@ -96,6 +104,9 @@ export function ClassificationDialog({
                     {budget.lines.map((l) => (
                       <option value={l.lineKey} key={l.lineKey}>
                         {l.label}
+                        {fundingAccountId && l.fundingAccountId === fundingAccountId
+                          ? ' · funds this account'
+                          : ''}
                       </option>
                     ))}
                   </select>

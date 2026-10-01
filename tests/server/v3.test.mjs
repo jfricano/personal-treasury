@@ -20,7 +20,7 @@ function fromBase32(s) {
   }
   return Buffer.from(bytes).toString('base64');
 }
-async function fixture(t, legacy = false) {
+async function fixture(t, legacy = false, extra = {}) {
   let clock = Date.parse('2026-09-27T12:00:00Z');
   const directory = await mkdtemp(path.join(tmpdir(), 'pt-v3-test-'));
   const legacyToken = randomBytes(32).toString('base64url');
@@ -47,7 +47,9 @@ async function fixture(t, legacy = false) {
       ...keys,
       setupSecret,
       legacyToken: legacy ? legacyToken : undefined,
+      requestLogger: () => undefined,
       now: () => clock,
+      ...extra,
     });
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
   t.after(() => new Promise((resolve) => server.close(resolve)));
@@ -130,6 +132,10 @@ async function fixture(t, legacy = false) {
     credentials,
     directory,
     secret,
+    server,
+    config: { dataDirectory: directory, origin, ...keys, setupSecret, requestLogger: () => undefined },
+    recoveryCodes: begin.body.recoveryCodes,
+    cookie: () => cookies,
     advance: (ms) => {
       clock += ms;
     },
@@ -305,4 +311,413 @@ test('SEC-DEVICE desktop challenge requires the enrolled key and rejects replay'
   const body = { pending: pending.body.pending, method: 'device', deviceId: registration.body.id, signature };
   assert.equal((await f.call('/api/auth/factor', body, opts)).status, 200);
   assert.equal((await f.call('/api/auth/factor', body, opts)).status, 401);
+});
+
+test('SEC-SESS fresh step-up rotates cookies and recovery codes cannot authorize sensitive actions', async (t) => {
+  const f = await fixture(t);
+  await f.login();
+  const oldCookie = f.cookie();
+  f.advance(31000);
+  const proof = await f.call('/api/auth/step-up', {
+    method: 'totp',
+    code: totp(f.secret, Math.floor((f.clock() + 7000) / 30000)),
+  });
+  assert.equal(proof.status, 200);
+  assert.notEqual(f.cookie(), oldCookie);
+  assert.equal(
+    (await f.call('/api/auth/session', undefined, { headers: { Cookie: oldCookie } })).status,
+    401,
+  );
+  assert.equal(
+    (await f.call('/api/auth/step-up', { method: 'recovery', code: f.recoveryCodes[0] })).status,
+    403,
+  );
+  assert.equal((await f.call('/api/auth/session')).status, 200);
+});
+test('SEC-MFA regenerating recovery codes invalidates every old code and stores only hashes', async (t) => {
+  const f = await fixture(t);
+  await f.login();
+  const codes = await f.call('/api/auth/recovery/regenerate', {});
+  assert.equal(codes.status, 200);
+  assert.equal(codes.body.codes.length, 10);
+  const disk = await readFile(path.join(f.directory, 'account.json'), 'utf8');
+  for (const code of codes.body.codes) assert(!disk.includes(code));
+  await f.call('/api/auth/logout', {});
+  await f.call('/api/auth/login', f.credentials);
+  assert.equal(
+    (await f.call('/api/auth/factor', { method: 'recovery', code: f.recoveryCodes[0] })).status,
+    401,
+  );
+  assert.equal(
+    (await f.call('/api/auth/factor', { method: 'recovery', code: codes.body.codes[0] })).status,
+    200,
+  );
+  assert.equal((await f.call('/api/auth/recovery/regenerate', {})).status, 403);
+  await f.call('/api/auth/logout', {});
+  await f.call('/api/auth/login', f.credentials);
+  assert.equal(
+    (await f.call('/api/auth/factor', { method: 'recovery', code: codes.body.codes[0] })).status,
+    401,
+  );
+});
+test('SEC-MFA authenticator replacement keeps old secret until confirmed, then ends other sessions', async (t) => {
+  const f = await fixture(t);
+  await f.login();
+  const other = f.cookie();
+  await f.login();
+  const begin = await f.call('/api/auth/authenticator/begin', {});
+  assert.equal(begin.status, 200);
+  assert.equal((await f.call('/api/auth/authenticator/confirm', { code: 'bad' })).status, 401);
+  assert.equal((await f.call('/api/auth/session', undefined, { headers: { Cookie: other } })).status, 200);
+  const secret = fromBase32(begin.body.secret);
+  const confirm = await f.call('/api/auth/authenticator/confirm', {
+    code: totp(secret, Math.floor((f.clock() + 7000) / 30000)),
+  });
+  assert.equal(confirm.status, 200);
+  assert.equal((await f.call('/api/auth/session', undefined, { headers: { Cookie: other } })).status, 401);
+  await f.call('/api/auth/logout', {});
+  f.advance(60000);
+  await f.call('/api/auth/login', f.credentials);
+  assert.equal(
+    (
+      await f.call('/api/auth/factor', {
+        method: 'totp',
+        code: totp(f.secret, Math.floor((f.clock() + 7000) / 30000)),
+      })
+    ).status,
+    401,
+  );
+  assert.equal(
+    (
+      await f.call('/api/auth/factor', {
+        method: 'totp',
+        code: totp(secret, Math.floor((f.clock() + 7000) / 30000)),
+      })
+    ).status,
+    200,
+  );
+});
+test('SEC-DEVICE revocation ends an enrolled desktop session and its device key cannot sign in again', async (t) => {
+  const f = await fixture(t),
+    desktop = await f.desktop();
+  const pair = await webcrypto.subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, false, [
+    'sign',
+    'verify',
+  ]);
+  const publicKey = Buffer.from(await webcrypto.subtle.exportKey('spki', pair.publicKey)).toString('base64');
+  const device = await f.call('/api/auth/devices', { publicKey }, { headers: desktop });
+  await f.login();
+  assert.equal((await f.call('/api/auth/devices/revoke', { id: device.body.id })).status, 200);
+  assert.equal((await f.call('/api/auth/session', undefined, { headers: desktop })).status, 401);
+  const opts = { headers: { Origin: 'tauri://localhost', Cookie: '' } };
+  const pending = await f.call('/api/auth/login', { ...f.credentials, client: 'desktop' }, opts);
+  const challenge = await f.call('/api/auth/factor/device', { pending: pending.body.pending }, opts);
+  const signature = Buffer.from(
+    await webcrypto.subtle.sign(
+      { name: 'ECDSA', hash: 'SHA-256' },
+      pair.privateKey,
+      Buffer.from(challenge.body.challenge, 'base64'),
+    ),
+  ).toString('base64');
+  assert.equal(
+    (
+      await f.call(
+        '/api/auth/factor',
+        { pending: pending.body.pending, method: 'device', deviceId: device.body.id, signature },
+        opts,
+      )
+    ).status,
+    401,
+  );
+});
+test('SEC-AUTH password changes require desktop and current password, preserve history and expire other sessions', async (t) => {
+  const f = await fixture(t);
+  await f.login();
+  const oldCookie = f.cookie();
+  const desktop = await f.desktop();
+  const snapshot = envelope('snapshot', 'treasury', 1);
+  await f.call(
+    '/api/sync/head',
+    { envelope: snapshot },
+    { method: 'PUT', headers: { ...desktop, 'If-Match': '"0"' } },
+  );
+  const next = {
+    ...f.credentials,
+    authKey: randomBytes(32).toString('base64'),
+    salt: randomBytes(32).toString('base64'),
+    wrapped: { iv: 'new', ciphertext: 'new wrapper' },
+  };
+  assert.equal(
+    (await f.call('/api/auth/password', { ...next, currentAuthKey: f.credentials.authKey })).status,
+    403,
+  );
+  assert.equal(
+    (await f.call('/api/auth/password', { ...next, currentAuthKey: 'wrong' }, { headers: desktop })).status,
+    401,
+  );
+  assert.equal(
+    (
+      await f.call(
+        '/api/auth/password',
+        { ...next, currentAuthKey: f.credentials.authKey },
+        { headers: desktop },
+      )
+    ).status,
+    200,
+  );
+  assert.equal(
+    (await f.call('/api/auth/session', undefined, { headers: { Cookie: oldCookie } })).status,
+    401,
+  );
+  assert.deepEqual(
+    (await f.call('/api/sync/versions/1', undefined, { headers: desktop })).body.envelope,
+    snapshot,
+  );
+  assert.equal((await f.call('/api/auth/login', f.credentials)).status, 401);
+  assert.equal((await f.call('/api/auth/login', next)).status, 200);
+  f.advance(31000);
+  assert.equal(
+    (
+      await f.call('/api/auth/factor', {
+        method: 'totp',
+        code: totp(f.secret, Math.floor((f.clock() + 7000) / 30000)),
+      })
+    ).status,
+    200,
+  );
+});
+
+test('SEC-RL only a signed desktop proof selects the trusted device lockout pool', async (t) => {
+  const f = await fixture(t),
+    headers = await f.desktop();
+  const pair = await webcrypto.subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, false, [
+    'sign',
+    'verify',
+  ]);
+  const publicKey = Buffer.from(await webcrypto.subtle.exportKey('spki', pair.publicKey)).toString('base64');
+  const device = await f.call('/api/auth/devices', { publicKey }, { headers });
+  for (let i = 0; i < 5; i++)
+    assert.equal(
+      (await f.call('/api/auth/login', { ...f.credentials, authKey: 'wrong' }, { headers: { Cookie: '' } }))
+        .status,
+      401,
+    );
+  const opts = { headers: { Origin: 'tauri://localhost', Cookie: '' } };
+  assert.equal(
+    (await f.call('/api/auth/login', { ...f.credentials, client: 'desktop', deviceId: device.body.id }, opts))
+      .status,
+    429,
+  );
+  const challenge = await f.call('/api/auth/device/challenge', { deviceId: device.body.id }, opts);
+  const signature = Buffer.from(
+    await webcrypto.subtle.sign(
+      { name: 'ECDSA', hash: 'SHA-256' },
+      pair.privateKey,
+      Buffer.from(challenge.body.challenge, 'base64'),
+    ),
+  ).toString('base64');
+  const body = {
+    ...f.credentials,
+    client: 'desktop',
+    deviceId: device.body.id,
+    deviceProof: { challenge: challenge.body.challenge, signature },
+  };
+  assert.equal((await f.call('/api/auth/login', body, opts)).status, 200);
+  assert.equal((await f.call('/api/auth/login', body, opts)).status, 429);
+});
+
+test('SEC-DEVICE desktop step-up binds password proof and signature, rotates bearer token and rejects replay', async (t) => {
+  const f = await fixture(t),
+    headers = await f.desktop(),
+    pair = await webcrypto.subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, false, [
+      'sign',
+      'verify',
+    ]);
+  const publicKey = Buffer.from(await webcrypto.subtle.exportKey('spki', pair.publicKey)).toString('base64');
+  const device = await f.call('/api/auth/devices', { publicKey }, { headers });
+  assert.equal(
+    (await f.call('/api/auth/step-up/device', { ...f.credentials, authKey: 'wrong' }, { headers })).status,
+    401,
+  );
+  const challenge = await f.call('/api/auth/step-up/device', f.credentials, { headers });
+  const signature = Buffer.from(
+    await webcrypto.subtle.sign(
+      { name: 'ECDSA', hash: 'SHA-256' },
+      pair.privateKey,
+      Buffer.from(challenge.body.challenge, 'base64'),
+    ),
+  ).toString('base64');
+  const body = { method: 'device', deviceId: device.body.id, signature };
+  const proof = await f.call('/api/auth/step-up', body, { headers });
+  assert.equal(proof.status, 200);
+  const next = { ...headers, Authorization: `Bearer ${proof.body.token}` };
+  assert.notEqual(next.Authorization, headers.Authorization);
+  assert.equal((await f.call('/api/auth/session', undefined, { headers })).status, 401);
+  assert.equal((await f.call('/api/auth/step-up', body, { headers: next })).status, 401);
+  assert.equal((await f.call('/api/auth/session', undefined, { headers: next })).status, 200);
+});
+
+test('SEC-MFA break-glass requires the password, works once, replaces factors, and remains consumed after restart', async (t) => {
+  const reset = randomBytes(32).toString('base64'),
+    f = await fixture(t, false, { mfaReset: reset });
+  assert.equal((await f.call('/api/auth/login', { ...f.credentials, authKey: 'wrong' })).status, 401);
+  const login = await f.call('/api/auth/login', f.credentials);
+  assert.equal(login.body.resetRequired, true);
+  assert.equal((await f.call('/api/sync/head')).status, 401);
+  const enrollment = await f.call('/api/auth/factor/reset/begin', {});
+  assert.equal(enrollment.status, 200);
+  assert.equal((await f.call('/api/auth/factor/reset/begin', {})).status, 403);
+  const secret = fromBase32(enrollment.body.totpSecret);
+  const confirmation = await f.call('/api/auth/factor/reset/confirm', {
+    code: totp(secret, Math.floor((f.clock() + 7000) / 30000)),
+  });
+  assert.equal(confirmation.status, 200);
+  assert.equal((await f.call('/api/auth/factor/reset/confirm', {})).status, 401);
+  const state = JSON.parse(await readFile(path.join(f.directory, 'state.json'), 'utf8'));
+  assert(state.events.some((e) => e.type === 'mfa_break_glass_completed'));
+  assert(!JSON.stringify(state).includes(reset));
+  await new Promise((resolve) => f.server.close(resolve));
+  const server = await createV3Server({ ...f.config, mfaReset: reset, now: f.clock });
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  t.after(() => new Promise((resolve) => server.close(resolve)));
+  const response = await fetch(`http://127.0.0.1:${server.address().port}/api/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-PT-Request': '1', Origin: 'http://localhost' },
+    body: JSON.stringify(f.credentials),
+  });
+  assert.equal((await response.json()).resetRequired, false);
+});
+test('SEC-KEY at-rest rotation rewrites only encrypted account fields and requires the old key', async (t) => {
+  const f = await fixture(t),
+    before = JSON.parse(await readFile(path.join(f.directory, 'account.json'), 'utf8'));
+  await new Promise((resolve) => f.server.close(resolve));
+  const nextKey = randomBytes(32).toString('base64');
+  await assert.rejects(
+    createV3Server({ ...f.config, atRestKeyId: '2', atRestKey: nextKey }),
+    /Required at-rest key/,
+  );
+  const server = await createV3Server({
+    ...f.config,
+    atRestKeyId: '2',
+    atRestKey: f.config.atRestKey,
+    atRestKeys: { 1: f.config.atRestKey, 2: nextKey },
+  });
+  t.after(() => new Promise((resolve) => server.close(resolve)));
+  const after = JSON.parse(await readFile(path.join(f.directory, 'account.json'), 'utf8'));
+  assert.equal(after.wrapped.kid, '2');
+  assert.equal(after.totp.kid, '2');
+  assert.notEqual(after.wrapped.ciphertext, before.wrapped.ciphertext);
+  assert.equal(after.verifier, before.verifier);
+  assert(!JSON.stringify(after).includes('wrapped key canary'));
+  // Reopening with only the new key proves both account fields were rewrapped atomically.
+  const reopened = await createV3Server({ ...f.config, atRestKeyId: '2', atRestKey: nextKey });
+  t.after(() => new Promise((resolve) => reopened.close(resolve)));
+});
+
+test('SEC-LOG request templates and append-only security events omit credential and path canaries', async (t) => {
+  const logs = [],
+    f = await fixture(t, false, { requestLogger: (r) => logs.push(r) });
+  await f.login();
+  await f.call('/api/auth/prelogin?CANARY_QUERY', { userId: 'CANARY_USER_ID' });
+  await f.call('/api/CANARY_PATH', {});
+  const files = await readdir(path.join(f.directory, 'security-events'));
+  const journal = (
+    await Promise.all(files.map((name) => readFile(path.join(f.directory, 'security-events', name), 'utf8')))
+  ).join('');
+  assert.match(journal, /sign_in_succeeded/);
+  assert.match(journal, /browser/);
+  const raw = JSON.stringify(logs) + journal;
+  for (const canary of [
+    'CANARY_QUERY',
+    'CANARY_PATH',
+    'CANARY_USER_ID',
+    f.credentials.authKey,
+    f.cookie(),
+    f.secret,
+    f.credentials.userId,
+  ])
+    assert.equal(raw.includes(canary), false);
+  assert.ok(
+    logs.every(
+      (r) => r.requestId && r.ipTag && Number.isInteger(r.inputBytes) && Number.isInteger(r.outputBytes),
+    ),
+  );
+  assert.equal(logs.at(-1).route, 'unmatched_api');
+});
+test('SEC-RL proxy IP partitioning is opt-in and never uses X-Forwarded-For', async (t) => {
+  const direct = await fixture(t);
+  direct.advance(30000);
+  for (let i = 0; i < 5; i++)
+    assert.equal(
+      (
+        await direct.call(
+          '/api/auth/prelogin',
+          {},
+          { advance: false, headers: { 'X-Real-IP': `192.0.2.${i + 1}` } },
+        )
+      ).status,
+      200,
+    );
+  assert.equal(
+    (await direct.call('/api/auth/prelogin', {}, { advance: false, headers: { 'X-Real-IP': '192.0.2.99' } }))
+      .status,
+    429,
+  );
+  const proxied = await fixture(t, false, { trustProxy: true });
+  for (let i = 0; i < 5; i++)
+    assert.equal(
+      (
+        await proxied.call(
+          '/api/auth/prelogin',
+          {},
+          { advance: false, headers: { 'X-Real-IP': '192.0.2.1' } },
+        )
+      ).status,
+      200,
+    );
+  assert.equal(
+    (
+      await proxied.call(
+        '/api/auth/prelogin',
+        {},
+        { advance: false, headers: { 'X-Real-IP': '192.0.2.1', 'X-Forwarded-For': '192.0.2.99' } },
+      )
+    ).status,
+    429,
+  );
+  assert.equal(
+    (await proxied.call('/api/auth/prelogin', {}, { advance: false, headers: { 'X-Real-IP': '192.0.2.2' } }))
+      .status,
+    200,
+  );
+});
+test('SEC-RL the persisted hourly breaker closes untrusted sign-ins while a signed trusted browser can still complete password proof', async (t) => {
+  const f = await fixture(t);
+  await f.login();
+  await new Promise((resolve) => f.server.close(resolve));
+  const stateFile = path.join(f.directory, 'state.json'),
+    state = JSON.parse(await readFile(stateFile, 'utf8'));
+  state.hourFailures = Array(1000).fill(f.clock());
+  await writeFile(stateFile, JSON.stringify(state));
+  const server = await createV3Server({ ...f.config, now: f.clock });
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  t.after(() => new Promise((resolve) => server.close(resolve)));
+  const call = async (body, cookie = '') => {
+    f.advance(7000);
+    return fetch(`http://127.0.0.1:${server.address().port}/api/auth/login`, {
+      method: 'POST',
+      headers: {
+        Origin: 'http://localhost',
+        'Content-Type': 'application/json',
+        'X-PT-Request': '1',
+        Cookie: cookie,
+      },
+      body: JSON.stringify(body),
+    });
+  };
+  assert.equal((await call({ ...f.credentials, authKey: randomBytes(32).toString('base64') })).status, 401);
+  assert.equal((await call(f.credentials)).status, 429);
+  assert.equal((await call(f.credentials, f.cookie())).status, 200);
+  const persisted = JSON.parse(await readFile(stateFile, 'utf8'));
+  assert.ok(persisted.breakerUntil > f.clock());
 });

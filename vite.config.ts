@@ -12,6 +12,7 @@ const demoHtml = (): Plugin => ({
   apply: 'build',
   transformIndexHtml: (html) =>
     html
+      .replace("style-src 'self' 'unsafe-inline'", "style-src 'self'; style-src-attr 'none'")
       .replace(
         /connect-src [^"]*/,
         "connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'",
@@ -27,6 +28,7 @@ const privateHtml = (): Plugin => ({
   apply: 'build',
   transformIndexHtml: (html) =>
     html
+      .replace("style-src 'self' 'unsafe-inline'", "style-src 'self'; style-src-attr 'none'")
       .replace(
         /connect-src [^"]*/,
         "connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'",
@@ -42,7 +44,17 @@ export default defineConfig(({ mode }) => {
     plugins: [react(), ...(demo ? [demoHtml()] : []), ...(privateWeb ? [privateHtml()] : [])],
     base: demo ? './' : '/',
     clearScreen: false,
-    resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
+    resolve: {
+      alias: [
+        ...(demo
+          ? ['@/sources/plaid', '@/sources/gather', './ProviderPanel'].map((find) => ({
+              find,
+              replacement: fileURLToPath(new URL('./src/demo/providerBoundary.tsx', import.meta.url)),
+            }))
+          : []),
+        { find: '@', replacement: fileURLToPath(new URL('./src', import.meta.url)) },
+      ],
+    },
     server: {
       port: 1420,
       strictPort: true,

@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from '@/security/schema';
 import type { SqlJsStatic } from 'sql.js';
 import { SqlJsDriver, type SqlDriver } from '@/db/driver';
 import { SCHEMA_VERSION, migrate } from '@/db/migrations';
@@ -36,6 +36,7 @@ export const BACKUP_TABLES = [
   'spending_report_flows',
   'spending_report_sources',
   'balance_snapshots',
+  'spending_source_periods',
   'audit_log',
 ] as const;
 
@@ -111,6 +112,8 @@ export function buildDatabaseFromBackup(SQL: SqlJsStatic, backup: BackupFile): U
   // Restore into the original schema before applying forward migrations.
   migrate(db, backup.schemaVersion);
   db.transaction(() => {
+    // Restore replaces the defaults seeded into this new database, including its household time zone.
+    db.run('DELETE FROM meta');
     for (const t of BACKUP_TABLES) {
       const rows = backup.tables[t] ?? [];
       if (!rows.length) continue;

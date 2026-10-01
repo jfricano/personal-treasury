@@ -322,6 +322,14 @@ export async function startFromEnv(environment = process.env) {
       origin: environment.PT_PUBLIC_ORIGIN,
       pepper: environment.PT_AUTH_PEPPER,
       atRestKey: environment.PT_AT_REST_KEY,
+      atRestKeyId: environment.PT_AT_REST_KEY_ID ?? '1',
+      atRestKeys: Object.fromEntries(
+        Object.entries(environment)
+          .filter(([name]) => /^PT_AT_REST_KEY_[a-zA-Z0-9_-]+$/.test(name) && name !== 'PT_AT_REST_KEY_ID')
+          .map(([name, value]) => [name.slice('PT_AT_REST_KEY_'.length), value]),
+      ),
+      mfaReset: environment.PT_AUTH_MFA_RESET,
+      trustProxy: environment.PT_TRUST_PROXY === '1',
       deviceCookieKey: environment.PT_DEVICE_COOKIE_KEY,
       logKey: environment.PT_LOG_KEY,
       setupSecret: environment.PT_SETUP_SECRET,

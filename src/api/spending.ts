@@ -1,4 +1,7 @@
-import { z } from 'zod';
+import { fromColumns, saveColumns, type SpendingTable } from '@/db/spendingColumns';
+import type { Param } from '@/db/driver';
+import { cmp } from '@/domain/money';
+import { z } from '@/security/schema';
 import type { Treasury } from './treasury';
 import {
   buildReport,
@@ -26,6 +29,9 @@ const AccountSchema = z.object({
     'brokerage',
     'retirement',
     'loan',
+    'student_loan',
+    'auto_loan',
+    'mortgage',
     'other_asset',
     'other_liability',
   ]),
@@ -76,8 +82,26 @@ export class SpendingService {
   constructor(private readonly t: Treasury) {}
   private list<T>(table: Table): T[] {
     return this.t.db
-      .all<{ data: string }>(`SELECT data FROM ${table} ORDER BY rowid`)
-      .map((r) => JSON.parse(r.data) as T);
+      .all<Record<string, Param>>(`SELECT * FROM ${table} ORDER BY rowid`)
+      .map((r) => fromColumns<T>(table, r));
+  }
+  reviewSettings() {
+    return {
+      timeZone:
+        this.t.repos.getMeta('household_time_zone') ?? Intl.DateTimeFormat().resolvedOptions().timeZone,
+      settleDays: Number(this.t.repos.getMeta('review_settle_days') ?? 3),
+      pairingDays: Number(this.t.repos.getMeta('review_pairing_days') ?? 5),
+    };
+  }
+  setReviewSettings(settings: { timeZone: string; settleDays: number; pairingDays: number }) {
+    new Intl.DateTimeFormat('en-US', { timeZone: settings.timeZone }).format();
+    if ([settings.settleDays, settings.pairingDays].some((v) => !Number.isInteger(v) || v < 0 || v > 10))
+      throw new Error('Use review delays of 0–10 days.');
+    this.t.mutate('Set review defaults', () => {
+      this.t.repos.setMeta('household_time_zone', settings.timeZone);
+      this.t.repos.setMeta('review_settle_days', String(settings.settleDays));
+      this.t.repos.setMeta('review_pairing_days', String(settings.pairingDays));
+    });
   }
   connections() {
     return this.list<Connection>('connections');
@@ -108,7 +132,7 @@ export class SpendingService {
         lastError: null,
         consentExpiresAt: null,
       };
-      this.t.db.run('INSERT INTO connections(id,data) VALUES(?,?)', [id, JSON.stringify(c)]);
+      saveColumns(this.t.db, 'connections', c, ['id']);
       this.t.repos.audit('create', 'connection', id, null, c);
     });
     return id;
@@ -126,20 +150,14 @@ export class SpendingService {
       consentExpiresAt: input.consentExpiresAt,
     };
     this.t.mutate('Save provider connection', () => {
-      this.t.db.run(
-        'INSERT INTO connections(id,data) VALUES(?,?) ON CONFLICT(id) DO UPDATE SET data=excluded.data',
-        [c.id, JSON.stringify(c)],
-      );
+      saveColumns(this.t.db, 'connections', c, ['id']);
       this.t.repos.audit('update', 'connection', c.id, null, c);
     });
   }
   saveAccount(input: InstitutionAccount) {
     const a = AccountSchema.parse(input);
     this.t.mutate('Save connected account', () => {
-      this.t.db.run(
-        'INSERT INTO institution_accounts(id,connection_id,treasury_account_id,data) VALUES(?,?,?,?) ON CONFLICT(id) DO UPDATE SET connection_id=excluded.connection_id,treasury_account_id=excluded.treasury_account_id,data=excluded.data',
-        [a.id, a.connectionId, a.treasuryAccountId, JSON.stringify(a)],
-      );
+      saveColumns(this.t.db, 'institution_accounts', a, ['id']);
       this.t.repos.audit('update', 'institution_account', a.id, null, a);
     });
   }
@@ -148,25 +166,22 @@ export class SpendingService {
       const c = this.connections().find((c) => c.id === id);
       if (!c) throw new Error('Connection not found');
       for (const a of this.accounts().filter((a) => a.connectionId === id)) {
-        this.t.db.run('UPDATE institution_accounts SET data=? WHERE id=?', [
-          JSON.stringify({ ...a, active: false }),
-          a.id,
-        ]);
+        saveColumns(this.t.db, 'institution_accounts', { ...a, active: false }, ['id']);
       }
-      this.t.db.run('UPDATE connections SET data=? WHERE id=?', [
-        JSON.stringify({ ...c, status: 'removed', credentialRef: null }),
-        id,
-      ]);
+      saveColumns(this.t.db, 'connections', { ...c, status: 'removed', credentialRef: null }, ['id']);
       this.t.repos.audit('delete', 'connection', id, null, null);
     });
   }
   saveRule(input: Rule) {
     const r = RuleSchema.parse(input);
+    if (
+      (r.min && cmp(r.min, '0') < 0) ||
+      (r.max && cmp(r.max, '0') < 0) ||
+      (r.min && r.max && cmp(r.min, r.max) > 0)
+    )
+      throw new Error('Invalid rule amount range');
     this.t.mutate('Save categorization rule', () => {
-      this.t.db.run(
-        'INSERT INTO categorization_rules(id,data) VALUES(?,?) ON CONFLICT(id) DO UPDATE SET data=excluded.data',
-        [r.id, JSON.stringify(r)],
-      );
+      saveColumns(this.t.db, 'categorization_rules', r, ['id']);
       this.t.repos.audit('update', 'categorization_rule', r.id, null, r);
     });
   }
@@ -235,22 +250,31 @@ export class SpendingService {
   }
   reports(): Report[] {
     return this.t.db
-      .all<{ month: string; data: string; budget_version_id: string | null }>(
-        'SELECT * FROM spending_reports ORDER BY month DESC',
-      )
+      .all<Record<string, Param>>('SELECT * FROM spending_reports ORDER BY month DESC')
       .map((r) => {
-        const header = JSON.parse(r.data);
-        const rows = (table: string) =>
+        const rows = (table: SpendingTable) =>
           this.t.db
-            .all<{ data: string }>(`SELECT data FROM ${table} WHERE month=? ORDER BY position`, [r.month])
-            .map((x) => JSON.parse(x.data));
+            .all<Record<string, Param>>(`SELECT * FROM ${table} WHERE month=? ORDER BY position`, [r.month])
+            .map((x) => fromColumns(table, x));
         return {
-          ...header,
-          budgetVersionId: r.budget_version_id,
+          ...fromColumns<Report>('spending_reports', r),
           lines: rows('spending_report_lines'),
           flows: rows('spending_report_flows'),
-          sources: rows('spending_report_sources'),
           balances: rows('balance_snapshots'),
+          sources: this.t.db
+            .all<Record<string, Param>>(
+              'SELECT * FROM spending_report_sources WHERE month=? ORDER BY position',
+              [r.month],
+            )
+            .map((x) => ({
+              ...(fromColumns('spending_report_sources', x) as object),
+              periods: this.t.db
+                .all<{ start_date: string; end_date: string }>(
+                  'SELECT start_date,end_date FROM spending_source_periods WHERE month=? AND source_position=? ORDER BY position',
+                  [r.month, x.position],
+                )
+                .map((p) => ({ start: p.start_date, end: p.end_date })),
+            })),
         } as Report;
       });
   }
@@ -260,25 +284,24 @@ export class SpendingService {
     const report = buildReport(review, this.accounts(), budget);
     this.t.mutate(`Clear spending report ${review.month}`, () => {
       this.t.db.run('DELETE FROM spending_reports WHERE month=?', [review.month]);
-      const { lines, flows, sources, balances, ...header } = report;
-      this.t.db.run('INSERT INTO spending_reports(month,budget_version_id,data) VALUES(?,?,?)', [
-        report.month,
-        report.budgetVersionId,
-        JSON.stringify(header),
-      ]);
+      saveColumns(this.t.db, 'spending_reports', report, ['month']);
       for (const [table, rows] of [
-        ['spending_report_lines', lines],
-        ['spending_report_flows', flows],
-        ['spending_report_sources', sources],
-        ['balance_snapshots', balances],
+        ['spending_report_lines', report.lines],
+        ['spending_report_flows', report.flows],
+        ['spending_report_sources', report.sources],
+        ['balance_snapshots', report.balances],
       ] as const)
-        rows.forEach((row, i) =>
-          this.t.db.run(`INSERT INTO ${table}(month,position,data) VALUES(?,?,?)`, [
-            report.month,
-            i,
-            JSON.stringify(row),
-          ]),
+        rows.forEach((row, position) =>
+          saveColumns(this.t.db, table, row, ['month', 'position'], { month: report.month, position }),
         );
+      report.sources.forEach((source, sourcePosition) =>
+        source.periods.forEach((period, position) =>
+          this.t.db.run(
+            'INSERT INTO spending_source_periods(month,source_position,position,start_date,end_date) VALUES(?,?,?,?,?)',
+            [report.month, sourcePosition, position, period.start, period.end],
+          ),
+        ),
+      );
       this.t.repos.audit('create', 'spending_report', report.month, null, { month: report.month });
     });
     return report;
@@ -292,26 +315,20 @@ export class SpendingService {
   setReportNote(month: string, note: string, lineKey?: string) {
     this.t.mutate('Edit report note', () => {
       if (lineKey) {
-        const rows = this.t.db.all<{ position: number; data: string }>(
-          'SELECT position,data FROM spending_report_lines WHERE month=?',
-          [month],
+        const row = this.t.db.get<{ position: number }>(
+          'SELECT position FROM spending_report_lines WHERE month=? AND line_key=?',
+          [month, lineKey],
         );
-        const row = rows.find((r) => JSON.parse(r.data).lineKey === lineKey);
         if (!row) throw new Error('Report line not found');
-        this.t.db.run('UPDATE spending_report_lines SET data=? WHERE month=? AND position=?', [
-          JSON.stringify({ ...JSON.parse(row.data), note: safeText(note) }),
+        this.t.db.run('UPDATE spending_report_lines SET note=? WHERE month=? AND position=?', [
+          safeText(note),
           month,
           row.position,
         ]);
       } else {
-        const row = this.t.db.get<{ data: string }>('SELECT data FROM spending_reports WHERE month=?', [
-          month,
-        ]);
-        if (!row) throw new Error('Report not found');
-        this.t.db.run('UPDATE spending_reports SET data=? WHERE month=?', [
-          JSON.stringify({ ...JSON.parse(row.data), note: safeText(note) }),
-          month,
-        ]);
+        if (!this.t.db.get('SELECT month FROM spending_reports WHERE month=?', [month]))
+          throw new Error('Report not found');
+        this.t.db.run('UPDATE spending_reports SET note=? WHERE month=?', [safeText(note), month]);
       }
       this.t.repos.audit('update', 'spending_report', month, null, {
         note: safeText(note),

@@ -2,6 +2,8 @@
 
 V3 is a single-user release. It replaces the v2.2 access token and sync passphrase with a User ID and password that the server can verify but cannot use to read data. It adds **Budget Analysis**, a monthly comparison of the budget with spending gathered from the owner's financial institutions, and a month-end **assets and liabilities** snapshot. Raw transactions are kept only while a month is under review. The permanent record is one cleared report per month.
 
+The [implementation preview status and local walkthrough](preview-status.md) record what is runnable, validation evidence and remaining release gates.
+
 These documents direct the implementation. Read them in this order:
 
 | Document | Read it to… |
