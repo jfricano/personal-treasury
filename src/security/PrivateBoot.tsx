@@ -119,9 +119,10 @@ export function PrivateBoot({ wasmUrl }: { wasmUrl: string }) {
   useEffect(
     () =>
       client.onInvalidated((reason) => {
-        if (!opened && stage === 'password') return;
+        if (!opened && !migration && stage === 'password') return;
         opened?.session.close();
         setOpened(null);
+        setMigration(null);
         wrap.current = null;
         pending.current = undefined;
         setPassword('');
@@ -133,16 +134,23 @@ export function PrivateBoot({ wasmUrl }: { wasmUrl: string }) {
             : 'Your session ended. Sign in again.',
         );
       }),
-    [client, opened, stage],
+    [client, opened, stage, migration],
   );
   const signOut = async () => {
-    if (!opened?.session.offline) await client.request('/api/auth/logout', 'POST', {});
-    client.clearToken();
-    opened?.session.close();
-    setOpened(null);
-    wrap.current = null;
-    setStage('password');
-    setPassword('');
+    try {
+      if (!opened?.session.offline) await client.request('/api/auth/logout', 'POST', {});
+    } finally {
+      client.clearToken();
+      opened?.session.close();
+      setOpened(null);
+      setMigration(null);
+      wrap.current = null;
+      parameters.current = null;
+      pending.current = undefined;
+      setStage('password');
+      setPassword('');
+      setCode('');
+    }
   };
   const lock = async () => {
     opened?.session.close();
@@ -197,6 +205,7 @@ export function PrivateBoot({ wasmUrl }: { wasmUrl: string }) {
       <MigrationPanel
         client={client}
         dataKey={migration}
+        onSignInAgain={() => void perform(signOut)}
         onComplete={() => {
           setMigration(null);
           setStage('unlock');
