@@ -72,7 +72,7 @@ Or run the demo container: `docker run --rm -p 8080:8080 ghcr.io/jfricano/person
 
 ## Documentation
 
-- **Using it:** [Getting started](docs/guide/getting-started.md), [private cloud sync](docs/guide/cloud-sync.md), and the [user guide](docs/guide/user-guide.md), which uses the demo household as its example.
+- **Using it:** The [user guide](docs/guide/user-guide.md) covers the v3 preview, from setup and monthly cash allocation to spending reviews, debts, private access and backups. See [Getting started](docs/guide/getting-started.md) for installation, or the [v2 user guide](docs/guide/user-guide-v2.md) and [v2 cloud sync](docs/guide/cloud-sync.md) for the earlier app.
 - **What's new:** [v0.2.2 release notes](docs/release-notes-v0.2.2.md) summarize private web access and guarded cross-device sync.
 - **Sharing it:** [Distribution plan](docs/distribution-plan.md) and the [demo walkthrough](docs/guide/demo-walkthrough.md).
 - **Building it:** [Development](docs/development/development.md), [architecture](docs/development/architecture.md), the [calculation rules](docs/development/data-and-rules.md), [workbook import](docs/development/workbook-import.md), [acceptance tests](docs/development/acceptance-tests.md), [testing](docs/development/testing.md) and [decisions](docs/development/decisions/).

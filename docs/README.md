@@ -6,8 +6,9 @@
 | --- | --- |
 | [Getting started](guide/getting-started.md) | Try the demo, run the app, build the desktop version and set up your household. |
 | [One-minute demo walkthrough](guide/demo-walkthrough.md) | Follow the fictional paycheck, bucket transfers, reconciliation and debt example. |
-| [User guide](guide/user-guide.md) | Learn the monthly workflow, interaccount debts, budgets, payroll and the tax estimate. |
-| [Private cloud sync](guide/cloud-sync.md) | Set up encrypted cross-device sync for the private web and desktop apps. |
+| [User guide](guide/user-guide.md) | Set up the v3 preview, reconcile cash, review actual spending, manage debts and recover data. |
+| [V2 user guide](guide/user-guide-v2.md) | Use the earlier app and its token-and-passphrase cloud sync. |
+| [Private cloud sync for v2](guide/cloud-sync.md) | Set up the earlier token-and-passphrase sync flow; v3 private access is covered in the user guide. |
 | [Railway hosting](guide/railway-sync.md) | Deploy the private sync service on a hosted volume with HTTPS. |
 | [v0.2.2 release notes](release-notes-v0.2.2.md) | See what private web access and guarded cloud sync add, plus their limits. |
 
