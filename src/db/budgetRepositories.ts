@@ -45,6 +45,7 @@ export interface BudgetVersion {
 }
 
 export interface StoredBudgetLine extends BudgetLine {
+  lineKey: string;
   versionId: string;
   sourceSheet: string | null;
   sourceRange: string | null;
@@ -288,6 +289,7 @@ export class BudgetRepositories {
       .map((r) => ({
         id: String(r.id),
         versionId: String(r.version_id),
+        lineKey: String(r.line_key),
         categoryId: String(r.category_id),
         label: String(r.label),
         position: Number(r.position),
@@ -306,8 +308,8 @@ export class BudgetRepositories {
   }
   insertLine(versionId: string, l: BudgetLine, src: { sheet?: string | null; range?: string | null } = {}) {
     this.db.run(
-      `INSERT INTO budget_lines(id, version_id, category_id, label, position, kind, monthly_amount, funding_account_id, gross_amount, notes, source_sheet, source_range)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+      `INSERT INTO budget_lines(id, version_id, category_id, label, position, kind, monthly_amount, funding_account_id, gross_amount, notes, source_sheet, source_range, line_key)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [
         l.id,
         versionId,
@@ -321,8 +323,25 @@ export class BudgetRepositories {
         l.notes ?? null,
         src.sheet ?? null,
         src.range ?? null,
+        l.lineKey ?? this.importLineKey(versionId, l),
       ],
     );
+  }
+  private importLineKey(versionId: string, line: BudgetLine): string {
+    const label = line.label.trim().toLowerCase();
+    const occurrence = this.listLines(versionId).filter(
+      (l) => l.categoryId === line.categoryId && l.label.trim().toLowerCase() === label,
+    ).length;
+    const previous = this.db.get<{ id: string }>(
+      'SELECT id FROM budget_versions WHERE id != ? ORDER BY created_at DESC, rowid DESC LIMIT 1',
+      [versionId],
+    );
+    const match =
+      previous &&
+      this.listLines(previous.id).filter(
+        (l) => l.categoryId === line.categoryId && l.label.trim().toLowerCase() === label,
+      )[occurrence];
+    return match?.lineKey ?? crypto.randomUUID();
   }
   updateLine(l: BudgetLine) {
     this.db.run(

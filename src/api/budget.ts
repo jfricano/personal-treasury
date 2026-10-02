@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from '@/security/schema';
 import { computeBudget, type BudgetLine, type BudgetResult } from '@/domain/budget';
 import { isMoney, normalize } from '@/domain/money';
 import {
@@ -343,6 +343,7 @@ export class BudgetService {
       const id = uuid();
       const line: BudgetLine = {
         id,
+        lineKey: uuid(),
         position: this.repos.nextLinePosition(versionId),
         ...l,
         fundingAccountId: l.fundingAccountId!,

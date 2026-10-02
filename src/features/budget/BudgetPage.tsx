@@ -25,7 +25,7 @@ export function BudgetPage() {
   return (
     <>
       <div className="page-head">
-        <h2>Budget and tax</h2>
+        <h1>Budget and Tax</h1>
         <div className="tabs" role="group" aria-label="Budget sections">
           <button
             aria-pressed={tab === 'versions'}

@@ -156,7 +156,7 @@ export function ImportExportPage() {
   return (
     <>
       <div className="page-head">
-        <h2>Import and export</h2>
+        <h1>Import and Export</h1>
         <span className="subtle">
           Files are only read or written when you choose them. The source workbook is never modified.
         </span>

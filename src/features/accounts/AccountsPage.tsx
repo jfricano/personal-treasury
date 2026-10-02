@@ -20,7 +20,7 @@ export function AccountsPage() {
   return (
     <>
       <div className="page-head">
-        <h2>Accounts</h2>
+        <h1>Accounts</h1>
         <span className="subtle">Name your money buckets and archive any you no longer use.</span>
       </div>
       <Panel

@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from '@/security/schema';
 import type { SqlJsStatic } from 'sql.js';
 import { SqlJsDriver, type SqlDriver } from '@/db/driver';
 import { SCHEMA_VERSION, migrate } from '@/db/migrations';
@@ -27,6 +27,16 @@ export const BACKUP_TABLES = [
   'journal_postings',
   'debts',
   'debt_events',
+  'connections',
+  'institution_accounts',
+  'categorization_rules',
+  'spending_line_settings',
+  'spending_reports',
+  'spending_report_lines',
+  'spending_report_flows',
+  'spending_report_sources',
+  'balance_snapshots',
+  'spending_source_periods',
   'audit_log',
 ] as const;
 
@@ -51,7 +61,7 @@ export function createBackup(db: SqlDriver): BackupFile {
     format: BACKUP_FORMAT,
     schemaVersion: SCHEMA_VERSION,
     exportedAt: new Date().toISOString(),
-    application: 'Personal Treasury 0.2.1',
+    application: 'Personal Treasury 0.3.0-preview.1',
     counts: Object.fromEntries(Object.entries(tables).map(([k, v]) => [k, v.length])),
     tables,
   };
@@ -99,9 +109,11 @@ export function readBackup(json: string): { backup: BackupFile; summary: Restore
  */
 export function buildDatabaseFromBackup(SQL: SqlJsStatic, backup: BackupFile): Uint8Array {
   const db = new SqlJsDriver(SQL);
-  // Only schema versions <= current are accepted (readBackup); v1 is the sole version today.
-  migrate(db);
+  // Restore into the original schema before applying forward migrations.
+  migrate(db, backup.schemaVersion);
   db.transaction(() => {
+    // Restore replaces the defaults seeded into this new database, including its household time zone.
+    db.run('DELETE FROM meta');
     for (const t of BACKUP_TABLES) {
       const rows = backup.tables[t] ?? [];
       if (!rows.length) continue;
@@ -120,5 +132,6 @@ export function buildDatabaseFromBackup(SQL: SqlJsStatic, backup: BackupFile): U
     const fk = db.all('PRAGMA foreign_key_check');
     if (fk.length) throw new Error(`Backup has ${fk.length} broken reference(s); nothing was restored.`);
   });
+  migrate(db);
   return db.export();
 }

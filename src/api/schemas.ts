@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from '@/security/schema';
 import { isMoney, isStrictlyPositive } from '@/domain/money';
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD');

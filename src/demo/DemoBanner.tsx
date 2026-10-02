@@ -1,3 +1,4 @@
+import { discardDemoReviews } from '@/features/spending/useReviewStore';
 import { useEffect, useState } from 'react';
 import { useApp, type Route } from '@/app/context';
 import { useConfirm } from '@/components/ui';
@@ -49,6 +50,7 @@ export function DemoBanner({
     setBusy(true);
     try {
       const data = await bytes();
+      await discardDemoReviews(treasury);
       if (run(() => treasury.replaceDatabase(data, label, { undoLabel: label }), done) !== undefined)
         navigate({ page: 'dashboard' });
     } finally {
@@ -76,7 +78,7 @@ export function DemoBanner({
             disabled={busy}
             onClick={() =>
               replace(
-                'Replace everything in this tab with the Harper household sample data? You can undo this.',
+                'Replace the database with the Harper household sample data? You can undo the database change. Temporary spending reviews will be discarded permanently.',
                 'Reset to sample data',
                 sampleBytes,
                 'Sample data restored',
@@ -90,7 +92,7 @@ export function DemoBanner({
             disabled={busy}
             onClick={() =>
               replace(
-                'Start with an empty database, as on a first launch? You can undo this, or reset to the sample data at any time.',
+                'Start with an empty database? You can undo the database change or reset to sample data. Temporary spending reviews will be discarded permanently.',
                 'Start blank',
                 blankBytes,
                 'Started with a clean slate',

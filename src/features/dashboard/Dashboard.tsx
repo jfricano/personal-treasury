@@ -1,3 +1,4 @@
+import { SpendingDashboard } from '@/features/spending/SpendingDashboard';
 import { useRef, useState } from 'react';
 import { useTreasury } from '@/app/context';
 import { Amount, MonthStatusBadge, Panel } from '@/components/ui';
@@ -13,7 +14,8 @@ export function Dashboard() {
   if (t.isEmpty()) {
     return (
       <div className="empty">
-        <h3>Welcome to Personal Treasury</h3>
+        <h1>Dashboard</h1>
+        <h2>Welcome to Personal Treasury</h2>
         <p className="subtle">
           {t.storage.kind === 'session'
             ? 'All data stays in this browser tab.'
@@ -32,6 +34,7 @@ export function Dashboard() {
             Add account buckets and a default allocation, then start a month.
           </button>
         </div>
+        <SpendingDashboard />
       </div>
     );
   }
@@ -65,7 +68,7 @@ export function Dashboard() {
   return (
     <>
       <div className="page-head">
-        <h2>Dashboard</h2>
+        <h1>Dashboard</h1>
         {m && (
           <MonthSelect value={m.cycle.id} onChange={(id) => navigate({ page: 'dashboard', monthId: id })} />
         )}
@@ -87,6 +90,7 @@ export function Dashboard() {
         </button>
       </div>
 
+      <SpendingDashboard />
       <div className="strip" role="group" aria-label="Summary">
         <button onClick={goMonth}>
           <div className="k">Month</div>

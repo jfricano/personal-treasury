@@ -12,7 +12,16 @@ import { CloudClient, decryptSnapshot } from '@/sync';
 import { CloudSyncSession } from '@/sync/session';
 
 export type Page =
-  'dashboard' | 'monthly' | 'budget' | 'debts' | 'history' | 'accounts' | 'import' | 'settings';
+  | 'analysis'
+  | 'connections'
+  | 'dashboard'
+  | 'monthly'
+  | 'budget'
+  | 'debts'
+  | 'history'
+  | 'accounts'
+  | 'import'
+  | 'settings';
 
 export interface Route {
   page: Page;
@@ -31,6 +40,8 @@ export interface Route {
 }
 
 const PAGES: Page[] = [
+  'analysis',
+  'connections',
   'dashboard',
   'monthly',
   'budget',
@@ -75,6 +86,9 @@ function toHash(r: Route): string {
  * desktop app passes none, so none of this code ships in it.
  */
 export interface AppExtras {
+  security?: import('@/security/client').V3Session;
+  onLock?: () => void;
+  onReconnect?: () => void;
   /** Shown above every page. */
   banner?: ReactNode;
   /** A ready-made workbook offered on Import and export. */

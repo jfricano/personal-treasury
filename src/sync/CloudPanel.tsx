@@ -1,4 +1,5 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
+import { SecurityPanel } from '@/security/SecurityPanel';
 import { useApp } from '@/app/context';
 import { Panel, useConfirm } from '@/components/ui';
 import type { CloudVersionMeta } from './client';
@@ -138,7 +139,8 @@ function ConnectedCloud({ session }: { session: CloudSyncSession }) {
 }
 
 export function CloudPanel() {
-  const { syncSession, connectCloud } = useApp();
+  const { syncSession, connectCloud, extras } = useApp();
+  if (extras.security) return <SecurityPanel session={extras.security} />;
   if (syncSession) return <ConnectedCloud session={syncSession} />;
   if (import.meta.env.MODE === 'demo') return null;
   return (

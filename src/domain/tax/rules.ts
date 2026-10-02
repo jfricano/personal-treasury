@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from '@/security/schema';
 import { cmp, isMoney, normalize, sum } from '../money';
 
 /** Tax rules are data, versioned by tax year and jurisdiction, and editable in the app. */

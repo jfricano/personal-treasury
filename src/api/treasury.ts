@@ -48,6 +48,7 @@ import type { z } from 'zod';
 
 import { TreasuryError } from './errors';
 import { BudgetService } from './budget';
+import { SpendingService } from './spending';
 import { diffMonthAgainstBudget, type BudgetDiff } from '@/domain/budget';
 export { TreasuryError };
 
@@ -153,10 +154,12 @@ export class Treasury {
   ) {
     this.repos = new Repositories(db);
     this.budget = new BudgetService(this);
+    this.spending = new SpendingService(this);
   }
 
   /** Budget plans, payroll and tax rules (see api/budget.ts). */
   readonly budget: BudgetService;
+  readonly spending: SpendingService;
 
   static async open(opts: OpenOptions = {}): Promise<Treasury> {
     const SQL = opts.SQL ?? (await loadSqlJs(opts.locateWasm));

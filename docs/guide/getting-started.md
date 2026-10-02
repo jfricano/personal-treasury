@@ -1,5 +1,7 @@
 # Getting started
 
+This installation guide describes the earlier app and public demo. For the v3 preview, use the [local preview instructions](../development/v3/preview-status.md) and the [current user guide](user-guide.md). V3 private access uses password and second-factor sign-in; the token-and-passphrase setup below applies to v2.
+
 ## 1. Try the demo
 
 The quickest way to see Personal Treasury is the [live demo](https://jfricano.github.io/personal-treasury/). It runs entirely in your browser with a made-up household, the Harpers, and starts with a one-minute guided tour. Your changes stay in that browser tab and disappear when you close it.

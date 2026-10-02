@@ -2,6 +2,7 @@
 reference
 tests/local
 node_modules
+**/node_modules
 dist
 dist-demo
 dist-private

@@ -1,3 +1,4 @@
+import { ReviewPreferences } from '@/features/spending/ReviewPreferences';
 import { useEffect, useState } from 'react';
 import { useTreasury } from '@/app/context';
 import { Field, Panel, useConfirm } from '@/components/ui';
@@ -20,9 +21,10 @@ export function SettingsPage() {
   return (
     <>
       <div className="page-head">
-        <h2>Settings</h2>
+        <h1>Settings</h1>
       </div>
       <CloudPanel />
+      <ReviewPreferences />
       <div className="grid-2">
         {t.storage.kind === 'session' ? (
           <Panel title="Storage">

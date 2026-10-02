@@ -1,3 +1,4 @@
+import { normalizeSpendingColumns } from './spendingColumns';
 import type { SqlDriver } from './driver';
 
 /**
@@ -302,6 +303,34 @@ UPDATE monthly_allocations SET allocation_origin = CASE
 CREATE INDEX idx_monthly_cycles_budget ON monthly_cycles(budget_version_id);
 `,
   },
+  {
+    version: 4,
+    name: 'Spending reports and stable budget line keys',
+    sql: `
+ALTER TABLE budget_lines ADD COLUMN line_key TEXT NOT NULL DEFAULT '';
+CREATE TABLE connections (id TEXT PRIMARY KEY, data TEXT NOT NULL);
+CREATE TABLE institution_accounts (id TEXT PRIMARY KEY, connection_id TEXT NOT NULL REFERENCES connections(id), treasury_account_id TEXT REFERENCES accounts(id), data TEXT NOT NULL);
+CREATE TABLE categorization_rules (id TEXT PRIMARY KEY, data TEXT NOT NULL);
+CREATE TABLE spending_line_settings (line_key TEXT PRIMARY KEY, role TEXT NOT NULL CHECK(role IN ('spending','set_aside')));
+CREATE TABLE spending_reports (month TEXT PRIMARY KEY, budget_version_id TEXT REFERENCES budget_versions(id) ON DELETE SET NULL, data TEXT NOT NULL);
+CREATE TABLE spending_report_lines (month TEXT NOT NULL REFERENCES spending_reports(month) ON DELETE CASCADE, position INTEGER NOT NULL, data TEXT NOT NULL, PRIMARY KEY(month,position));
+CREATE TABLE spending_report_flows (month TEXT NOT NULL REFERENCES spending_reports(month) ON DELETE CASCADE, position INTEGER NOT NULL, data TEXT NOT NULL, PRIMARY KEY(month,position));
+CREATE TABLE spending_report_sources (month TEXT NOT NULL REFERENCES spending_reports(month) ON DELETE CASCADE, position INTEGER NOT NULL, data TEXT NOT NULL, PRIMARY KEY(month,position));
+CREATE TABLE balance_snapshots (month TEXT NOT NULL REFERENCES spending_reports(month) ON DELETE CASCADE, position INTEGER NOT NULL, data TEXT NOT NULL, PRIMARY KEY(month,position));
+`,
+  },
+  {
+    version: 5,
+    name: 'Dedicated spending aggregate columns',
+    sql: `
+CREATE TABLE spending_source_periods (
+  month TEXT NOT NULL, source_position INTEGER NOT NULL, position INTEGER NOT NULL,
+  start_date TEXT NOT NULL, end_date TEXT NOT NULL,
+  PRIMARY KEY(month, source_position, position),
+  FOREIGN KEY(month, source_position) REFERENCES spending_report_sources(month, position) ON DELETE CASCADE
+);
+`,
+  },
 ];
 
 export const SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version;
@@ -310,7 +339,7 @@ export function currentVersion(db: SqlDriver): number {
   return db.get<{ user_version: number }>('PRAGMA user_version')?.user_version ?? 0;
 }
 
-export function migrate(db: SqlDriver): { from: number; to: number } {
+export function migrate(db: SqlDriver, target = SCHEMA_VERSION): { from: number; to: number } {
   const from = currentVersion(db);
   if (from > SCHEMA_VERSION) {
     throw new Error(
@@ -318,11 +347,31 @@ export function migrate(db: SqlDriver): { from: number; to: number } {
     );
   }
   for (const m of MIGRATIONS) {
-    if (m.version <= from) continue;
+    if (m.version <= from || m.version > target) continue;
     db.transaction(() => {
       db.exec(m.sql);
+      if (m.version === 4) {
+        const keys = new Map<string, string>();
+        const occurrences = new Map<string, number>();
+        for (const line of db.all<{ id: string; version_id: string; category_id: string; label: string }>(
+          'SELECT id, version_id, category_id, label FROM budget_lines ORDER BY version_id, position, id',
+        )) {
+          const identity = JSON.stringify([line.category_id, line.label.trim().toLowerCase()]);
+          const within = `${line.version_id}|${identity}`;
+          const count = occurrences.get(within) ?? 0;
+          occurrences.set(within, count + 1);
+          const match = `${identity}|${count}`;
+          const key = keys.get(match) ?? crypto.randomUUID();
+          keys.set(match, key);
+          db.run('UPDATE budget_lines SET line_key=? WHERE id=?', [key, line.id]);
+        }
+        db.exec(`CREATE UNIQUE INDEX idx_budget_line_key ON budget_lines(version_id,line_key);
+          CREATE TRIGGER budget_line_key_insert BEFORE INSERT ON budget_lines WHEN NEW.line_key = '' BEGIN SELECT RAISE(ABORT,'line_key required'); END;
+          CREATE TRIGGER budget_line_key_update BEFORE UPDATE ON budget_lines WHEN NEW.line_key = '' BEGIN SELECT RAISE(ABORT,'line_key required'); END;`);
+      }
+      if (m.version === 5) normalizeSpendingColumns(db);
       db.exec(`PRAGMA user_version = ${m.version}`);
     });
   }
-  return { from, to: SCHEMA_VERSION };
+  return { from, to: target };
 }
