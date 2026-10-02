@@ -9,6 +9,7 @@ All household names and examples below are fictional. Buttons and field names ap
 ## Find the instructions you need
 
 - [Understand your treasury](#understand-your-treasury)
+- [Create your private sign-in](#create-your-private-sign-in)
 - [Set up your household](#set-up-your-household)
 - [Plan and update your budget](#plan-and-update-your-budget)
 - [Run monthly reconciliation](#run-monthly-reconciliation)
@@ -283,6 +284,23 @@ Up to three reviews can remain open. Temporary reviews expire after 14 days with
 If completion says **awaiting upload**, reconnect and use **Retry completion**. Do not treat the review as fully finished until persistence and deletion complete. A late-posting notice compares aggregate changes in the preceding month's final seven days; it does not detect every possible correction. Re-run the affected month when needed.
 
 ## Use private access and sync
+
+### Create your private sign-in
+
+On the desktop sign-in screen, **Set up a new private service** opens first-time enrollment for the private server the desktop app is configured to use. It creates your sign-in and encryption keys on that existing service; it does not deploy another server. The preview supports one private account per service. Use setup once when the service has no private account yet; it cannot add a second user. After enrollment, use the normal sign-in screen. Setup is unavailable on the private website and cannot replace an existing account or reset its password.
+
+Before starting, the service owner must configure the server and the desktop must point to that same service. For the required server settings and desktop launch instructions, see the [preview walkthrough](../development/v3/preview-status.md). The **Setup secret** is the exact value saved as `PT_SETUP_SECRET` in the server's configuration. It is separate from the password you choose below; keep any trailing `=` characters in the generated value.
+
+1. Choose **Set up a new private service** in the desktop app.
+2. Enter the **Setup secret** and choose a **User ID** of 3–64 characters. Sign-in ignores leading and trailing spaces and treats the User ID as lowercase.
+3. Choose a **New password** of 15–256 characters and enter it again in **Repeat password**. The password cannot contain your User ID; the app also rejects common passwords. Save it in your password manager. A forgotten encryption password cannot be recovered.
+4. Choose **Create keys and enroll authenticator**. Add the displayed authenticator secret as a time-based one-time-password entry in your authenticator or password manager, then save the displayed one-use recovery codes offline. The recovery codes replace a missing second factor; they do not recover a forgotten password.
+5. Enter the current **Authenticator code** from that entry and choose **Confirm enrollment**. Complete this step within ten minutes; an expired enrollment requires starting setup again.
+6. Back on the sign-in screen, enter your new User ID and password and complete authenticator verification. You can then use those same credentials on the private website.
+
+If the service contains v2.2 history, the desktop guides you through migration after sign-in and keeps the existing history until verification completes. Once the treasury opens, continue with [Set up your household](#set-up-your-household) to create buckets and a budget or import workbooks.
+
+### Sign in, lock and manage security
 
 The v3 private app uses a User ID, password and second factor. On the private website, enter your credentials, choose an enrolled passkey, authenticator code or one-use recovery code, and finish verification. The desktop app can use its registered device factor after initial enrollment. Reloading an authenticated website asks for the password to unlock its encrypted local copy.
 
