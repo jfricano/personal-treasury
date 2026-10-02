@@ -721,3 +721,24 @@ test('SEC-RL the persisted hourly breaker closes untrusted sign-ins while a sign
   const persisted = JSON.parse(await readFile(stateFile, 'utf8'));
   assert.ok(persisted.breakerUntil > f.clock());
 });
+
+test('SEC-MIG expired proof leaves legacy history untouched and fresh desktop sign-in resumes migration', async (t) => {
+  const f = await fixture(t, true);
+  const stale = await f.desktop();
+  const original = await readFile(path.join(f.directory, 'versions', '1.json'), 'utf8');
+  f.advance(301000);
+  const blocked = await f.call('/api/migration/start', {}, { headers: stale });
+  assert.equal(blocked.status, 403);
+  assert.equal(blocked.body.error, 'step_up_required');
+  assert.equal(
+    (await f.call('/api/migration/status', undefined, { headers: stale })).body.phase,
+    'not_started',
+  );
+  assert.equal(await readFile(path.join(f.directory, 'versions', '1.json'), 'utf8'), original);
+  await f.call('/api/auth/logout', {}, { headers: stale });
+  assert.equal((await f.call('/api/migration/status', undefined, { headers: stale })).status, 401);
+  const fresh = await f.desktop();
+  assert.equal((await f.call('/api/migration/start', {}, { headers: fresh })).status, 200);
+  assert.equal((await f.call('/api/migration/status', undefined, { headers: fresh })).body.phase, 'copying');
+  assert.equal(await readFile(path.join(f.directory, 'versions', '1.json'), 'utf8'), original);
+});
