@@ -26,9 +26,10 @@ The desktop app stores everything in a SQLite file on your Mac and works offline
 
 ```bash
 npm run desktop:build
+npm run desktop:installer   # single-file PKG installer
 ```
 
-The app lands in `src-tauri/target/release/bundle/macos/Personal Treasury Local.app`, with a disk image in `bundle/dmg/`. It needs macOS 12 or later on Apple Silicon.
+The app lands in `src-tauri/target/release/bundle/macos/Personal Treasury Local.app`, with a disk image in `bundle/dmg/`. The installer command produces a self-contained `.pkg` in `bundle/pkg/`, which macOS Installer places in Applications. It needs macOS 12 or later on Apple Silicon.
 
 The build is signed for your own Mac only. It isn't notarized by Apple, so another Mac blocks it on first launch; the owner of that Mac can allow it under **System Settings → Privacy & Security → Open Anyway**. See [Development](../development/development.md#desktop-app-tauri) for signed, distributable builds.
 
