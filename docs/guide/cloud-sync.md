@@ -1,5 +1,7 @@
 # Private cloud sync (v2.2)
 
+Historical v2.2 token/passphrase guide, retained for legacy reference. New deployments use the [v3 Railway guide](railway-sync.md), [service README](../../sync-server/README.md) and [v3 sign-in](user-guide.md#use-private-access-and-sync). Legacy credentials apply only to unfinished v2 migration.
+
 The private web app and Mac executable can use one treasury across devices. Each device works from a local SQLite copy. A small service keeps encrypted, versioned snapshots and rejects an upload if another device has changed the cloud copy.
 
 The public demo remains separate and contains only fictional data. Do not use it as the private web app.

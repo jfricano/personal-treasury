@@ -1,5 +1,7 @@
 # Acceptance Tests
 
+These AT1–AT15 checks are the treasury baseline for v3 as well. Also apply the [v3 acceptance matrix](v3/acceptance-tests.md), [security requirements](v3/security.md#7-security-requirements) and [current release gates](v3/preview-status.md#remaining-release-work).
+
 These tests are automated wherever practical; test names in `tests/` refer to them as AT1–AT15. Current-workbook assertions are migration controls, not values to hardcode in the application.
 
 ## 1. Decimal arithmetic

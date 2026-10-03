@@ -1,5 +1,7 @@
 # Personal Treasury v3
 
+Current implementation: **0.3.0-preview.2**, merged into `main` and published as a Local-only Mac prerelease and [v3 demo](https://pt.orcasolutions.dev/). [Release notes](../../release-notes-v0.3.0.md) describe the current download and limits. These specifications define the target contract, not a claim that every acceptance gate has passed.
+
 V3 is a single-user release. It replaces the v2.2 access token and sync passphrase with a User ID and password that the server can verify but cannot use to read data. It adds **Budget Analysis**, a monthly comparison of the budget with spending gathered from the owner's financial institutions, and a month-end **assets and liabilities** snapshot. Raw transactions are kept only while a month is under review. The permanent record is one cleared report per month.
 
 The [implementation preview status and local walkthrough](preview-status.md) record what is runnable, validation evidence and remaining release gates.

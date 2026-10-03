@@ -1,5 +1,7 @@
 # ADR 0007 — Guarded encrypted cloud snapshots for v2.2
 
+Scope: legacy v2.2 snapshot/authentication design. V3 keeps conditional client-encrypted sync but replaces token/passphrase access with [ADR 0008](0008-single-user-sign-in.md), separate temporary reviews ([ADR 0010](0010-temporary-spending-review.md)) and retention controls. See the [current service README](../../../sync-server/README.md).
+
 Status: accepted · 2026-09-25. V3 replaces its credential model and adds temporary reviews: see [ADR 0008](0008-single-user-sign-in.md) and [ADR 0010](0010-temporary-spending-review.md).
 
 ## Context

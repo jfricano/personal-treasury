@@ -1,40 +1,58 @@
-# Private snapshot service
+# V3 private treasury service
 
-For the v3 implementation, use the [preview walkthrough and v3 service configuration](../docs/development/v3/preview-status.md). It uses password/MFA, cookie and native device sessions, encrypted review storage and a separate provider vault. `npm run preview:private:fixture` starts a disposable fictional v3 service. The protocol and instructions below describe **legacy v2 mode**, selected only when `PT_AUTH_PEPPER` is absent.
+The Node.js service serves the private web app and stores client-encrypted treasury versions, temporary review objects and the encrypted provider vault. It cannot decrypt the treasury and never contacts financial institutions. Current public version: **0.3.0-preview.2**; see [release status](../docs/development/v3/preview-status.md) for outstanding acceptance checks.
 
-This small Node.js service stores client-encrypted SQLite snapshots. It does not decrypt or merge databases. A web browser and the desktop app can use the same API. Run one service instance against its data directory; write serialization is process-local. A single person should avoid making edits on two devices at once: a stale upload receives HTTP 409 and must be resolved on the client before retrying.
+The public Local Mac app and demo do not use this service. Connected apps are configured and retained privately, with no public installer download.
 
-## Run
+## Configuration and startup
 
-Use Node.js 24 or newer and a persistent directory outside the source checkout:
+Use Node.js 24 or newer and one process against a persistent data directory outside the checkout. Install frontend and service dependencies, build private assets, then start:
 
 ```sh
-export PT_SYNC_TOKEN="$(openssl rand -hex 32)"
-export PT_SYNC_DATA_DIR=/var/lib/personal-treasury-sync
-export PT_STATIC_DIR=/opt/personal-treasury/dist-private
-export PT_ALLOWED_ORIGINS='https://treasury.example.com,tauri://localhost,http://tauri.localhost,https://tauri.localhost'
-export PT_SYNC_HOST=127.0.0.1
-export PT_SYNC_PORT=8787
+npm ci
+npm --prefix sync-server ci
+npm run build:private
 node sync-server/server.mjs
 ```
 
-Save the token in a secret manager and provide it to each client through its private setup screen. Use HTTPS at the reverse proxy or hosting edge for every remote connection. Give `PT_SYNC_DATA_DIR` a persistent volume and back it up; deleting it deletes all remote versions. Set `PT_SYNC_HOST=0.0.0.0` only when the service must accept connections from a container network or proxy. `PT_STATIC_DIR` is optional; without it the service exposes only the API. Static assets are public application code; all snapshot API requests require the token. Add the private web app's exact HTTPS origin to `PT_ALLOWED_ORIGINS` even when the service serves the app itself, because browsers may send an `Origin` header on writes. Add the desktop WebView origin used on your platform too.
+Configure secrets through a secret manager or deployment environment before startup:
 
-The service rejects missing tokens, tokens shorter than 32 characters, missing data directories, and wildcard CORS origins at startup. A randomly generated token is essential; token length by itself does not guarantee randomness. Store the data directory outside a publicly served static directory.
-
-## API
-
-All `/api/` requests other than CORS preflight need `Authorization: Bearer <PT_SYNC_TOKEN>`. Browser preflight (`OPTIONS`) is origin checked and returns only CORS headers. The API never uses cookies.
-
-| Request | Response |
+| Variable | Requirement |
 | --- | --- |
-| `GET /api/sync/head` | `{ "revision": 0, "createdAt": null, "label": null }` for an empty store, otherwise the newest metadata |
-| `GET /api/sync/versions` | Metadata array, newest first |
-| `GET /api/sync/versions/:revision` | Metadata plus the opaque `envelope` object |
-| `PUT /api/sync/head` | New metadata after a conditional upload |
+| `PT_PUBLIC_ORIGIN` | Exact public HTTPS origin; localhost HTTP is permitted only for fixtures/development. |
+| `PT_AUTH_PEPPER` | 32 random bytes in base64; selects v3 mode. |
+| `PT_AT_REST_KEY` | Separate 32-byte base64 key for protected account secrets. |
+| `PT_DEVICE_COOKIE_KEY` | Separate 32-byte base64 secret. |
+| `PT_LOG_KEY` | Separate 32-byte base64 log key. |
+| `PT_SETUP_SECRET` | Random initial-enrollment secret; use a separate `openssl rand -base64 32` value. |
+| `PT_SYNC_DATA_DIR` | Persistent writable directory, outside the static-assets directory. |
+| `PT_STATIC_DIR` | Optional private frontend directory, normally `dist-private`. |
+| `PT_SYNC_HOST` / `PT_SYNC_PORT` | Defaults `127.0.0.1` / `8787`; `PORT` overrides the port. Use `0.0.0.0` behind a container/hosting edge. |
+| `PT_SYNC_TOKEN` | Preserve the existing v2 token only for unfinished legacy migration. |
+| `PT_TRUST_PROXY` | `1` only if the trusted edge overwrites `X-Real-IP`; otherwise unset. |
 
-For a PUT, send `Content-Type: application/json`, `If-Match: "0"` for an empty store or the quoted current decimal revision, and `{ "envelope": { ... }, "label": "optional note" }`. The label can be up to 120 characters. The server accepts at most 32 MiB of JSON per upload and stores the envelope without inspecting or decrypting it. The clients must validate the encryption format and decrypt locally. The server does not assert that arbitrary client-supplied envelopes are encrypted.
+Generate the four server secrets independently with `openssl rand -base64 32`. Save keys with your volume-backup recovery plan. `PT_ALLOWED_ORIGINS` applies only to legacy mode; v3 allowlists `PT_PUBLIC_ORIGIN` plus built-in native origins. A remotely accessed service requires HTTPS at the proxy/hosting edge.
 
-A stale `If-Match` receives HTTP 409 with `{ "error": "revision_conflict", "head": { ...current metadata... } }`. The client should stop and let the user resolve the divergence rather than automatically overwriting the newer version. A missing or malformed `If-Match` receives HTTP 428. Versions are append-only; a successful upload creates a new numbered file and updates the head pointer atomically. A complete version left by a crash before the head pointer update is published on restart. No API deletes history yet, so storage usage grows with each upload.
+For Railway, use the [v3 hosting guide](../docs/guide/railway-sync.md). The Docker image has private production assets and isolated service dependencies, runs as UID 1000 with Node filesystem permissions, and needs a mounted volume writable by that user. It contains no npm/npx runtime and does not chown the mount.
 
-Run server tests with `node --test tests/server/sync-server.test.mjs`. They bind an ephemeral localhost port.
+## Authentication and storage
+
+Web sessions use HTTP-only cookies and CSRF protection. Native sessions use bearer authorization and enrolled-device proof. Initial enrollment and migration are desktop operations; routine access uses User ID, password and MFA. Sensitive actions require fresh verification. [User setup and sync](../docs/guide/user-guide.md#use-private-access-and-sync) describe the visible workflows; [security design](../docs/development/v3/security.md) records the full target contract.
+
+Snapshots use conditional revisions; stale writes return a conflict for explicit client resolution. Temporary reviews have their own revision/deletion history and expiry, separate from permanent SQLite snapshots. The provider vault is available to native sessions and contains client-encrypted credentials. Persistent history supports retention and pinning; backups are still needed outside the service volume. Static application assets and `/healthz` are public; treasury APIs require the appropriate authenticated session.
+
+Migration freezes legacy writes, accepts re-encrypted history and verifies it before cutover. Old ciphertext is preserved after commit; deletion uses a separate explicit migration operation. Keep the original token and passphrase until migration succeeds. See [upgrade steps](../docs/guide/railway-sync.md#upgrade-an-existing-v2-service).
+
+## Operational recovery and key rotation
+
+For lost MFA, configure a fresh random `PT_AUTH_MFA_RESET` of at least 32 characters and restart. The reset is single-use and still requires the owner's encryption password and new authenticator enrollment. Confirmation revokes old factors/sessions. A reset cannot recover a forgotten encryption password; recovery uses an independently encrypted backup and its passphrase.
+
+For server at-rest rotation, retain the old key as `PT_AT_REST_KEY_1`, add independent `PT_AT_REST_KEY_2`, and set `PT_AT_REST_KEY_ID=2`. Startup rewraps protected server secrets without changing client ciphertext. Verify restart/sign-in before removing the old runtime key, and retain historical keys with backups that need them. Arbitrary replacement of a key is not rotation.
+
+## Development and validation
+
+`npm run preview:private:fixture` starts a disposable fictional v3 service and prints fixture credentials. It creates fresh secrets and temporary storage; do not use it as a live deployment configuration.
+
+Run `npm run test:server`, `npm run test:e2e:v3-private` and the Docker smoke test `node scripts/smoke-private-container.mjs`. The [testing guide](../docs/development/testing.md) distinguishes automated coverage from pending native, provider and independent security checks.
+
+Startup without `PT_AUTH_PEPPER` uses the [legacy v2 protocol](legacy-v2.md). It is retained for migration and regression testing, not the current private frontend.

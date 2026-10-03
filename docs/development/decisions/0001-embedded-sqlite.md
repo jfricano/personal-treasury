@@ -1,5 +1,7 @@
 # ADR 0001 — Embedded SQLite (sql.js) instead of the Tauri SQL plugin
 
+The dated context below records the initial storage decision. In v3 the Local app retains plain SQLite profiles; private working copies use encryption, and the native shell also has provider/lock commands. Current architecture and build commands are in [Architecture](../architecture.md) and [Development](../development.md).
+
 Status: accepted · 2026-09-24
 
 ## Context

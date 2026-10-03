@@ -1,8 +1,8 @@
 # Architecture — Personal Treasury
 
-This covers the treasury system, the budget, payroll and tax integration built on top of it, the public browser demo (§13), and the optional v2.2 private cloud snapshot path.
+This covers the current **v3 / 0.3.0-preview.2** implementation: the unchanged treasury/budget models, public demo (§13), and separate spending-review/private-access layers (§14). Product acceptance and security requirements are recorded in the [v3 specification](v3/README.md); implemented scope and pending gates are in the [release report](v3-release-report.md).
 
-The v2.2 private web build and desktop executable share the existing in-process SQLite and domain layers. `src/sync/` encrypts full snapshots, compares remote revisions before upload, and stops on divergence. `sync-server/` stores immutable encrypted versions and serves the private web build. See [ADR 0007](decisions/0007-guarded-cloud-snapshots.md) for the boundaries and recovery behavior.
+The private website and privately configured Connected desktop share client-side SQLite/domain code. `src/security/` manages password-derived unlock and client encryption; `src/sync/` exchanges encrypted versions using conditional revisions. Temporary reviews and provider credentials use separate stores. `sync-server/` authenticates access and retains encrypted objects without decrypting treasury records or contacting providers. [ADR 0007](decisions/0007-guarded-cloud-snapshots.md) records the legacy design; [ADR 0008](decisions/0008-single-user-sign-in.md) and [ADR 0010](decisions/0010-temporary-spending-review.md) describe v3 sign-in and review lifetimes.
 
 Where things are specified:
 - **Treasury rules:** [Data model and calculation rules](data-and-rules.md), [Workbook import](workbook-import.md) and [Acceptance tests](acceptance-tests.md).
@@ -13,7 +13,7 @@ Where things are specified:
 
 | Layer | Technology |
 | --- | --- |
-| Desktop shell | Tauri 2 (Rust). Registers only `tauri-plugin-fs` and `tauri-plugin-dialog`. |
+| Desktop shell | Tauri 2 (Rust). Registers fs/dialog plugins plus native commands for allowlisted provider HTTPS, offline keys and lock integration. |
 | UI | React 19 + TypeScript, built with Vite. Plain CSS design tokens (`src/app/styles.css`); no component library. |
 | Database | SQLite 3 compiled to WebAssembly (`sql.js`), running in-process. The file is persisted by a storage adapter. See ADR 0001 for why it isn't `tauri-plugin-sql`. |
 | Money | `decimal.js` (60-digit precision). Values are stored as normalized decimal **strings**. |
@@ -35,7 +35,12 @@ src/
   platform/      files.ts (file pick/save: browser input/anchor, or Tauri dialog + fs)
   app/           App.tsx (shell/nav), context.tsx (routing, toasts, store hooks), styles.css
   components/    ui.tsx (Amount, badges, Dialog, CommitInput, AccountField, …)
-  features/      dashboard/ monthly/ budget/ debts/ history/ accounts/ importExport/ settings/
+  features/      dashboard/ monthly/ budget/ debts/ history/ accounts/ importExport/ settings/ spending/
+  security/      client keys, sign-in, encrypted working copies and backups
+  review-store/  temporary transactions and review revisions, outside SQLite
+  sources/       statement parsers, native provider adapters, gather and vault
+  sync/          conditional encrypted treasury sync and session state
+sync-server/     private web/API service: authenticated sessions and encrypted stores
 src-tauri/       Tauri shell: Cargo.toml, tauri.conf.json, capabilities/default.json, icons/
 tests/           unit/ integration/ e2e/ fixtures/ (synthetic workbooks generated in code)
   demo/          public demo only: persona.ts (the fictional Harper household), seed.ts, tab storage, banner
@@ -56,6 +61,8 @@ Migrations are forward-only entries in `src/db/migrations.ts`. Each runs in a tr
 | 1 | Initial treasury schema. |
 | 2 | Triggers rejecting month numbers outside 01–12. v1's `GLOB` check allowed 13–19. |
 | 3 | Budget, payroll and tax tables. Treasury linkage: `monthly_cycles.budget_version_id` and `expected_cash_origin`; `monthly_allocations.planned_amount` and `allocation_origin`. Existing months are back-filled as `import` or `template`. |
+| 4 | Connections, institution accounts, categorization rules, stable budget-line keys and persistent spending aggregates. |
+| 5 | Dedicated aggregate columns and source-window rows; upgrades schema-4 preview records in place. |
 
 ### Treasury tables
 
@@ -71,7 +78,7 @@ Migrations are forward-only entries in `src/db/migrations.ts`. Each runs in a tr
 | `import_runs` / `import_warnings` | Provenance for both workbook imports (`mode` = empty / replace / budget) | Content hash indexed |
 | `audit_log`, `meta` | Before/after JSON of every mutation; key/value | — |
 
-### Budget, payroll and tax tables (v3)
+### Budget, payroll and tax tables (schema 3, retained in v3)
 
 | Table | Purpose | Key constraints |
 | --- | --- | --- |
@@ -96,7 +103,7 @@ Money columns are `TEXT`. Repositories reject anything that isn't a decimal and 
 
 ## 4. Account-level calculations
 
-The app deliberately **doesn't compute bank balances**. It computes these account-level figures:
+Treasury buckets are virtual allocations, not real bank balances. This module computes the following bucket figures; Budget Analysis separately records real-account balance snapshots (§14):
 
 1. **Monthly line** (`computeMonth`): `transfers_in`, `transfers_out`, and `final_transfer = budget_allocation + Σ postings`.
 2. **Debt position** (`summarizeDebts`): owed-to, owed-by and net across the latest non-zero balance of each debt. Net positions sum to $0.
@@ -188,14 +195,14 @@ bytes ─► analyze…()  (pure, no DB writes) ─► plan { …, warnings, con
 ## 9. Routes, views and state management
 
 - **Routing:** hash routes `#/<page>?month=&debt=&account=&role=&version=&tab=` (`app/context.tsx`).
-  - Pages: dashboard, monthly, **budget** (versions, or `tab=tax` for the tax rules editor), debts, history, accounts, import, settings.
+  - Pages: dashboard, monthly, **budget** (versions, or `tab=tax` for the tax rules editor), debts, history, accounts, import, settings, **analysis** and **connections**.
   - Deep links open a month, a debt drawer, an account filter, or a budget version.
 - **State:** the `Treasury` instance is the single source of truth.
   - Components subscribe with `useSyncExternalStore` on `treasury.version` and re-read derived views synchronously: `monthView`, `budgetDiff`, `debtBoard`, `budget.versionView`, `dashboard`.
   - React state holds only drafts, dialogs and filters.
 - **Writes** go through `run(() => t.method(...))`. It shows errors as toasts, returns `undefined` only on failure, and returns `true` for successful void calls, so dialogs close reliably.
 - **Undo:** the database is snapshotted before each mutation, and Cmd-Z restores it. This covers budget edits, activation and refreshes too.
-- **Persistence:** the SQLite file is saved after each commit (IndexedDB in the browser; `<AppData>/databases/<profile>.sqlite` in Tauri, via tmp file + rename).
+- **Persistence:** the SQLite working copy is saved after each commit. Local browser mode uses IndexedDB; Local native profiles use `<AppData>/databases/<profile>.sqlite` via temporary file and rename. Private storage adapters encrypt working copies and safety copies. Atomic replacement is not a claim of fsync power-loss durability.
 
 ## 10. Service and domain boundaries
 
@@ -231,21 +238,31 @@ Known limitations:
 - The source workbooks contain personal financial data and **aren't committed**. Public tests use synthetic and sample data instead.
 - Each commit rewrites the whole SQLite file. That's fine at current size and needs revisiting past tens of MB (ADR 0001).
 - Undo covers the current session only. The audit log is permanent.
-- The Excel export covers treasury data only. Budget, payroll and tax data round-trip through the JSON backup, not Excel.
+- Treasury and current-budget Excel workbooks and cleared spending-report exports are available. A current-budget workbook does not preserve all budget versions; complete persistent history round-trips through backups. Raw review transactions and provider credentials are excluded from ordinary backups.
 - The 2026 California tax figures are 2025 values (provisional) until updated in Tax rules. The estimate assumes a single filer with no credits beyond those entered.
 - The funding map for the budget workbook reflects the audited layout. A differently structured workbook needs its lines reassigned after import.
 - Legacy months have no expected-cash cell and no entry dates (ADR 0002). They're archival and not linked to budgets.
-- The packaged app is ad-hoc signed, not notarized. Native Open/Save dialogs in the desktop build haven't been clicked through by hand.
+- The Local app is ad-hoc signed, its PKG is unsigned, and neither is notarized. Earlier v2 native-dialog checks do not complete current packaged v3 acceptance; see the release report.
 
 ## 13. Public demo
 
-`npm run build:demo` (Vite `--mode demo`) builds the same app as a static site in `dist-demo/`. The desktop and development builds contain none of it: `main.tsx` loads `src/demo/boot.tsx` only in that mode, and the branch is removed from every other build.
+`npm run build:demo` (Vite `--mode demo`) builds the same app as a static site in `dist-demo/`. Other build modes contain none of it: `main.tsx` loads `src/demo/boot.tsx` only in that mode, and the branch is removed from every other build.
 
 - **Storage:** `SessionDatabaseStorage` keeps the SQLite file base64-encoded in the tab's `sessionStorage`. It survives a reload and is discarded when the tab closes. Each tab is independent, and nothing is sent anywhere. Safety copies stay in memory; if the database outgrows the storage quota, the session continues in memory and the banner says so.
 - **Sample data:** `seedHarpers` builds the fictional Harper household through the public service API, so it passes the same validation, lifecycle rules and audit as typed-in data. Dates are relative to today: three closed months and the current open month. The debts cover a roll-forward, a paid-off loan, a reversed overpayment and a `canceled` note. `tests/integration/demo-seed.test.ts` pins every figure.
 - **Reset and clean slate:** the banner replaces the database with a freshly built sample or a freshly migrated empty database through `Treasury.replaceDatabase(…, { undoLabel })`, so each can be undone.
-- **Guided tour:** `src/demo/Tour.tsx`, eight steps anchored to the pages' own labelled panels (`aria-label`), navigating between pages as it goes. It starts once per browser (a `localStorage` flag, a convenience only) and reopens from the banner. While it's open the app root is `inert`, so focus stays in the tour; arrow keys step and Escape closes. On narrow screens the card becomes a bottom sheet.
+- **Guided tour:** `src/demo/Tour.tsx`, steps anchored to the pages' own labelled panels (`aria-label`), navigating between pages as it goes. It starts once per browser (a `localStorage` flag, a convenience only) and reopens from the banner. While it's open the app root is `inert`, so focus stays in the tour; arrow keys step and Escape closes. On narrow screens the card becomes a bottom sheet.
 - **Sample workbook:** the Import page offers the sample household's workbook, exported from a freshly built sample with the app's own exporter, so visitors can try an import without a file of their own.
 - **How the demo plugs in:** `main.tsx` passes `AppExtras` (`app/context.tsx`): a banner and an optional sample workbook. Pages read them from context. The desktop build passes none.
 - **Differences from the desktop app:** no profiles (backups restore by replacing the demo data), relative asset paths for any sub-path, no source maps, and a content security policy limited to the page's own origin. Workbook-specific seed aliases are never included.
 - **Hosting:** GitHub Pages serves `dist-demo/` (`.github/workflows/deploy-demo.yml`). The same files ship as a small unprivileged nginx image (`Dockerfile`, published to GitHub Container Registry) for anyone who wants to host it themselves.
+
+## 14. V3 spending reviews and private access
+
+`Treasury.spending` manages persistent connection/account metadata, rules and cleared report aggregates through repositories and the existing transaction boundary. Schema 5 stores report headers, lines, flows, sources/windows and balances as dedicated columns. Budget lines have stable keys so classifications follow line identity across version edits. Treasury journal entries, debt events and budget amounts are unchanged by spending classifications.
+
+Raw statement/provider transactions, coverage and classifications belong to temporary review objects in `src/review-store/`, outside SQLite, persistent audit snapshots and ordinary backups. Local-only native reviews have the same device protection as their local profile; private review objects are encrypted and have separate cloud revisions/conflict choices. Reviews expire after 14 idle days or 45 days total, with at most three open. Clearing retains the aggregate report and deletes transaction details after required persistence/upload acknowledgement. Undo can restore the previous report, not deleted transactions.
+
+Client Argon2id/HKDF/AES-GCM code derives unlock/encryption keys; the service verifies authentication and stores wrapped keys/account secrets. Browser sessions use cookies/CSRF controls; native sessions use bearer authorization/device proof. A separate encrypted vault holds provider credentials, accessed only by the signed-in native adapter. The public demo build aliases the live provider adapter to its boundary stub and checks the emitted bundle.
+
+Local uses `com.personaltreasury.app.local`; private Connected retains `com.personaltreasury.app`. Dev identifiers are separate. Public releases contain Local only. The [security design](v3/security.md), [spending rules](v3/spending-review-rules.md) and [preview status](v3/preview-status.md) distinguish the target requirements, implemented paths and outstanding acceptance evidence.

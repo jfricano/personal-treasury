@@ -1,6 +1,8 @@
-# v3 implementation preview — 0.3.0-preview.1
+# V3 release status — 0.3.0-preview.2
 
-[Draft implementation PR #7](https://github.com/jfricano/personal-treasury/pull/7) incorporates the design in PR #6. This is a runnable review build, **not a production release candidate**. The public Pages deployment is unchanged. Do not migrate the live private service onto this preview.
+Updated October 3, 2026. The v3 implementation [PR #7](https://github.com/jfricano/personal-treasury/pull/7) and Local distribution work through [PR #13](https://github.com/jfricano/personal-treasury/pull/13) are merged into `main`. The [v3 demo](https://pt.orcasolutions.dev/) is deployed on GitHub Pages. [GitHub Releases](https://github.com/jfricano/personal-treasury/releases/tag/v0.3.0-preview.2) offers the **Local-only** Mac PKG, alternate DMG and checksums. Connected builds are private and have no public download.
+
+This remains a **prerelease**, with the gates below still outstanding. See [release notes](../../release-notes-v0.3.0.md) for installation and [release report](../v3-release-report.md) for publication evidence. Private-service owners use the [v3 hosting/migration guide](../../guide/railway-sync.md); the earlier draft-PR warning here no longer describes the current merged source.
 
 ## Try it locally
 
@@ -49,7 +51,7 @@ The fixture generates fresh secrets and a temporary data directory on each run. 
 
 ## Validation recorded
 
-The continuation was checked on September 30, 2026:
+Historical implementation evidence from September 30, 2026 follows. Later CI and packaging/publication checks are recorded in the [release report](../v3-release-report.md):
 
 - 148 unit/integration tests, including schema-3/4 migration, backup round trips, aggregate-only persistence canaries, review conflict/deletion races, provider vault retries and household-calendar coverage.
 - 25 Node service tests, including MFA, step-up, credential revocation, password changes, trusted-device proof, break-glass recovery, at-rest rotation, sanitized logs, CAS writes, tombstones and migration cutover.
@@ -60,7 +62,7 @@ The continuation was checked on September 30, 2026:
 - 69 owner-local regression tests passed using ignored private fixtures. No fixture or owner-specific reference file is published.
 - Format, lint, TypeScript and all three web builds; documentation file-link check; production audits with no reported vulnerabilities; dependency signature checks; owner-local privacy scan.
 
-These are targeted automated checks, not a claim that every V3-AT/SEC requirement has passed. See the test files for exact assertions. CI repeats web checks and the container smoke test on the PR.
+These are targeted automated checks, not a claim that every V3-AT/SEC requirement has passed. See the test files for exact assertions. CI repeats web checks and the container smoke test on pull requests and `main`.
 
 ## Remaining release work
 
@@ -70,9 +72,9 @@ These are targeted automated checks, not a claim that every V3-AT/SEC requiremen
 4. **Product acceptance:** owner walkthrough of a completed real month, aggregate reconciliation and reports. Remaining specification follow-ups include institution-level liability defaults, transfer confirmation hints, complete figure drilldowns, and closed/removed-account metadata refinements. Do not mark these complete based on the sample alone.
 5. **Release operations:** final custom domain before registering production passkeys, TLS/security-header verification at the actual edge, staging migration/backup/restore/key-rotation/break-glass rehearsal, signed installer and owner-approved rollout.
 
-No deployment, release tag, real-account connection or live-data migration is part of this PR deliverable.
+The public demo and preview tag/installers are now published. Public publication does not certify provider lifecycle, private deployment or an owner-specific migration. Private operational acceptance must be recorded separately, without publishing financial details.
 
-## Private service development configuration
+## Private service configuration
 
 Use one service process with a persistent data directory. The v3 service requires `PT_PUBLIC_ORIGIN` and four independent 32-byte base64 values: `PT_AUTH_PEPPER`, `PT_AT_REST_KEY`, `PT_DEVICE_COOKIE_KEY`, `PT_LOG_KEY`. Use `PT_SETUP_SECRET` for initial enrollment; migration from an existing v2 service also requires its existing `PT_SYNC_TOKEN`. Back up server secrets separately from ciphertext. The service cannot recover a forgotten encryption password.
 

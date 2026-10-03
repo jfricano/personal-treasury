@@ -1,5 +1,7 @@
 # Personal Treasury v0.2.2 — private cloud sync
 
+Historical v2.2 release notes. The [v3 release notes](release-notes-v0.3.0.md) and [current user guide](guide/user-guide.md) cover password/MFA access and the current Local preview.
+
 V2.2 adds an optional way for one person to use the same treasury from the Mac app and a private website on a phone or computer. The desktop app still works from its local SQLite file, and the public [Pages demo](https://jfricano.github.io/personal-treasury/) remains a separate, fictional-data experience.
 
 ## What's new

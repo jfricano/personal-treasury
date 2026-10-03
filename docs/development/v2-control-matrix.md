@@ -1,5 +1,7 @@
 # V2 rendered control inventory and coverage
 
+Historical v2 control evidence. It remains regression context; current v3 coverage and remaining gates are in [Testing](testing.md) and the [release report](v3-release-report.md).
+
 The [machine readable inventory](v2-control-inventory.json) records each rendered link, button, input, select, textarea, focusable control, disabled state, and accessible name on all eight populated demo routes. It also records the demo exercise list and tour, key dialogs and drawer, import preview, and blank dashboard. Generate it from the production demo with `node scripts/v2-inventory.mjs OUTPUT [FICTIONAL_WORKBOOK]`. The workbook argument must contain fictional data.
 
 The initial route inventory was taken before source edits. Counts were Dashboard 37, Monthly 69, Budget 101, Debts 57, History 17, Accounts 80, Import 21, and Settings 13. The versioned inventory was regenerated after the fixes: 37, 73, 101, 57, 17, 80, 21, and 13 respectively. The four additional Monthly controls reflect the now reachable budget override state. Repeated shell and row controls are intentionally listed on every route where they render.

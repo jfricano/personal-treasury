@@ -1,6 +1,6 @@
 # One-minute demo walkthrough
 
-[Open the Personal Treasury demo](https://jfricano.github.io/personal-treasury/). The Harpers are a fictional household with one paycheck and eight account buckets. The demo begins with a guided tour; you can follow it or use the steps below. Changes stay in your browser tab and disappear when you close it.
+[Open the Personal Treasury demo](https://pt.orcasolutions.dev/). The Harpers are a fictional household with one paycheck and eight account buckets. The demo begins with a guided tour; you can follow it or use the steps below. Changes stay in your browser tab and disappear when you close it.
 
 1. **Start at the dashboard.** The active **After the raise** budget turns Sam's $6,500 gross monthly pay into **$4,690.96 take-home pay** after the sample deductions and actual withholding. Open a summary figure to see what produced it.
 2. **Open Monthly reconciliation.** The budget funds eight buckets. For example, Household receives **$3,137**, Long-term savings **$300**, and Travel **$125** before any transfers between buckets. The account transfer summary shows each bucket's final amount after those journal entries. The reconciliation panel names issues that need review; completed transfers can be marked **Done**.
@@ -10,8 +10,10 @@ The demo also offers **What to try** exercises, sample workbooks for the import 
 
 ![Monthly reconciliation in the fictional demo](../images/demo-monthly.png)
 
+Try v3 spending review under **Budget Analysis → Try a sample review**. Check statement coverage, classify or split purchases, pair the card-payment transfer, then inspect Summary and Assets and liabilities. Clearing retains an aggregate report and discards transaction details.
+
 ## Ready to use your own data?
 
-The desktop app works offline and stores its SQLite database on your Mac. Choose **Download Mac installer · Local** in the demo banner to download a single `.pkg` file directly. Open it and follow macOS Installer to place the app in Applications; no disk-image drag-and-drop step is needed. The adjacent [Installation notes](https://github.com/jfricano/personal-treasury/releases/tag/v0.3.0-preview.2) explain compatibility and preview permissions. It runs locally on Apple Silicon Macs with macOS 12 or later and starts with an empty treasury. The preview is ad-hoc signed and is not Apple-notarized. [Getting started](getting-started.md) also covers building from source.
+The desktop app works offline and stores its SQLite database on your Mac. Choose **Download Mac installer · Local** in the demo banner to download a single `.pkg` file directly. Open it and follow macOS Installer to place the app in Applications; no disk-image drag-and-drop step is needed. The adjacent [Installation notes](https://github.com/jfricano/personal-treasury/releases/tag/v0.3.0-preview.2) explain compatibility and preview permissions. It runs locally on Apple Silicon Macs with macOS 12 or later and starts with an empty treasury. The PKG is unsigned; its app is ad-hoc signed and not Apple-notarized. If blocked, use **Done → System Settings → Privacy & Security → Security → Open Anyway**. The installed app may need approval too; [Getting started](getting-started.md#2-install-the-local-mac-app) gives the steps. [Getting started](getting-started.md) also covers building from source.
 
-The public PKG installer contains **Personal Treasury Local.app**. It has its own data folder and can be installed beside **Personal Treasury Connected.app**, the separately configured app that syncs with a private website. An earlier preview used the unsuffixed name; export a complete backup from that app before restoring it in Local. Its existing files are retained.
+The public PKG installer contains **Personal Treasury Local.app**. It has its own data folder and can be installed beside **Personal Treasury Connected.app**, the separately configured private app that syncs with a private website and is not offered as a public download. An earlier preview used the unsuffixed name; export a complete backup from that app before restoring it in Local. Its existing files are retained.

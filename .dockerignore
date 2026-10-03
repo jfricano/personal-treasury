@@ -14,3 +14,8 @@ src-tauri/gen
 .github
 *.local
 .DS_Store
+# Private Connected artifacts may be copied outside the native target directory.
+**/*_Connected.pkg
+**/*_Connected.dmg
+**/*_Connected.zip
+**/Personal Treasury Connected*.app

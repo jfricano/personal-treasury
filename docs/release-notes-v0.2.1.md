@@ -1,5 +1,7 @@
 # Personal Treasury v0.2.1 — release notes draft
 
+Historical release-notes draft. The current public Mac download is the [v3 Local preview](release-notes-v0.3.0.md); the publication checklist below records the earlier v0.2.1 plan.
+
 Personal Treasury by Orca Solutions is a local-first Mac app for allocating a household paycheck across virtual account buckets, reconciling monthly transfers, and tracking debts between those buckets. It is free and MIT licensed.
 
 **Try it first:** [one-minute browser demo](https://jfricano.github.io/personal-treasury/) · [guided walkthrough](guide/demo-walkthrough.md)
