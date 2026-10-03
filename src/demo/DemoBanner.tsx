@@ -69,11 +69,11 @@ export function DemoBanner({
         <div className="demo-actions">
           <a
             className="btn small primary"
-            href="https://github.com/jfricano/personal-treasury/releases/tag/v0.3.0-preview.1"
+            href="https://github.com/jfricano/personal-treasury/releases/tag/v0.3.0-preview.2"
             target="_blank"
             rel="noopener noreferrer"
           >
-            Download Mac preview
+            Download Mac preview · Local
           </a>
           <button className="btn small" onClick={() => setTouring(true)}>
             Take the tour
@@ -112,7 +112,8 @@ export function DemoBanner({
         </div>
       </div>
       <p className="demo-download-note">
-        Mac preview: Apple Silicon · macOS 12+ · Works offline. See the download page for installation notes.
+        Local Mac preview: Apple Silicon · macOS 12+ · Works offline. See the download page for installation
+        notes.
       </p>
       {open && (
         <ol className="demo-try">

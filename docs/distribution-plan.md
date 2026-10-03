@@ -23,7 +23,9 @@ The current local V2.1 package is ad-hoc signed. It is not a public Mac release 
 
 The owner approved offering an ad-hoc signed, non-notarized Mac preview on 2026-10-02, without waiting for Apple Developer Program enrollment. This is a preview exception to the stable-release process above.
 
-The [v0.3.0-preview.1 download](https://github.com/jfricano/personal-treasury/releases/tag/v0.3.0-preview.1) is local-only, starts with an empty treasury, and requires macOS 12 or later on Apple Silicon. It contains no private service origin, credentials, or household data. The release notes disclose the signing limitations and provide installation instructions and a SHA-256 checksum. The demo links to those notes rather than starting an installer download without context.
+The [v0.3.0-preview.2 Local download](https://github.com/jfricano/personal-treasury/releases/tag/v0.3.0-preview.2) is local-only, starts with an empty treasury, and requires macOS 12 or later on Apple Silicon. It contains no private service origin, credentials, or household data. The release notes disclose the signing limitations and provide installation instructions and a SHA-256 checksum. The demo links to those notes rather than starting an installer download without context.
+
+**Personal Treasury Local.app** uses `com.personaltreasury.app.local`, while **Personal Treasury Connected.app** retains `com.personaltreasury.app`. App and installer filenames identify Local or Connected. Only Local is offered as a public download; a connected installer is configured privately for its service. The renamed Local app does not overwrite the earlier app or automatically move its records.
 
 Developer ID signing, notarization, clean-install testing on another Mac, and the outstanding v3 release checks remain requirements for a stable release.
 
