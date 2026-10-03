@@ -67,7 +67,15 @@ export function DemoBanner({
           and is gone when you close it. Nothing is sent anywhere.
         </p>
         <div className="demo-actions">
-          <button className="btn small primary" onClick={() => setTouring(true)}>
+          <a
+            className="btn small primary"
+            href="https://github.com/jfricano/personal-treasury/releases/tag/v0.3.0-preview.1"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Download Mac preview
+          </a>
+          <button className="btn small" onClick={() => setTouring(true)}>
             Take the tour
           </button>
           <button className="btn small" aria-expanded={open} onClick={() => setOpen(!open)}>
@@ -103,6 +111,9 @@ export function DemoBanner({
           </button>
         </div>
       </div>
+      <p className="demo-download-note">
+        Mac preview: Apple Silicon · macOS 12+ · Works offline. See the download page for installation notes.
+      </p>
       {open && (
         <ol className="demo-try">
           {TRY.map((item) => (

@@ -19,6 +19,14 @@ The current local V2.1 package is ad-hoc signed. It is not a public Mac release 
 - Add accurate GitHub topics: `personal-finance`, `budgeting`, `local-first`, `macos`, `tauri`, and `open-source`. Set the repository website to the demo.
 - Verify the download, source archive, demo, and README links from a signed-out browser session.
 
+## Public v3 preview
+
+The owner approved offering an ad-hoc signed, non-notarized Mac preview on 2026-10-02, without waiting for Apple Developer Program enrollment. This is a preview exception to the stable-release process above.
+
+The [v0.3.0-preview.1 download](https://github.com/jfricano/personal-treasury/releases/tag/v0.3.0-preview.1) is local-only, starts with an empty treasury, and requires macOS 12 or later on Apple Silicon. It contains no private service origin, credentials, or household data. The release notes disclose the signing limitations and provide installation instructions and a SHA-256 checksum. The demo links to those notes rather than starting an installer download without context.
+
+Developer ID signing, notarization, clean-install testing on another Mac, and the outstanding v3 release checks remain requirements for a stable release.
+
 ## 3. Submit software listings — owner handoff
 
 Once the release URL exists, submit Personal Treasury to [AlternativeTo](https://alternativeto.net/faq/) and [MacUpdate](https://www.macupdate.com/help). Use the GitHub Release as the download URL and the browser demo as the trial URL. Orca Solutions will handle these submissions and their reviews.

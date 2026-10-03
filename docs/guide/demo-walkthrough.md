@@ -12,4 +12,4 @@ The demo also offers **What to try** exercises, sample workbooks for the import 
 
 ## Ready to use your own data?
 
-The desktop app works offline and stores its SQLite database on your Mac. See [Getting started](getting-started.md) for the current build instructions and the [GitHub releases page](https://github.com/jfricano/personal-treasury/releases) for public downloads when available.
+The desktop app works offline and stores its SQLite database on your Mac. Choose **Download Mac preview** in the demo banner for the [v3 Mac preview](https://github.com/jfricano/personal-treasury/releases/tag/v0.3.0-preview.1) and installation notes. It runs locally on Apple Silicon Macs with macOS 12 or later and starts with an empty treasury. The preview is ad-hoc signed and is not Apple-notarized. [Getting started](getting-started.md) also covers building from source.

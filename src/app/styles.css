@@ -953,6 +953,14 @@ table.t td .btn.small.danger:focus-visible {
   gap: 6px;
   flex-wrap: wrap;
 }
+.demo-actions a {
+  text-decoration: none;
+}
+.demo-download-note {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
 .demo-try {
   margin: 8px 0 2px;
   padding-left: 22px;
