@@ -25,10 +25,10 @@ npm run dev           # the app itself, starting empty, at http://localhost:1420
 The desktop app stores everything in a SQLite file on your Mac and works offline. Building it needs [Rust](https://www.rust-lang.org/tools/install) as well as Node.js.
 
 ```bash
-npm run tauri build
+npm run desktop:build
 ```
 
-The app lands in `src-tauri/target/release/bundle/macos/Personal Treasury.app`, with a disk image in `bundle/dmg/`. It needs macOS 12 or later on Apple Silicon.
+The app lands in `src-tauri/target/release/bundle/macos/Personal Treasury Local.app`, with a disk image in `bundle/dmg/`. It needs macOS 12 or later on Apple Silicon.
 
 The build is signed for your own Mac only. It isn't notarized by Apple, so another Mac blocks it on first launch; the owner of that Mac can allow it under **System Settings → Privacy & Security → Open Anyway**. See [Development](../development/development.md#desktop-app-tauri) for signed, distributable builds.
 

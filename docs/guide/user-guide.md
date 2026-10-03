@@ -2,6 +2,8 @@
 
 Personal Treasury helps you plan where your household's income goes, reconcile the money allocated to each account bucket, and track what those buckets owe one another. Budget Analysis adds a separate monthly review of actual spending and real account balances.
 
+**Personal Treasury Local** saves on your Mac and is the public download. **Personal Treasury Connected** is configured for a private service and syncs the same encrypted treasury as that service’s private website. They have distinct app names and local data folders. The public browser demo remains a separate fictional sample.
+
 This guide covers **v3 preview 0.3.0-preview.1**. The preview is available for local evaluation; provider connections and private access still have release acceptance work outstanding. The published demo may show the earlier interface. For that version, use the [v2 user guide](user-guide-v2.md). See [Getting started](getting-started.md) for installation and the [preview walkthrough](../development/v3/preview-status.md) for running the v3 demo.
 
 All household names and examples below are fictional. Buttons and field names appear in **bold**.
