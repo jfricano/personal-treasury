@@ -69,11 +69,9 @@ export function DemoBanner({
         <div className="demo-actions">
           <a
             className="btn small primary"
-            href="https://github.com/jfricano/personal-treasury/releases/tag/v0.3.0-preview.2"
-            target="_blank"
-            rel="noopener noreferrer"
+            href="https://github.com/jfricano/personal-treasury/releases/download/v0.3.0-preview.2/Personal-Treasury_0.3.0-preview.2_Apple-Silicon_Local.pkg"
           >
-            Download Mac preview · Local
+            Download Mac installer · Local
           </a>
           <button className="btn small" onClick={() => setTouring(true)}>
             Take the tour
@@ -112,8 +110,14 @@ export function DemoBanner({
         </div>
       </div>
       <p className="demo-download-note">
-        Local Mac preview: Apple Silicon · macOS 12+ · Works offline. See the download page for installation
-        notes.
+        Local Mac preview: Apple Silicon · macOS 12+ · Works offline · Single-file installer (PKG).{' '}
+        <a
+          href="https://github.com/jfricano/personal-treasury/releases/tag/v0.3.0-preview.2"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Installation notes
+        </a>
       </p>
       {open && (
         <ol className="demo-try">

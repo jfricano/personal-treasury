@@ -37,7 +37,8 @@
     "test:e2e:v3-private": "playwright test --config playwright.v3-private.config.ts",
     "preview:private:fixture": "npm run build:private && node scripts/preview-private.mjs",
     "docs:screenshots": "node scripts/capture-v3.mjs",
-    "docs:links": "node scripts/check-doc-links.mjs"
+    "docs:links": "node scripts/check-doc-links.mjs",
+    "desktop:installer": "node scripts/macos-installer.mjs"
   },
   "dependencies": {
     "@simplewebauthn/browser": "14.0.0",
