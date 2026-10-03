@@ -35,6 +35,8 @@ The installer is unsigned; its app is ad-hoc signed and not Apple-notarized. Per
 
 The October 3 review covers all tracked public Markdown: README/document index, current user/developer/hosting guides, release/distribution copy, v3 contracts, treasury/workbook rules and historical records. Current instructions now identify preview.2, direct Local downloads, v3 password/MFA setup, schema 5 and actual check/build commands. Legacy guides, v2 reports and the original v3 plan are explicitly dated/historical; financial rules and target acceptance contracts remain intact. Provider research remains labelled with its original date.
 
+README screenshots were refreshed from the fictional v3 demo on October 3, including dashboard, reconciliation, debt history, the guided tour and Budget Analysis on desktop and phone. Earlier v2 images remain as historical assets. These captures are documentation evidence, not a substitute for the remaining device acceptance checks.
+
 The public download policy is Local-only. Explicit `.gitignore` and `.dockerignore` patterns protect Connected apps and installer copies from tracking and container build contexts. Release uploads still require selecting exact Local assets; ignore rules alone do not govern GitHub uploads.
 
 ## Remaining acceptance and operations

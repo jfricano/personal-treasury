@@ -8,7 +8,7 @@ A local-first desktop and private web app for running a household's money as a s
 
 **[Follow the one-minute walkthrough →](docs/guide/demo-walkthrough.md)** See how one paycheck becomes account allocations, monthly transfers, reconciliation and debt history.
 
-![Monthly reconciliation in the demo](docs/images/demo-monthly.png)
+![Monthly reconciliation in the demo](docs/screenshots/v3/monthly.png)
 
 ## Download v3
 
@@ -41,20 +41,20 @@ V3 is available on `main`, in the public demo and as a **GitHub prerelease**. Pr
 
 <table>
   <tr>
-    <td width="50%"><img src="docs/images/demo-dashboard.png" alt="Dashboard: this month at a glance" /></td>
-    <td width="50%"><img src="docs/images/demo-debts.png" alt="A loan whose overpayment reversed who owes whom" /></td>
+    <td width="50%"><img src="docs/screenshots/v3/dashboard.png" alt="Dashboard: this month at a glance" /></td>
+    <td width="50%"><img src="docs/screenshots/v3/debts.png" alt="A loan whose overpayment reversed who owes whom" /></td>
   </tr>
   <tr>
     <td>Dashboard: expected cash, reconciliation, transfers and debts at a glance.</td>
     <td>A loan's full event history. Overpaying it reversed who owes whom.</td>
   </tr>
   <tr>
-    <td><img src="docs/images/demo-tour.png" alt="The guided tour highlighting the account transfer summary" /></td>
-    <td align="center"><img src="docs/images/demo-phone.png" alt="The debts page on a phone" width="220" /></td>
+    <td><img src="docs/screenshots/v3/tour.png" alt="The guided tour highlighting the dashboard summary" /></td>
+    <td align="center"><img src="docs/screenshots/v3/phone-coverage.png" alt="Budget Analysis statement coverage on a phone" width="220" /></td>
   </tr>
   <tr>
     <td>The guided tour walks through each screen on a first visit.</td>
-    <td>On a phone, wide tables scroll inside their panels.</td>
+    <td>Statement coverage and review controls on a phone.</td>
   </tr>
   <tr>
     <td><img src="docs/screenshots/v3/transactions.png" alt="Budget Analysis: fictional statement transactions ready for classification" /></td>
