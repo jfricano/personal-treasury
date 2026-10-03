@@ -1,5 +1,7 @@
 # Spending review rules
 
+Scope: the v3 target contract. Current preview implementation and remaining acceptance evidence are recorded in [release status](preview-status.md) and the [release report](../v3-release-report.md); publication does not certify every requirement below.
+
 Status: approved for implementation · 2026-09-26
 
 This is the calculation and data contract for **Budget Analysis**, the balance snapshot, and their storage. It has the same authority for v3 that [Data model and calculation rules](../data-and-rules.md) has for the treasury. When the product spec and this document disagree, this document wins and the disagreement is a bug in the spec. All money uses `domain/money.ts` (decimal strings, `decimal.js`); nothing here uses binary floating point.

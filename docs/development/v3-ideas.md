@@ -1,6 +1,6 @@
 # Personal Treasury v3 ideas
 
-Started 2026-09-25. This is a place to collect possibilities, not a release commitment. V2.2 is the current baseline; a new feature should earn its place by making an existing task easier or making the app available to someone who cannot use it today.
+Started 2026-09-25. This is a place to collect possibilities, not a release commitment. V2.2 was the baseline when these ideas were written; v3 preview is now implemented (see the [release report](v3-release-report.md)); a new feature should earn its place by making an existing task easier or making the app available to someone who cannot use it today.
 
 **Update 2026-09-26:** v3 is now specified in [docs/development/v3/](v3/README.md): a single-user release with User ID and password sign-in, Budget Analysis from institution data, and an assets and liabilities snapshot. The multi-user section below is **abandoned** and kept only as a record. The Windows installer continues as a separate track.
 
@@ -45,7 +45,7 @@ Open design choices include where to host the admin interface, how to deliver ac
 
 | Idea | Why it might help | Open question |
 | --- | --- | --- |
-| Downloadable desktop releases | Make the Mac app, and eventually the Windows app, available without asking someone to build from source. | Which builds are ready to share, and what signing or install instructions do they need? |
+| Downloadable desktop releases | Local Mac PKG/DMG preview is now published on GitHub; Windows remains a separate candidate. | Stable signing/notarization and external installation checks remain outstanding. |
 | Compare budget versions | Show the active budget beside a draft before activation: take-home pay, category totals, and funding differences. | Which comparisons would actually help a budget decision? |
 | Year overview | Summarize completed months and debt balances from records already in the app. | What is useful to see together without adding a new bookkeeping task? |
 | Backup confidence | Make it easier to see when a backup was last saved and check that it can be restored. | How can the check avoid changing the active profile? |

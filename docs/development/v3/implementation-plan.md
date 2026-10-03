@@ -1,6 +1,6 @@
 # Personal Treasury v3: implementation plan and builder handoff
 
-Prepared 2026-09-26 from the v2.2 source on `main`, the earlier v3 notes in [v3 ideas](../v3-ideas.md), the Windows installer candidate, the owner's v3 direction, and an independent review of this document set. This is a **build plan**. Nothing in it is implemented yet.
+Prepared 2026-09-26 from the v2.2 source on `main`, the earlier v3 notes in [v3 ideas](../v3-ideas.md), the Windows installer candidate, the owner's v3 direction, and an independent review of this document set. This is the **original build plan**, preserved with its dated starting point and planned branch/slice workflow. V3 implementation and preview distribution are now merged into `main`; use the [release report](../v3-release-report.md) and [current status](preview-status.md) for delivered scope and remaining gates. A public preview does not mean the full stable-release gate below has passed.
 
 Read first: [Product specification](product-spec.md), [Spending review rules](spending-review-rules.md), [Security design](security.md), [Institution data](aggregation.md), [Acceptance tests](acceptance-tests.md).
 
@@ -14,7 +14,7 @@ Read first: [Product specification](product-spec.md), [Spending review rules](sp
 | `codex/v3-windows-build` (worktree) | Uncommitted Windows NSIS installer candidate: workflow, platform config, doc. | **Separate track** (§4, T-WIN). Not required for v3.0. Not touched by v3 branches. |
 | v2.2 sync (`src/sync/`, `sync-server/`) | Bearer token + passphrase; PBKDF2; append-only versions; no rate limiting; token and passphrase in `sessionStorage`. | Replaced by the design in [Security](security.md). The conflict model (If-Match revisions, stop on divergence) stays. |
 
-## 2. Branches, authorship and releases
+## 2. Original branches, authorship and release plan
 
 ```text
 main ─────────────●────────────────────────────────────────────●── v0.3.0 tag
@@ -25,7 +25,7 @@ main ─────────────●───────────
 ```
 
 - **`main`** is production. Railway builds `main` only after CI passes (**Wait for CI**), and the owner triggers each production deploy by hand.
-- **`v3/spec`** (this branch) holds the v3 documents only. It merges into `main` by PR so the plan is visible, without code changes.
+- **`v3/spec`** (the original specification branch) holds the v3 documents only. It merges into `main` by PR so the plan is visible, without code changes.
 - **`release/v3`** is cut from `main` after the spec merges. It is the v3 integration branch. Nothing merges into `main` from v3 until the release gate (§8) passes.
 - **Slice branches `v3/<slice>`** are cut from `release/v3` and return by pull request. One slice per branch, small enough to review in one sitting. Rebase on `release/v3` before review.
 - **Fixes to v0.2.2** go on `fix/<topic>` from `main`, merge into `main`, then `main` merges into `release/v3`.

@@ -1,5 +1,7 @@
 # Personal Treasury v2 release report
 
+Historical report dated September 25, 2026. Branch, deployment and validation statements below describe that date; current scope and publication are in the [v3 release report](v3-release-report.md).
+
 Date: 2026-09-25. Branch: `codex/v2`. V1 remains on `main` and at tag `v1-baseline` (`9e21d48`). This report describes the local checkout and packaged macOS build; no remote release was published.
 
 ## Delivered

@@ -1,9 +1,9 @@
-# Personal Treasury launch post
+# Personal Treasury v3 preview announcement
 
-Publish after the v0.2.1 Mac release passes the [distribution checklist](distribution-plan.md). The links below point to the demo, walkthrough, source and release hub.
+Copy for the currently published **Local Mac preview**, not a stable-release announcement. See the [distribution status](distribution-plan.md) and [v3 release notes](release-notes-v0.3.0.md).
 
-> We built [Personal Treasury](https://github.com/jfricano/personal-treasury) at Orca Solutions for households that plan where each paycheck goes before moving money between accounts.
+> [Personal Treasury](https://github.com/jfricano/personal-treasury) by Orca Solutions is a free, MIT-licensed Mac app for households that plan where each paycheck goes before moving money between accounts.
 >
-> Start with a budget, fund your account buckets, record transfers, then reconcile the month to the cent. Each check names what needs attention, and interaccount debts keep a full event history. The Mac app works offline; your data stays in a local SQLite file.
+> Build a budget, fund virtual account buckets, record transfers and reconcile the month to the cent. V3 adds statement-based Budget Analysis, actual-spending reports and real-account balance snapshots. Interaccount debts keep their full event history. The public Local app works offline and saves on your Mac.
 >
-> [Try the one-minute demo](https://jfricano.github.io/personal-treasury/) with a fictional household, [follow the walkthrough](https://github.com/jfricano/personal-treasury/blob/main/docs/guide/demo-walkthrough.md), or [download the Mac release](https://github.com/jfricano/personal-treasury/releases). The code is MIT licensed.
+> [Try the v3 browser demo](https://pt.orcasolutions.dev/) with a fictional household, [read the walkthrough](https://github.com/jfricano/personal-treasury/blob/main/docs/guide/demo-walkthrough.md), or [download the Local Mac preview](https://github.com/jfricano/personal-treasury/releases/tag/v0.3.0-preview.2). It supports Apple Silicon/macOS 12+. The preview installer is unsigned and the app is not notarized; release notes explain macOS approval and the remaining acceptance checks.

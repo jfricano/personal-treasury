@@ -1,5 +1,7 @@
 # Personal Treasury v2: review, plan, and builder handoff
 
+Historical v2 build plan. Use the [v3 specification](v3/README.md), [release report](v3-release-report.md) and [testing guide](testing.md) for the current implementation and remaining acceptance work.
+
 Prepared 2026-09-25 from the published demo, the current source, and the existing test suite. This is a **build specification**, not a claim that v2 fixes or exhaustive testing are complete.
 
 ## Executive decision

@@ -1,5 +1,7 @@
 # V3 acceptance tests
 
+Scope: the v3 target contract. Current preview implementation and remaining acceptance evidence are recorded in [release status](preview-status.md) and the [release report](../v3-release-report.md); publication does not certify every requirement below.
+
 These extend the [existing acceptance tests](../acceptance-tests.md), which all still apply. Test names in `tests/` refer to these as V3-AT1–V3-AT15. Fixtures use the fictional Harper household and synthetic statement files only. Amounts below are illustrative fixture values, not the demo's seeded figures.
 
 Unless stated otherwise, the fixture budget version for 2026-08 has take-home $6,000.00 and these lines: Groceries $600.00 (Household and personal, funded by HH); Fuel and parking $200.00 (Transportation, HH); Car maintenance $150.00 (Pets etc., PETC); Summer trip fund $250.00 (Travel, TRV, role set-aside); Everything else as the residual (Discretionary, ENT). Institution accounts: Checking ••1111 (in review, linked to HH), Savings ••2222 (in review, linked to PETC), Card ••3333 (in review, Shared), Brokerage ••4444 (snapshot only), Student loan ••5555 (snapshot only).

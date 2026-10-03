@@ -14,3 +14,8 @@ reference/*
 !reference/README.md
 tests/local/
 *.tsbuildinfo
+# Connected builds are private, including copies outside the ignored target folder.
+*_Connected.pkg
+*_Connected.dmg
+*_Connected.zip
+Personal Treasury Connected*.app/

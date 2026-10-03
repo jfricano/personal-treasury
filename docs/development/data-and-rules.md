@@ -1,5 +1,7 @@
 # Data Model and Calculation Rules
 
+These treasury rules remain applicable in v3. Separate actual-spending, real-account balance and temporary-review contracts are in [V3 spending review rules](v3/spending-review-rules.md); they do not change monthly journal or interaccount-debt calculations.
+
 ## Money representation
 
 Store monetary values as normalized decimal strings and calculate with `decimal.js` or an equivalent decimal type. Do not store or calculate money using JavaScript `number` values.

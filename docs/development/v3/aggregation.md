@@ -1,5 +1,7 @@
 # Institution data: providers, gathering and statement files
 
+Research and provider comparison recorded September 26, 2026; this is the design/source record, not a current provider-availability guarantee. Plaid is the chosen native adapter; live/Sandbox lifecycle and terms acceptance remain in the [release gates](preview-status.md#remaining-release-work). SimpleFIN is a documented fallback, not an implemented public feature.
+
 Status: approved for implementation · 2026-09-26; the owner chose Plaid (Option A) on 2026-09-27
 
 The spending review needs posted transactions and balances from the owner's checking, savings, credit card, brokerage, retirement and loan accounts. This document compares the ways to get them, including an option without Plaid, recommends one, and specifies where gathering runs, the adapter contract, and statement-file import. It names none of the owner's institutions: their coverage, quirks and connection plan are in the private notes (`reference/v3-institutions.md`). Research date 2026-09-26; every material claim has a source in §12.

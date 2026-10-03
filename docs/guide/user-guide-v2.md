@@ -1,5 +1,7 @@
 # Personal Treasury — User Guide
 
+Historical v2 guide. For the current v3 preview and Local download, use [Getting started](getting-started.md) and the [v3 user guide](user-guide.md).
+
 Personal Treasury replaces a spreadsheet system of two workbooks: a cash-flow and account ledger (monthly transfers and interaccount debts) and a personal budget (pay, budget and tax). The desktop app stores everything on your Mac, works offline, and recalculates every total from the underlying entries.
 
 ## Try it in the browser

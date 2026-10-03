@@ -1,5 +1,7 @@
 # Personal Treasury v3: product specification
 
+Scope: the v3 target contract. Current preview implementation and remaining acceptance evidence are recorded in [release status](preview-status.md) and the [release report](../v3-release-report.md); publication does not certify every requirement below.
+
 Status: approved direction; Q1 (passkeys) and Q2 (Plaid) decided 2026-09-27; remaining questions in §10 · 2026-09-26
 
 V3 turns the private web app and the desktop app into one signed-in treasury for a **single owner**. It adds a monthly comparison of the budget with actual spending, drawn from the owner's own financial institutions, and a month-end snapshot of assets and liabilities. The treasury rules in [Data model and calculation rules](../data-and-rules.md) and the budget model in [Architecture §7](../architecture.md) do not change.

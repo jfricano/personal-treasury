@@ -1,5 +1,7 @@
 # Security design
 
+Scope: the v3 target contract. Current preview implementation and remaining acceptance evidence are recorded in [release status](preview-status.md) and the [release report](../v3-release-report.md); publication does not certify every requirement below.
+
 Status: approved for implementation · 2026-09-26; passkey second factor confirmed by the owner 2026-09-27
 
 V3 puts one person's complete financial picture behind an internet-facing sign-in and adds read access to their institutions. This document is the security contract: the threat model, the design, and the testable requirements (SEC-…) that the [implementation plan](implementation-plan.md) turns into tests. It was prepared from a review of the v2.2 code and current guidance from OWASP, NIST SP 800-63B-4, RFC 9106 and the providers' documentation (§10), then checked by an independent review of the whole v3 document set.
@@ -31,7 +33,7 @@ V2.2 compares its token in constant time, authenticates before reading request b
 | M5 | Medium | The same host serves the web code and stores the ciphertext, so a compromised host can capture the secret at the next sign-in. | Inherent to a website; sensitive work runs on the desktop (§6). |
 | L1–L6 | Low | The desktop may connect to any HTTPS host; images and actions not pinned; plaintext backups; one corrupt version stops the service; password managers hindered; version labels stored in plaintext. | §5.5, §5.8, §5.9, §5.10. |
 
-These issues exist in the running v2.2 service today. The implementation plan adds an interim fix (security headers) to v2.2 before v3 is ready.
+These were findings against the v2.2 service at the September 26 design review. The original implementation plan proposed interim v2 hardening; the current source implements v3 authentication and security headers. See release status for remaining verification and specification differences.
 
 ## 3. Threat model
 

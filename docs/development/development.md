@@ -1,17 +1,21 @@
 # Development
 
+Current implementation: **v3 / 0.3.0-preview.2**. Use Node.js 24+; Rust is needed for native builds. See [release status](v3/preview-status.md) for pending acceptance checks.
+
 ## Layout
 
 | Path | Contents |
 | --- | --- |
 | `src/domain/` | Pure types and calculations: decimal money, monthly reconciliation, debt roll-forward, account resolution, payroll (take-home), budget (funding by account, month diff), tax (`tax/rules.ts`, `tax/estimate.ts`). |
-| `src/db/` | SQLite driver (sql.js), versioned migrations (v1–v3), treasury and budget repositories, storage backends. |
+| `src/db/` | SQLite driver (sql.js), versioned migrations (schema 1–5), persistent spending aggregates, treasury and budget repositories, storage backends. |
 | `src/api/` | `Treasury` service (the application API): validation (Zod), transactions, audit, undo, import commit, budget diff/refresh. `treasury.budget` is the `BudgetService` (versions, payroll, lines, tax rules, budget import). |
 | `src/import/` | Treasury workbook recognition and parsers (Overview, Template, Ledger, legacy and normalized months); `import/budget/` for the budget workbook; control comparisons; reports. |
 | `src/export/` | Excel workbook export and JSON backup/restore. |
+| `src/security/`, `src/review-store/`, `src/sources/`, `src/sync/` | Client cryptography, separate temporary reviews, provider/statement adapters and encrypted sync. |
+| `sync-server/` | V3 private web/API service; isolated production dependencies and a persistent encrypted store. |
 | `src/features/` | React screens. They call `Treasury` and render domain results; they don't do their own arithmetic. |
 | `src/demo/` | Public browser demo only: the fictional Harper household (`persona.ts`), its seed, tab-scoped storage, the banner and the guided tour. Never part of the desktop build. |
-| `src-tauri/` | Tauri 2 desktop shell (fs + dialog plugins only). |
+| `src-tauri/` | Tauri 2 shell: fs/dialog plugins, native allowlisted provider transport, offline-key storage and screen-lock integration. |
 | `tests/unit`, `tests/integration`, `tests/e2e`, `tests/fixtures` | Vitest, Playwright (against the demo build), synthetic workbooks. Public: they use only synthetic and sample data. |
 | `tests/local/`, `reference/` | Personal: the owner's workbooks, control totals and the tests that check them. Gitignored; see [reference/README.md](../../reference/README.md). |
 | `docker/`, `Dockerfile`, `.github/workflows/` | Demo container, CI and deployment. |
@@ -21,20 +25,23 @@
 ## Commands
 
 ```bash
-npm install
+npm ci
 npm run dev            # browser dev server at http://localhost:1420 (IndexedDB storage)
 npm run dev:demo       # the public demo with sample data, at http://localhost:1420
-npm run dev:private    # private web UI; proxy /api/sync to localhost:8787
+npm run dev:private    # private web UI; proxy /api to localhost:8787
 npm test               # unit + integration + database checks (Vitest)
 npm run db:check       # database integrity, constraints and migrations only
-npm run check          # format, lint, typecheck, tests, production build and demo build
+npm run check          # format, lint, types, unit/service tests, all web builds and doc links
 npm run test:e2e:demo  # Playwright against the demo build, using the installed Google Chrome
 npm run test:e2e       # Playwright against the personal reference workbooks (local only)
 npm run lint && npm run typecheck
 npm run build          # production web bundle in dist/
 npm run build:demo     # static demo site in dist-demo/
 npm run build:private  # private web app in dist-private/
-npm run test:server    # snapshot service auth, CAS and history checks
+npm run test:server    # legacy and v3 service tests
+npm run test:e2e:v3-private # disposable v3 private Chrome fixture
+npm run test:e2e:private # legacy private browser regressions
+npm run docs:links    # Markdown repository links
 npm run privacy:check  # scan publishable files for personal terms (run before every push)
 ```
 
@@ -44,7 +51,9 @@ The owner's workbooks and everything derived from them live in `reference/` and 
 
 ## Private cloud build
 
-`npm run build:private` creates the credential-gated web app. `sync-server/server.mjs` serves it and stores encrypted snapshot versions on persistent disk; see [private cloud sync](../guide/cloud-sync.md) and [ADR 0007](decisions/0007-guarded-cloud-snapshots.md). The public demo and private build have separate output folders and storage behavior. The desktop build remains local-first and connects to the same service only when configured in Settings.
+`npm run build:private` creates the v3 password/MFA web app. The [service README](../../sync-server/README.md) documents current configuration; the [Railway guide](../guide/railway-sync.md) covers deployment and migration. `npm run preview:private:fixture` creates a disposable localhost service with fictional credentials. Private sessions encrypt local working copies; snapshots, reviews and the provider vault are separate stores.
+
+The public demo excludes the live provider adapter. Local native builds work offline without private auth. Configured Connected builds select the service via `PT_SERVICE_ORIGIN` at build time and retain the private app's storage identity. **Connected artifacts stay private; only Local is publicly distributed.**
 
 ### Demo container
 
@@ -60,18 +69,22 @@ The image builds the demo in a Node stage and serves it from an unprivileged ngi
 Rust is installed in `~/.cargo/bin`. If `cargo` isn't found, run `source ~/.cargo/env` or add that directory to `PATH`.
 
 ```bash
-npm run tauri dev      # desktop window with hot reload
-npm run tauri build    # .app + .dmg in src-tauri/target/release/bundle/
+npm run tauri:dev          # Local Dev, separate app identity/storage
+npm run desktop:build      # Local.app + DMG in target/release/bundle/
+npm run desktop:installer  # builds Local.app and a self-contained PKG
+npm run desktop:installer -- --existing-build # package a matching, verified app already built
 ```
 
-`tauri.conf.json` sets `"signingIdentity": "-"`, so `tauri build` produces an **ad-hoc signed** build (verified with `codesign --verify --deep --strict`) that runs on this Mac. It isn't notarized, so another Mac's Gatekeeper will block it. For a distributable build:
+Use these wrappers so app names, storage identity and native CSP follow the selected variant. For a private source build, set `PT_SERVICE_ORIGIN` to the exact HTTPS service origin before the command. Development builds append **Dev** to the name and identifier. The PKG builder targets Apple Silicon/macOS 12+ and installs only the named app in Applications, without install scripts or records. Generated files are in `src-tauri/target/release/bundle/`; Connected packages remain private and explicitly ignored, including copies outside that directory.
 
-1. Get a *Developer ID Application* certificate (Apple Developer Program) and install it in your login keychain.
-2. Set `bundle.macOS.signingIdentity` to the certificate name (or export `APPLE_SIGNING_IDENTITY`).
-3. For notarization, export `APPLE_ID`, `APPLE_PASSWORD` (app-specific password) and `APPLE_TEAM_ID`, then run `npm run tauri build`.
+### Signing and preview permissions
 
-The DMG step styles the disk image by driving Finder and can fail intermittently (`error running bundle_dmg.sh`). If it does, detach any leftover `/Volumes/dmg.*` volume (`hdiutil detach`), delete `src-tauri/target/release/bundle/macos/rw.*.dmg`, and rerun `npm run tauri build`.
+`tauri.conf.json` defaults to ad-hoc application signing. The current PKG builder does not sign the installer or notarize the app. Its readme discloses that preview status. Downloaded files may require **System Settings → Privacy & Security → Open Anyway** for both the installer and first app launch; see [Getting started](../guide/getting-started.md#2-install-the-local-mac-app).
 
-The database lives at `~/Library/Application Support/com.personaltreasury.app/databases/<profile>.sqlite`. Safety copies sit next to it as `<profile>~<label>-<timestamp>.sqlite`.
+For a stable distributable app, configure a Developer ID Application identity and notarization credentials using [Tauri's macOS guide](https://v2.tauri.app/distribute/sign/macos/), then build through `npm run desktop:build`. A signed PKG also requires a Developer ID Installer identity and a signing/notarization step beyond the current script. See the [distribution gates](../distribution-plan.md).
 
-Verified in the packaged app: first launch creates the database (AppData scope, mkdir, write-then-rename), and the v1→v2 migration upgrades an existing file. Not yet exercised by hand: the native Open/Save dialogs for import, export and backup. They use `tauri-plugin-dialog`, which adds the chosen path to the fs scope.
+### Data and packaged validation
+
+Local profiles live under `~/Library/Application Support/com.personaltreasury.app.local/databases/`. Connected retains `com.personaltreasury.app` and uses encrypted private storage; Dev variants have separate identifiers. App deletion from Applications leaves these data folders and any cloud history intact. Records and keys are never packaged with installers.
+
+The [release report](v3-release-report.md) records native first launch, installer verification and earlier automated evidence. Native UI, external-install, provider and security acceptance remain separate gates; do not infer them from `npm run check` or a successful build.
