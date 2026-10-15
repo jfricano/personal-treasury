@@ -19,3 +19,6 @@ tests/local/
 *_Connected.dmg
 *_Connected.zip
 Personal Treasury Connected*.app/
+
+# Local Claude Code settings and state.
+/.claude/
