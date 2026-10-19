@@ -1,3 +1,10 @@
+import {
+  INGESTION_LIMITS,
+  requestPolicy,
+  createIngestionBudget,
+  checkBodyHeaders,
+  readBoundedJson,
+} from './ingestion.mjs';
 import http from 'node:http';
 import { isIP } from 'node:net';
 import path from 'node:path';
@@ -240,6 +247,7 @@ export async function createV3Server({
   setupSecret,
   legacyToken,
   trustProxy = false,
+  ingestionLimits = INGESTION_LIMITS,
   requestLogger = (record) => console.log(JSON.stringify(record)),
   now = () => Date.now(),
 } = {}) {
@@ -297,6 +305,8 @@ export async function createV3Server({
   );
   if (legacyNames.length && !legacyToken && state.migration?.phase !== 'committed')
     throw new Error('Existing v2.2 history requires PT_SYNC_TOKEN for migration.');
+  const legacyBodies = new WeakMap();
+  const ingestion = createIngestionBudget(ingestionLimits);
   let legacyServer = null;
   if (legacyToken && state.migration?.phase !== 'committed') {
     const { createSyncServer } = await import('./server.mjs');
@@ -304,6 +314,7 @@ export async function createV3Server({
       token: legacyToken,
       dataDirectory,
       allowedOrigins: [...origins].join(','),
+      readBody: async (req) => ({ value: legacyBodies.get(req) }),
     });
   }
   setupSecret ??= legacyToken;
@@ -345,7 +356,8 @@ export async function createV3Server({
     const [id, signature] = value.split('.');
     return signature && equal(signature, mac('deviceCookieKey', id)) ? id : null;
   };
-  const session = async (req, allowLocked = false) => {
+  // Admission checks are synchronous and read-only. Session side effects stay in route().
+  const inspectSession = (req, allowLocked = false) => {
     const bearer = req.headers.authorization?.startsWith('Bearer '),
       id = bearer ? req.headers.authorization.slice(7) : cookie(req, '__Host-pt_session');
     const s = id ? sessions.get(hash(id)) : null;
@@ -354,20 +366,29 @@ export async function createV3Server({
       !['tauri://localhost', 'http://tauri.localhost', 'https://tauri.localhost'].includes(req.headers.origin)
     )
       reject(403, 'desktop_origin_required');
-    if (!s || s.desktop !== !!bearer || now() - s.created >= 12 * 3600000) {
-      if (id) sessions.delete(hash(id));
+    if (!s || s.desktop !== !!bearer || now() - s.created >= 12 * 3600000)
+      return { s, id, key: id ? hash(id) : null, error: 'expired' };
+    return {
+      s,
+      id,
+      key: hash(id),
+      error: (s.locked || now() - s.active >= 15 * 60000) && !allowLocked ? 'locked' : null,
+    };
+  };
+  const session = async (req, allowLocked = false) => {
+    const result = inspectSession(req, allowLocked);
+    const { s, key, error } = result;
+    if (error === 'expired') {
+      if (key) sessions.delete(key);
       if (s) await event('session_expired', s.desktop ? 'desktop' : 'browser');
-      reject(401, 'expired');
     }
-    if ((s.locked || now() - s.active >= 15 * 60000) && !allowLocked) {
-      if (!s.locked) {
-        s.locked = true;
-        await event('locked', s.desktop ? 'desktop' : 'browser');
-      }
-      reject(401, 'locked');
+    if (error === 'locked' && !s.locked) {
+      s.locked = true;
+      await event('locked', s.desktop ? 'desktop' : 'browser');
     }
+    if (error) reject(401, error);
     if (!allowLocked) s.active = now();
-    return { s, id, key: hash(id) };
+    return result;
   };
   const stepUp = (s) => {
     if (now() - s.proof > 5 * 60000) reject(403, 'step_up_required');
@@ -1303,6 +1324,7 @@ export async function createV3Server({
       securityHeaders(res);
       const started = performance.now(),
         requestId = randomBytes(16).toString('hex');
+      let lease;
       let routeTemplate = 'unmatched',
         inputBytes = 0;
       const forwarded = req.headers['x-real-ip'];
@@ -1333,9 +1355,13 @@ export async function createV3Server({
       try {
         const url = new URL(req.url, 'http://localhost');
         routeTemplate = logRoute(url.pathname);
-        if (url.pathname === '/healthz' && req.method === 'GET') return json(res, 200, { status: 'ok' });
+        if (url.pathname === '/healthz' && req.method === 'GET') {
+          checkBodyHeaders(req, 0);
+          return json(res, 200, { status: 'ok' });
+        }
         if (!url.pathname.startsWith('/api/')) {
           if (!staticDirectory || !['GET', 'HEAD'].includes(req.method)) reject(404, 'not_found');
+          checkBodyHeaders(req, 0);
           const root = await realpath(staticDirectory);
           let file = path.resolve(root, `.${decodeURIComponent(url.pathname)}`);
           if (file === root) file = path.join(root, 'index.html');
@@ -1356,25 +1382,50 @@ export async function createV3Server({
           createReadStream(actual).pipe(res);
           return;
         }
-        if (
+        const legacy = !!(
           legacyToken &&
           equal(req.headers.authorization ?? '', `Bearer ${legacyToken}`) &&
           url.pathname.startsWith('/api/sync/')
-        ) {
-          const task = queue.then(() => {
+        );
+        const policy = requestPolicy(
+          url.pathname,
+          req.method === 'OPTIONS' ? req.headers['access-control-request-method'] : req.method,
+          legacy,
+        );
+        if (!policy) reject(404, 'not_found');
+        const authorize = () => {
+          if (policy.auth === 'legacy') {
             if (state.migration?.phase === 'committed') reject(401, 'unauthorized');
             if (state.migration?.phase === 'copying' && req.method === 'PUT')
               reject(423, 'migration_write_freeze');
-            return new Promise((resolve) => {
-              res.once('finish', resolve);
-              if (legacyServer) legacyServer.emit('request', req, res);
-              else json(res, 401, { error: 'unauthorized' });
-            });
-          });
-          queue = task.catch(() => undefined);
-          await task;
-          return;
-        }
+          } else if (policy.auth === 'setup') {
+            if (account) reject(404, 'not_found');
+            if (!setupSecret || !equal(req.headers.authorization ?? '', `Bearer ${setupSecret}`))
+              reject(401, 'unauthorized');
+          } else if (policy.auth === 'session') {
+            const { s, error } = inspectSession(req, policy.allowLocked);
+            if (error) reject(401, error);
+            if (policy.desktop && !s.desktop) reject(403, 'desktop_required');
+            if (policy.fresh) stepUp(s);
+          } else if (
+            policy.auth === 'device' &&
+            !['tauri://localhost', 'http://tauri.localhost', 'https://tauri.localhost'].includes(
+              req.headers.origin,
+            )
+          ) {
+            reject(403, 'desktop_origin_required');
+          }
+        };
+        const authorizeQueued = async () => {
+          try {
+            authorize();
+          } catch (error) {
+            // Preserve expiry removal and idle-lock audit events in the serialized lane.
+            if (policy.auth === 'session' && inspectSession(req, policy.allowLocked).error)
+              await session(req, policy.allowLocked);
+            throw error;
+          }
+        };
         if (req.headers.origin && !origins.has(req.headers.origin)) reject(403, 'origin_forbidden');
         if (req.headers.origin) {
           res.setHeader('Access-Control-Allow-Origin', req.headers.origin);
@@ -1382,6 +1433,7 @@ export async function createV3Server({
           res.setHeader('Access-Control-Allow-Credentials', 'true');
         }
         if (req.method === 'OPTIONS') {
+          checkBodyHeaders(req, 0);
           res.setHeader(
             'Access-Control-Allow-Headers',
             'Authorization, Content-Type, If-Match, X-PT-Request',
@@ -1390,7 +1442,20 @@ export async function createV3Server({
           res.writeHead(204);
           return res.end();
         }
-        if (req.method !== 'GET') csrf(req);
+        if (!legacy && req.method !== 'GET') csrf(req);
+        try {
+          authorize();
+        } catch (error) {
+          if (policy.auth === 'session' && error.status === 401) {
+            lease = ingestion.acquire(0);
+            const task = queue.then(authorizeQueued);
+            queue = task.catch(() => undefined);
+            await task;
+          }
+          throw error;
+        }
+        checkBodyHeaders(req, policy.limit);
+        lease = ingestion.acquire(policy.limit);
         if (
           [
             '/api/auth/login',
@@ -1416,34 +1481,48 @@ export async function createV3Server({
           if (rates.size > 5000) rates.delete(rates.keys().next().value);
           rates.set(ip, r);
         }
-        let b = {};
-        if (!['GET', 'HEAD'].includes(req.method)) {
-          if (!req.headers['content-type']?.startsWith('application/json')) reject(415, 'json_required');
-          let size = 0;
-          const parts = [];
-          for await (const chunk of req) {
-            size += chunk.length;
-            inputBytes = size;
-            if (size > 32 * 1024 * 1024) reject(413, 'payload_too_large');
-            parts.push(chunk);
-          }
+        if (req.headers.expect?.toLowerCase() === '100-continue') res.writeContinue();
+        const b = policy.limit
+          ? await readBoundedJson(req, policy.limit, (size) => {
+              inputBytes = size;
+            })
+          : {};
+        lease.uploaded();
+        // Capacity includes parsed bodies waiting here and running work. State transitions,
+        // replay checks and conditional writes remain serialized; recheck after slow uploads.
+        const task = queue.then(async () => {
+          if (req.aborted || res.destroyed) return;
+          await authorizeQueued();
+          if (!legacy) return route(req, res, url, b);
+          legacyBodies.set(req, b);
           try {
-            b = JSON.parse(Buffer.concat(parts).toString());
-          } catch {
-            reject(400, 'invalid_json');
+            await new Promise((resolve) => {
+              res.once('finish', resolve);
+              res.once('close', resolve);
+              if (legacyServer) legacyServer.emit('request', req, res);
+              else json(res, 401, { error: 'unauthorized' });
+            });
+          } finally {
+            legacyBodies.delete(req);
           }
-          if (!bodyObject(b)) reject(400, 'invalid_json');
-        }
-        // Serialize state transitions so replay protection and conditional writes are atomic.
-        const task = queue.then(() => route(req, res, url, b));
+        });
         queue = task.catch(() => undefined);
         await task;
       } catch (e) {
-        if (!res.headersSent) json(res, e.status ?? 500, { error: e.status ? e.message : 'internal_error' });
-        else res.destroy();
+        // Do not drain a rejected upload or reuse a socket containing unread body bytes.
+        if (!res.headersSent && !res.destroyed) {
+          res.setHeader('Connection', 'close');
+          if (e.status === 503) res.setHeader('Retry-After', '1');
+          res.once('finish', () => req.destroy());
+          json(res, e.status ?? 500, { error: e.status ? e.message : 'internal_error' });
+        } else res.destroy();
+      } finally {
+        lease?.release();
       }
     },
   );
+  // Do not invite an upload until route, authentication and capacity checks pass.
+  server.on('checkContinue', (req, res) => server.emit('request', req, res));
   server.on('close', () => clearInterval(interval));
   return server;
 }

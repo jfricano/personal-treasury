@@ -742,3 +742,332 @@ test('SEC-MIG expired proof leaves legacy history untouched and fresh desktop si
   assert.equal((await f.call('/api/migration/status', undefined, { headers: fresh })).body.phase, 'copying');
   assert.equal(await readFile(path.join(f.directory, 'versions', '1.json'), 'utf8'), original);
 });
+
+async function upload(f, url, { method = 'PUT', headers = {}, prefix, length } = {}) {
+  const { request } = await import('node:http');
+  let req;
+  const response = new Promise((resolve, reject) => {
+    req = request(
+      {
+        hostname: '127.0.0.1',
+        port: f.server.address().port,
+        path: url,
+        method,
+        headers: {
+          Origin: 'http://localhost',
+          'X-PT-Request': '1',
+          'Content-Type': 'application/json',
+          Cookie: f.cookie(),
+          ...(length === undefined ? {} : { 'Content-Length': length }),
+          ...headers,
+        },
+      },
+      (res) => {
+        let body = '';
+        res.on('data', (part) => {
+          body += part;
+        });
+        res.on('end', () =>
+          resolve({ status: res.statusCode, body: body ? JSON.parse(body) : {}, headers: res.headers }),
+        );
+      },
+    );
+    req.on('error', reject);
+  });
+  const admitted = new Promise((resolve) => req.once('continue', resolve));
+  req.flushHeaders();
+  if (prefix) req.write(prefix);
+  return { req, response, admitted };
+}
+
+test('T-01 protected and unknown uploads reject before JSON/body ingestion, including Expect continue', async (t) => {
+  const logs = [];
+  const f = await fixture(t, false, { requestLogger: (r) => logs.push(r) });
+  for (const [url, method, headers, status] of [
+    ['/api/sync/head', 'PUT', { Cookie: '' }, 401],
+    ['/api/vault', 'PUT', { Cookie: '' }, 401],
+    ['/api/unknown', 'POST', {}, 404],
+    ['/api/auth/factor/unknown', 'POST', {}, 404],
+    ['/api/auth/login', 'PUT', {}, 404],
+    ['/api/setup/begin', 'POST', {}, 404],
+    ['/api/sync/head', 'PUT', { Cookie: '', Expect: '100-continue' }, 401],
+  ]) {
+    const u = await upload(f, url, { method, headers, length: 32 * 1024 ** 2 });
+    let continued = false;
+    u.req.on('continue', () => {
+      continued = true;
+    });
+    const result = await u.response; // never send body or end: must receive prompt final response
+    assert.equal(result.status, status);
+    assert.equal(continued, false);
+    assert.equal(logs.at(-1).inputBytes, 0);
+    assert.equal(result.headers.connection, 'close');
+    u.req.destroy();
+  }
+});
+
+test('T-01 streaming caps and declared limits reject promptly and capacity recovers after invalid JSON and abort', async (t) => {
+  const f = await fixture(t);
+  await f.login();
+  for (const [url, method, cap] of [
+    ['/api/sync/head', 'PUT', 32 * 1024 ** 2],
+    ['/api/review/11111111-1111-4111-8111-111111111111', 'PUT', 8 * 1024 ** 2],
+    ['/api/auth/passkeys/verify', 'POST', 256 * 1024],
+    ['/api/auth/sessions/revoke', 'POST', 64 * 1024],
+  ]) {
+    const u = await upload(f, url, { method, length: cap + 1 });
+    assert.equal((await u.response).status, 413);
+    u.req.destroy();
+  }
+  const large = await upload(f, '/api/auth/sessions/revoke', {
+    method: 'POST',
+    prefix: ' '.repeat(64 * 1024 + 1),
+  });
+  assert.equal((await large.response).status, 413);
+  large.req.destroy();
+  const invalid = await upload(f, '/api/sync/head', { prefix: '{' });
+  invalid.req.end();
+  assert.equal((await invalid.response).body.error, 'invalid_json');
+  const aborted = await upload(f, '/api/sync/head', { prefix: '{"envelope":' });
+  aborted.response.catch(() => {});
+  aborted.req.destroy();
+  // Subsequent requests must be able to reserve a full snapshot slot.
+  assert.equal(
+    (
+      await f.call(
+        '/api/sync/head',
+        { envelope: envelope('snapshot', 'treasury', 1) },
+        { method: 'PUT', headers: { 'If-Match': '"0"' } },
+      )
+    ).status,
+    200,
+  );
+});
+
+test('T-01 aggregate reservations reject overload without waiting and recover on disconnect', async (t) => {
+  const f = await fixture(t);
+  await f.login();
+  const a = await upload(f, '/api/sync/head', { prefix: '{', headers: { Expect: '100-continue' } });
+  await a.admitted;
+  const b = await upload(f, '/api/sync/head', { prefix: '{', headers: { Expect: '100-continue' } });
+  await b.admitted;
+  a.response.catch(() => {});
+  b.response.catch(() => {});
+  const busy = await upload(f, '/api/sync/head');
+  const response = await busy.response;
+  assert.equal(response.status, 503);
+  assert.equal(response.headers['retry-after'], '1');
+  busy.req.destroy();
+  a.req.end();
+  b.req.end();
+  assert.equal((await a.response).status, 400);
+  assert.equal((await b.response).status, 400);
+  const next = await upload(f, '/api/sync/head', { prefix: '{}' });
+  next.req.end();
+  assert.equal((await next.response).status, 409); // reaches conditional write check
+});
+
+test('T-01 slow ingestion revalidates logout, lock, absolute expiry and fresh proof before writes', async (t) => {
+  for (const invalidation of ['logout', 'lock', 'expiry', 'step-up']) {
+    const f = await fixture(t);
+    await f.login();
+    const sensitive = invalidation === 'step-up';
+    const u = await upload(f, sensitive ? '/api/sync/pin' : '/api/sync/head', {
+      method: sensitive ? 'POST' : 'PUT',
+      prefix: sensitive ? '{"revision":' : '{"envelope":',
+      headers: { 'If-Match': '"0"' },
+    });
+    // A completed read is a deterministic barrier that the partial body was admitted.
+    assert.equal((await f.call('/api/sync/head')).status, 200);
+    if (invalidation === 'expiry') f.advance(12 * 3600000);
+    else if (invalidation === 'step-up') f.advance(5 * 60000);
+    else await f.call('/api/auth/' + invalidation, {});
+    u.req.end(sensitive ? '1}' : JSON.stringify(envelope('snapshot', 'treasury', 1)) + '}');
+    const result = await u.response;
+    assert.equal(result.status, sensitive ? 403 : 401);
+    assert.equal(
+      result.body.error,
+      sensitive ? 'step_up_required' : invalidation === 'lock' ? 'locked' : 'expired',
+    );
+    assert.equal((await readdir(path.join(f.directory, 'snapshots'))).length, 0);
+  }
+});
+
+test('T-01 early and queued session refusals preserve serialized lock and expiry audit events', async (t) => {
+  const f = await fixture(t);
+  await f.login();
+  f.advance(15 * 60000);
+  assert.equal((await f.call('/api/sync/head')).body.error, 'locked');
+  assert.equal((await f.call('/api/auth/session')).body.locked, true);
+  const events = async () => await readFile(path.join(f.directory, 'state.json'), 'utf8');
+  assert.match(await events(), /"type":"locked"/);
+  await f.call('/api/auth/unlock', f.credentials);
+  const u = await upload(f, '/api/sync/head', { prefix: '{"envelope":' });
+  assert.equal((await f.call('/api/sync/head')).status, 200);
+  f.advance(12 * 3600000);
+  u.req.end(JSON.stringify(envelope('snapshot', 'treasury', 1)) + '}');
+  assert.equal((await u.response).body.error, 'expired');
+  assert.match(await events(), /"type":"session_expired"/);
+  const before = await events();
+  assert.equal((await f.call('/api/sync/head')).body.error, 'expired');
+  assert.equal(await events(), before); // expired session removed; event emitted once
+});
+
+test('T-01 legitimate near-cap encrypted snapshot, review, vault and migration round-trip without truncation', async (t) => {
+  const { createCipheriv, createDecipheriv } = await import('node:crypto');
+  const f = await fixture(t, true);
+  const headers = await f.desktop();
+  const key = randomBytes(32);
+  const encrypted = (purpose, ref, rev, cap) => {
+    const iv = randomBytes(12),
+      cipher = createCipheriv('aes-256-gcm', key, iv);
+    // Base64 expands binary 4/3; leave room for JSON and the authentication tag.
+    const plain = Buffer.alloc(Math.floor(((cap - 4096) * 3) / 4), 0x61);
+    const ciphertext = Buffer.concat([cipher.update(plain), cipher.final(), cipher.getAuthTag()]).toString(
+      'base64',
+    );
+    return { ...envelope(purpose, ref, rev), iv: iv.toString('base64'), ciphertext };
+  };
+  const verify = (value, expected) => {
+    assert.deepEqual(value, expected);
+    const bytes = Buffer.from(value.ciphertext, 'base64');
+    const decipher = createDecipheriv('aes-256-gcm', key, Buffer.from(value.iv, 'base64'));
+    decipher.setAuthTag(bytes.subarray(-16));
+    const plain = Buffer.concat([decipher.update(bytes.subarray(0, -16)), decipher.final()]);
+    assert.equal(plain[0], 0x61);
+    assert.equal(plain.at(-1), 0x61);
+  };
+  assert.equal((await f.call('/api/migration/start', {}, { headers })).status, 200);
+  let value = encrypted('snapshot', 'treasury', 1, 32 * 1024 ** 2);
+  let body = { envelope: value };
+  assert(Buffer.byteLength(JSON.stringify(body)) < 32 * 1024 ** 2);
+  assert.equal((await f.call('/api/migration/versions/1', body, { method: 'PUT', headers })).status, 200);
+  verify((await f.call('/api/migration/versions/1', undefined, { headers })).body.envelope, value);
+  const digest = createHash('sha256').update(JSON.stringify(value)).digest('base64url');
+  assert.equal(
+    (await f.call('/api/migration/verify', { revision: 1, envelopeDigest: digest }, { headers })).status,
+    200,
+  );
+  assert.equal((await f.call('/api/migration/commit', {}, { headers })).status, 200);
+  value = encrypted('snapshot', 'treasury', 2, 32 * 1024 ** 2);
+  body = { envelope: value };
+  assert.equal(
+    (await f.call('/api/sync/head', body, { method: 'PUT', headers: { ...headers, 'If-Match': '"1"' } }))
+      .status,
+    200,
+  );
+  verify((await f.call('/api/sync/versions/2', undefined, { headers })).body.envelope, value);
+  const ref = '11111111-1111-4111-8111-111111111111';
+  value = encrypted('review', ref, 1, 8 * 1024 ** 2);
+  body = { envelope: value, header: envelope('review-header', ref, 1) };
+  assert.equal(
+    (await f.call('/api/review/' + ref, body, { method: 'PUT', headers: { ...headers, 'If-Match': '"0"' } }))
+      .status,
+    200,
+  );
+  verify((await f.call('/api/review/' + ref, undefined, { headers })).body.envelope, value);
+  value = encrypted('vault', 'credentials', 1, 1024 ** 2);
+  assert.equal(
+    (
+      await f.call(
+        '/api/vault',
+        { envelope: value },
+        { method: 'PUT', headers: { ...headers, 'If-Match': '"0"' } },
+      )
+    ).status,
+    200,
+  );
+  verify((await f.call('/api/vault', undefined, { headers })).body.envelope, value);
+});
+
+test(
+  'T-01 intake deadline frees aggregate capacity without a client end or disconnect',
+  { timeout: 40000 },
+  async (t) => {
+    const f = await fixture(t);
+    await f.login();
+    const a = await upload(f, '/api/sync/head', { prefix: '{', headers: { Expect: '100-continue' } });
+    await a.admitted;
+    const b = await upload(f, '/api/sync/head', { prefix: '{', headers: { Expect: '100-continue' } });
+    await b.admitted;
+    assert.equal((await f.call('/api/sync/head', {}, { method: 'PUT' })).status, 503);
+    assert.deepEqual(
+      (await Promise.all([a.response, b.response])).map((r) => r.status),
+      [408, 408],
+    );
+    a.req.destroy();
+    b.req.destroy();
+    assert.equal((await f.call('/api/sync/head', {}, { method: 'PUT' })).status, 409);
+  },
+);
+
+test(
+  'T-01 queued parsed bodies retain reservations and bounded readers do not create an unbounded queue',
+  { skip: process.platform === 'win32' },
+  async (t) => {
+    const { execFileSync } = await import('node:child_process');
+    const { open, unlink } = await import('node:fs/promises');
+    const f = await fixture(t);
+    await f.login();
+    const ref = '11111111-1111-4111-8111-111111111111';
+    const fifo = path.join(f.directory, 'reviews', ref + '.json');
+    execFileSync('mkfifo', [fifo]);
+    // A disposable FIFO read holds the serialized lane, not the upload reader.
+    const blocked = f.call('/api/review/' + ref);
+    const writer = await open(fifo, 'w'); // reader has entered route(); lane is now blocked
+    const uploads = [],
+      reads = [];
+    try {
+      for (let i = 0; i < 2; i++) {
+        const u = await upload(f, '/api/sync/head', { headers: { Expect: '100-continue' }, prefix: '{}' });
+        await u.admitted;
+        u.req.end();
+        uploads.push(u);
+      }
+      const busy = await upload(f, '/api/sync/head');
+      assert.equal((await busy.response).status, 503);
+      busy.req.destroy();
+      // Two parsed uploads plus the blocked route consume three of sixteen slots.
+      for (let i = 0; i < 13; i++) {
+        const r = await upload(f, '/api/sync/head', {
+          method: 'GET',
+          length: 0,
+          headers: { Expect: '100-continue' },
+        });
+        await r.admitted;
+        r.req.end();
+        reads.push(r);
+      }
+      const full = await upload(f, '/api/sync/head', { method: 'GET' });
+      assert.equal((await full.response).status, 503);
+      full.req.destroy();
+    } finally {
+      await writer.write(JSON.stringify({ expiresAt: '2099-01-01T00:00:00Z' }));
+      await writer.close();
+    }
+    assert.equal((await blocked).status, 200);
+    assert.deepEqual(
+      (await Promise.all(uploads.map((u) => u.response))).map((r) => r.status),
+      [409, 409],
+    );
+    assert((await Promise.all(reads.map((r) => r.response))).every((r) => r.status === 200));
+    await unlink(fifo);
+    assert.equal((await f.call('/api/sync/head')).status, 200);
+  },
+);
+
+test('T-01 enrollment secret is checked before the first body is consumed', async (t) => {
+  const f = await fixture(t);
+  const directory = await mkdtemp(path.join(tmpdir(), 'pt-v3-unenrolled-'));
+  const server = await createV3Server({ ...f.config, dataDirectory: directory });
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  t.after(() => new Promise((resolve) => server.close(resolve)));
+  const unenrolled = { server, cookie: () => '' };
+  const u = await upload(unenrolled, '/api/setup/begin', {
+    method: 'POST',
+    headers: { Origin: 'tauri://localhost', Authorization: 'Bearer invalid' },
+    length: 1024 ** 2,
+  });
+  assert.equal((await u.response).status, 401);
+  u.req.destroy();
+});

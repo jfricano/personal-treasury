@@ -35,6 +35,10 @@ Generate the four server secrets independently with `openssl rand -base64 32`. S
 
 For Railway, use the [v3 hosting guide](../docs/guide/railway-sync.md). The Docker image has private production assets and isolated service dependencies, runs as UID 1000 with Node filesystem permissions, and needs a mounted volume writable by that user. It contains no npm/npx runtime and does not chown the mount.
 
+## Request ingestion
+
+The [request-ingestion contract and T-01 verification](../docs/development/v3/request-ingestion.md) lists supported methods, authentication gates, wire-byte caps, bounded concurrency settings, retry behavior and deployment/rollback constraints. Local remediation does not establish deployed acceptance or resource fit.
+
 ## Authentication and storage
 
 Web sessions use HTTP-only cookies and CSRF protection. Native sessions use bearer authorization and enrolled-device proof. Initial enrollment and migration are desktop operations; routine access uses User ID, password and MFA. Sensitive actions require fresh verification. [User setup and sync](../docs/guide/user-guide.md#use-private-access-and-sync) describe the visible workflows; [security design](../docs/development/v3/security.md) records the full target contract.

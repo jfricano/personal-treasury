@@ -204,7 +204,13 @@ async function serveStatic(request, response, staticDirectory) {
 }
 
 /** Construct a snapshot API. The returned server does not listen until listen() is called. */
-export async function createSyncServer({ token, dataDirectory, allowedOrigins = '', staticDirectory } = {}) {
+export async function createSyncServer({
+  token,
+  dataDirectory,
+  allowedOrigins = '',
+  staticDirectory,
+  readBody = readJsonBody,
+} = {}) {
   if (typeof token !== 'string' || token.length < 32) {
     throw new Error('PT_SYNC_TOKEN must be set to at least 32 random characters');
   }
@@ -259,7 +265,7 @@ export async function createSyncServer({ token, dataDirectory, allowedOrigins = 
         if (!match || !Number.isSafeInteger(Number(match[1]))) {
           return json(response, 428, { error: 'if_match_required' });
         }
-        const body = await readJsonBody(request);
+        const body = await readBody(request);
         if (body.error)
           return json(response, body.error, {
             error: body.error === 413 ? 'payload_too_large' : 'invalid_json',
@@ -316,7 +322,13 @@ export async function createSyncServer({ token, dataDirectory, allowedOrigins = 
 export async function startFromEnv(environment = process.env) {
   if (environment.PT_AUTH_PEPPER) {
     const { createV3Server } = await import('./v3.mjs');
+    const { INGESTION_LIMITS } = await import('./ingestion.mjs');
     const server = await createV3Server({
+      ingestionLimits: {
+        requests: Number(environment.PT_INGESTION_REQUESTS ?? INGESTION_LIMITS.requests),
+        uploads: Number(environment.PT_INGESTION_UPLOADS ?? INGESTION_LIMITS.uploads),
+        bytes: Number(environment.PT_INGESTION_BYTES ?? INGESTION_LIMITS.bytes),
+      },
       dataDirectory: environment.PT_SYNC_DATA_DIR,
       staticDirectory: environment.PT_STATIC_DIR,
       origin: environment.PT_PUBLIC_ORIGIN,
