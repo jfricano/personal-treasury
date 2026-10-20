@@ -99,3 +99,7 @@ Stack: Tauri 2, React 19, TypeScript, SQLite (sql.js), decimal.js, Zod, SheetJS,
 ## License
 
 [MIT](LICENSE)
+
+## Delivery workflow
+
+See [the delivery workflow](docs/development/DELIVERY_WORKFLOW.md) for author verification, focused review of high-risk changes and scoped release authority. Existing project behavior and setup commands above remain authoritative.
