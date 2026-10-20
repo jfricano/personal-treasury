@@ -19,3 +19,6 @@ tests/local/
 *_Connected.dmg
 *_Connected.zip
 Personal Treasury Connected*.app/
+
+# Personal agent overrides stay local.
+*.local.*
