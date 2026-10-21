@@ -251,7 +251,7 @@ Clock 2026-10-06, so M = 2026-09 and N = 2026-10.
 
 ### 17. Migration, backup, import and export (V4-AT17)
 
-1. Migrating a v0.2.2 (schema version 3) fixture and a v3 fixture changes no pre-existing column of any row (hash comparison). Roles are empty, every setting holds its pre-v4 value, and every existing event is `recorded`.
+1. Migrating a v0.2.2 (schema version 3) fixture and a v0.3.0-preview.2 (schema version 5) fixture changes no pre-existing column of any row (hash comparison). Roles are empty, every setting holds its pre-v4 value, and every existing event is `recorded`.
 2. JSON backups from v0.2.2 and v3 restore into v4 and migrate forward.
 3. A v4 backup round trip reproduces roles, the hub, settings, standing amounts, event types, reasons, offset groups, related events, link purposes and origins, institution links, acknowledgements, reviews, decisions, verifications and funding pairs.
 4. The workbook export imported into a fresh profile reproduces roles, hub, account standing amounts, event types, reasons, offset groups and related Loan IDs; Loan IDs with hyphens remain text. Links between events and journal rows are empty after import, and **Link history** proposes every one of them again.

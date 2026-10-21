@@ -1,6 +1,6 @@
 # Personal Treasury v4: product specification
 
-Status: proposed direction, pending owner review of the decisions in §9 and the v3 amendments in §10 · 2026-09-27
+Status: proposed direction, pending owner review of the decisions in §9 and the changes to shipped v3 in §10 · 2026-09-27, updated 2026-10-20 for the shipped v3 (v0.3.0-preview.2)
 
 V4 makes each treasury account formally one real account and uses that fact to check the treasury against reality. It also makes the debt workflow single-entry and shows debts as of a date. The treasury rules in [Data model and calculation rules](../data-and-rules.md) stay in force except where [Treasury rules §18](treasury-rules.md#18-domain-rules-kept-extended-or-changed) marks a change, and every such change is an owner decision.
 
@@ -10,7 +10,7 @@ Companion documents:
 - [Implementation plan](implementation-plan.md): branches, Track A and Track B, build order and release gate.
 - [Acceptance tests](acceptance-tests.md): the behaviors v4 must pass.
 - Decision: [ADR 0011](../decisions/0011-treasury-accounts-are-physical-accounts.md).
-- V3, which v4 builds on: [v3 specification](../v3/README.md). V3 requirement IDs are written with a "v3" prefix (for example v3 FR-CONN-4) wherever this document cites them.
+- V3, which v4 builds on: [v3 specification](../v3/README.md), as shipped in v0.3.0-preview.2 ([release report](../v3-release-report.md), [preview status](../v3/preview-status.md)). V3 requirement IDs are written with a "v3" prefix (for example v3 FR-CONN-4) wherever this document cites them.
 
 ## 1. The owner's question and the answer
 
@@ -149,7 +149,7 @@ Today the steps sit on four screens and the owner remembers the order. V4 puts t
 
 - The checklist is computed from the data, never stored, like the reconciliation status. It never blocks closing: closing still follows the existing rules.
 - Clearing M's review while M has unverified lines warns that it is the last chance to verify them from bank data.
-- Without v3 data (Track A only, or a local-only profile), steps 1–3 show **Needs connected accounts** and the rest still works.
+- Without connected accounts (Track A only, or a profile with no connections), steps 1–3 show **Needs connected accounts** and the rest still works.
 - N's own verification appears in step 1 of the next cycle, or earlier if the owner gathers N's data mid-month.
 
 ### 4.7 Sinking funds (Track B)
@@ -240,7 +240,7 @@ IDs are referenced by the [implementation plan](implementation-plan.md) and the 
 
 | ID | Requirement | Track |
 | --- | --- | --- |
-| FR-SETTLE-1 | Clearing a review writes net totals per (paying treasury account, funding treasury account), totals only, from its accepted budget parts; hub-paid spending is kept as information only. Must. | B |
+| FR-SETTLE-1 | Clearing a review writes net totals per (paying treasury account, funding treasury account), totals only, from its accepted budget parts; hub-paid spending is kept as information only. Must. | B0 |
 | FR-SETTLE-2 | The next open treasury month offers one proposal per pair with Settle now, Settle over time, Split and Reject, one at a time or in bulk (OD10). Must. | B |
 | FR-SETTLE-3 | Refunds reduce a pair's total; a negative total is proposed in the reverse direction, defaulting to settle over time when settling now would make a card's final transfer negative. Must. | B |
 | FR-SETTLE-4 | Each decision is stored once and links to the journal row or debt it created. Must. | B |
@@ -324,8 +324,8 @@ Subtitle *Your treasury accounts checked against their real balances*, to keep i
 - **Kept:** every v3 behavior, the temporary-transaction rule, the read-only stance toward institutions, and every treasury calculation not listed in [Treasury rules §18](treasury-rules.md#18-domain-rules-kept-extended-or-changed).
 - **Changed (owner decisions):** the debt headline defaults to today (OD6); the hub bucket's line is retained (OD16); proposals from institution data may become treasury records, and verified lines may be marked Done, on the owner's click (OD10, OD11), narrowing v3's non-goal; new months and new entries hold cents (OD13); the debt effect is chosen in the same save as the transfer (OD20).
 - **Added:** treasury roles, the hub, required links, event types, write-offs, reassignments, offsets, pay pair, the tie-out, balance checks, verification, settlement proposals, standing amounts, floors and targets, the close checklist and the Balances page.
-- **Replaced:** v3's FR-REV-13 transfer-confirmation hint, by verification, once Track B ships.
-- **Asked of v3:** the amendments in §10, if the owner adopts them.
+- **Replaced:** v3's unbuilt FR-REV-12 and FR-REV-13 hints, by settlement proposals (B4) and verification (B3).
+- **Changed in shipped v3:** the link model, Shared, rule shape and report totals in §10, if the owner adopts them (OD19).
 
 ## 8. Success measures
 
@@ -359,20 +359,22 @@ These change financial meaning, reinterpret an account, or decide how v4 ships, 
 | OD16 | If pay lands in a bucket, should that bucket's line count as **retained** rather than waiting for Done? | Yes. This rewords rule 5 ("every account except the hub bucket"), so it needs the owner's approval. |
 | OD17 | Should unresolved tie-out items block **Complete**? | No. They are warnings on the month and a step on the close checklist. |
 | OD18 | Which treasury month does pay received in a calendar month fund: the same month or the next? | The owner states it once when marking the hub; the hub checks stay off until then. |
-| OD19 | Amend the v3 specification (§10) before v3's connection slices start? | Yes, V3-A1 to V3-A6, before v3 slice S4; V3-A7 when convenient. Each is cheaper in v3 than as a v4 migration. |
+| OD19 | Make the changes to shipped v3 in §10? | Yes, V3-A1 to V3-A6; V3-A7 when convenient. Ship B0 (V3-A3, V3-A4) first, so months cleared from then on keep the funding-pair totals. |
 | OD20 | Should a transfer that pays a debt record the debt effect in the same save (instead of a separate **Record on Loan** click afterwards)? | Yes, linking an existing matching event first and creating a new one only when none exists. Imported rows are never re-recorded by an edit. |
-| OD21 | How does Track A ship? | Inside v3.0 (it merges into `release/v3` with one migration sequence) if that doesn't delay v3's release gate; otherwise as v3.1 right after v3.0. See the [implementation plan §4](implementation-plan.md#4-release-path-for-track-a). |
+| OD21 | How does Track A ship? | As further v0.3 previews from `main`, one slice per pull request, with its migrations numbered after schema 5, while v3's stable-release gates continue. See the [implementation plan §4](implementation-plan.md#4-release-path-for-track-a). |
 
-## 10. Proposed amendments to v3
+## 10. Changes v4 makes to shipped v3
 
-**Proposed, not applied.** V3 is specified but not built. Some v4 decisions are cheapest to make in v3's specification before its connection slices (S4 onward) create the tables and reports. None of the files in `docs/development/v3/` has been changed; adopting any of these is owner decision OD19. If an amendment is not adopted, v4 does the same work later, at the cost shown.
+V3 shipped after this specification was first drafted (v0.3.0-preview.2, schema 5; see the [v3 release report](../v3-release-report.md) and [preview status](../v3/preview-status.md)). The amendments first proposed for v3's specification therefore become v4 changes to shipped code, made by migration and by the v4 slices named below. The v3 documents describe what shipped and are updated only in v4's documentation pass (implementation plan slice D). Adopting these changes is owner decision OD19.
 
-| # | Amendment | v3 sections it would change | Why now | If not adopted |
+| # | Change | Shipped v3 today | v4 slice | Cost of waiting |
 | --- | --- | --- | --- | --- |
-| V3-A1 | **Required 1:1 links.** Replace the optional treasury account with a link target (treasury account, separate hub, outside the treasury, not set); a treasury account links to at most one institution account; cash buckets link only to checking or savings, cards only to credit cards; the Accounts page's read-only column becomes the place links are edited, with a setup prompt for unlinked cash buckets and cards. Update the page subtitles so they fit cards and counterparties (for example *Your treasury accounts: buckets, cards and counterparties* and *Bank, card, brokerage and loan accounts, each linked to a treasury account or marked outside it*), and the glossary's "virtual bucket" definition of a treasury account. | [Product spec §4.2](../v3/product-spec.md#42-connecting-institutions) step 3; §3 glossary; v3 FR-CONN-4; §6 Accounts and Connected Accounts; [Spending review rules §13](../v3/spending-review-rules.md#13-schema) `institution_accounts`; §14 invariant "the link is an optional FK". | S4 creates `institution_accounts`; the owner maps each account once while connecting. | V4 slice B1 adds the target and unique index by migration and asks the owner to re-confirm every mapping. |
-| V3-A2 | **Drop "Shared"** for cards (and everything else). A card links to its own card treasury account. Two buckets that truly share one bank account are deferred (§2). | Product spec §4.2 step 3 ("or Shared…, such as a credit card"); v3 FR-CONN-4; Spending review rules §13 (`shared` flag); [V3 acceptance tests](../v3/acceptance-tests.md) fixture (Card ••3333, Shared). | Cards already have their own treasury codes; Shared would record a mapping v4 must then undo. | B1's migration turns every Shared account into "not set" and lists it for the owner; nothing is mapped silently. |
-| V3-A3 | **Account-only classification rules.** A rule may match on an institution account (with optional direction and amount range) and no description, so a bucket that funds a single budget line classifies its own account's spending without description patterns. Suggestions only, as for every rule. | [Spending review rules §7](../v3/spending-review-rules.md#7-rules); v3 FR-REV-6; V3-AT6. | Under 1:1 the account decides the line for single-line buckets; this saves the owner writing a rule per merchant from the first review. | V4 adds the rule shape later; reviews before then need description rules. |
-| V3-A4 | **Persist funding-pair totals.** Each cleared report keeps, per (paying treasury account, funding treasury account), the net spending total and count, with hub-paid spending in its own row: totals only. Promote v3 FR-REV-12 from Should to Must, and add a **Funding pairs** sheet to the export. | [Spending review rules §9](../v3/spending-review-rules.md#9-the-spending-report), §11, §13 (new `spending_report_funding_pairs`), §15; product spec v3 FR-REV-12. | Settlement proposals and card coverage are built from these totals. Reports cleared without them can never produce proposals, because their transactions are gone. | V4 adds the table in B4; every month cleared before then yields no proposals. |
-| V3-A5 | **Cent matching in v3 FR-REV-13.** The transfer-confirmation hint compares the deposit with the final transfer after rounding both half-up to cents, rather than exactly. | [Spending review rules §15](../v3/spending-review-rules.md#15-treasury-hints); v3 FR-REV-13. | Budget-driven and imported final transfers can carry fractions of a cent; an exact comparison never matches them. | The v3 hint misses those lines until v4's verification (B3) replaces it. |
-| V3-A6 | **Narrow the non-goal on confirming transfers.** V3's non-goal "creating treasury journal entries, confirming treasury transfers or creating interaccount debts from institution data" gains "except on the owner's explicit click, as a later release specifies". V3 itself still creates none of them. | [Product spec §2](../v3/product-spec.md#2-goals-and-non-goals) non-goals; Spending review rules §1 principle 4 (unchanged: the review itself never writes). | Keeps v3's documents consistent with OD10 and OD11 once v4 ships, so v3's non-goal isn't silently contradicted. | V4's own documents record the exception; v3's text stays stricter than the shipped app until the documentation pass. |
-| V3-A7 | *Optional.* Let the manual-entry form for PDF-only accounts take the statement's **opening** balance as well as its closing balance, and keep both on the report's source row. | Product spec §4.2 step 4; Spending review rules §4 and §9. | V4's typing check (FR-BAL-3) needs it. | V4 adds the field in B2 and the check starts from that month. |
+| V3-A1 | **Required 1:1 links.** A link target per institution account (treasury account, separate hub, outside the treasury, not set); a treasury account links to at most one institution account; cash buckets link only to checking or savings, cards only to credit cards; links are edited on Accounts and Connected Accounts, with a setup prompt for unlinked cash buckets and cards. Page subtitles and the glossary's "virtual bucket" wording are updated to fit cards and counterparties. | `institution_accounts.treasury_account_id` is optional, and new accounts start unlinked and **Shared**. | B1 | Balance checks, verification and proposals have nothing to run on until links exist. |
+| V3-A2 | **Drop "Shared".** A card links to its own card treasury account. Two buckets that truly share one bank account are deferred (§2). | Every institution account carries a `shared` flag, and Connected Accounts shows **Shared** for unlinked accounts. | B1 | B1's migration turns every Shared account into "not set" and lists it for the owner; nothing is mapped silently. Waiting only means more accounts to re-confirm. |
+| V3-A3 | **Account-only classification rules.** A rule may match on an institution account (with optional direction and amount range) and no description, so a bucket that funds a single budget line classifies its own account's spending without description patterns. Suggestions only, as for every rule. | A rule may name an account, but its description pattern is required (the API rejects an empty one, and the matcher skips it). | B0 | Every review until then needs a description rule per merchant for single-line buckets. |
+| V3-A4 | **Persist funding-pair totals.** Each cleared report keeps, per (paying treasury account, funding treasury account), the net spending total and count, with hub-paid spending in its own row: totals only. A **Funding pairs** sheet is added to the report export. | Report lines keep their funding account and the report keeps flow totals by kind, but no per-pair totals. The v3 funding-mismatch hint (v3 FR-REV-12) was not built. | B0 | **Highest.** A month cleared without these totals can never yield settlement proposals or the card-coverage share, because its transactions are deleted when it is cleared. |
+| V3-A5 | **Cent matching** wherever a deposit is compared with a final transfer. | The v3 transfer-confirmation hint (v3 FR-REV-13) was not built; preview status lists it as follow-up work. | B3 | None: B3's verification replaces the hint, so v3 should not build FR-REV-13 separately. |
+| V3-A6 | **Narrow the non-goal on confirming transfers.** V3's non-goal "creating treasury journal entries, confirming treasury transfers or creating interaccount debts from institution data" gains "except on the owner's explicit click". V3 itself still creates none of them. | The shipped app follows the non-goal. | D (documentation) | None until B3 or B4 ships; the v3 documents are corrected in the same release. |
+| V3-A7 | *Optional.* The manual-entry form for PDF-only accounts takes the statement's **opening** balance as well as its closing balance, and keeps both on the report's source row. | Manual entry records the closing balance only. | B2 | The typing check (FR-BAL-3) starts from the first month entered after B2. |
+
+**Recommended order.** Because v3 is already in use, B0 (V3-A3 and V3-A4) should ship first and on its own, so that every month cleared from then on keeps the totals v4 needs. It changes no treasury calculation.

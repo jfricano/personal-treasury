@@ -13,7 +13,7 @@ An accounting review found that it does, with general exceptions:
 - some codes aren't accounts: a relative who lends money, or an account outside the treasury, is only ever a party to a debt;
 - some real accounts (brokerage, retirement, loans) sit outside the treasury on purpose.
 
-V3, which is specified but not built, links an institution account to a treasury account optionally, offers **Shared** for cards, and uses the link only for two hints. Nothing in the app records what a code physically is, so the app treats a bucket, a card and a person alike, and it can't check itself against the balances the institutions report.
+V3, as shipped in v0.3.0-preview.2, links an institution account to a treasury account optionally, starts new accounts as **Shared**, and uses the link for no treasury check (its two planned hints were not built). Nothing in the app records what a code physically is, so the app treats a bucket, a card and a person alike, and it can't check itself against the balances the institutions report.
 
 The review also confirmed that the monthly final transfers already net every journal row and debt repayment into one real transfer per account, the minimum possible. That part of the design is not in question.
 
@@ -41,5 +41,5 @@ The review also confirmed that the monthly final transfers already net every jou
 - The owner declares each account's role once and, with v3, links each bucket and card once. Until then, nothing changes.
 - With links in place, the app can prove each month's cash, compare each card with what will pay for it, verify the final transfers to the cent, and propose settlements for spending from the wrong account, all without storing transactions.
 - A wrong link produces wrong checks. The link dialog shows the account's last four digits and balance before saving, and relinking is audited and undoable.
-- V3's institution-account table gains a link target and a unique link, and loses Shared. If the owner adopts the proposed v3 amendments, this happens in v3's own schema; otherwise v4 migrates it and asks the owner to re-confirm every mapping.
+- V3's institution-account table gains a link target and a unique link, and loses Shared. V4 migrates it (slice B1) and asks the owner to re-confirm every mapping; nothing is mapped silently.
 - ADR 0003 stands: codes, aliases and unknown codes are handled as before. An imported unknown code may be declared a counterparty and archived with its history.

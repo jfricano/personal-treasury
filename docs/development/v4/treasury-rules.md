@@ -499,7 +499,7 @@ Computed on read for `M` = the latest calendar month that has ended and `N` = th
 
 | Step | State |
 | --- | --- |
-| 1 Clear `M`'s review | While a review for `M` is open: **In progress**, with *"M's lines: x verified, y unresolved"*. **Done** once report `M` exists. **Needs connected accounts** without v3 data. |
+| 1 Clear `M`'s review | While a review for `M` is open: **In progress**, with *"M's lines: x verified, y unresolved"*. **Done** once report `M` exists. **Needs connected accounts** when no account is connected. |
 | 2 Decide proposals | **Done** if no proposal from `M` is pending; count otherwise. |
 | 3 Check balances | **Done** if every check for `M` is Proven, Covered, Timing, Explained or not available for a stated reason; count otherwise. |
 | 4 Review debts | **Done** if treasury month `M` has no unacknowledged tie-out item and the review queue as of `M`'s last day has no unacknowledged item; counts otherwise. |
@@ -529,7 +529,7 @@ Forward-only and additive. Money is `TEXT` holding normalized decimals. No migra
 | `balance_check_notes` | B2 | Report month, institution account, check, note, the difference it explains. |
 | `transfer_verifications` | B3 | PK (month, account, leg); status; `verified_cents`; `posted_by_prior_month_end`; `decided_by`; review month; time. |
 | `transfer_verification_months` | B3 | PK month; count of ignored outside transfers. |
-| `spending_report_funding_pairs` | B4 (or v3 via V3-A4) | FK report `ON DELETE CASCADE`; `paying_account_id` (nullable, `ON DELETE SET NULL`) with a code copy; `paying_is_hub`; `funding_account_id` (`ON DELETE SET NULL`) with a code copy; `net`; `count`. |
+| `spending_report_funding_pairs` | B0 | FK report `ON DELETE CASCADE`; `paying_account_id` (nullable, `ON DELETE SET NULL`) with a code copy; `paying_is_hub`; `funding_account_id` (`ON DELETE SET NULL`) with a code copy; `net`; `count`. |
 | `settlement_decisions` | B4 | Unique `(report month, paying, funding, sequence)`; decision; amount; `supersedes_decision_id`; `journal_entry_id`, `debt_id` (`ON DELETE SET NULL`); reason; time. |
 | `accounts.floor_amount`, `target_amount`, `sweep_to_account_id` | B5 | Nullable; `sweep_to_account_id` FK `accounts`. |
 
@@ -573,7 +573,7 @@ The eleven domain rules that must not drift, and the rules in `data-and-rules.md
 | Architecture §6: `computeMonth` reads only expected cash, allocations and postings. | **Extended (OD16, OD14):** it also takes the retained account and, for display only, the standing amounts. | §5 |
 | ADR 0004: "Record on Loan" is a one-click option after saving. | **Changed (OD20):** the debt effect is chosen in the same save, linking an existing event first. The API default stays off. | §8 |
 | V3 non-goal: no journal entries, confirmed transfers or debts from institution data. | **Changed (OD10, OD11; V3-A6):** proposals become records, and verified lines become Done, only on the owner's click. | §14, §15 |
-| V3 FR-REV-13: transfer-confirmation hints. | **Replaced** by verification (§14) once B3 ships; until then the hint stands (with V3-A5's cent matching if adopted). | §14 |
+| V3 FR-REV-13: transfer-confirmation hints. | **Replaced** by verification (§14), with cent matching (V3-A5). The hint was not built in v3 and is not built separately. | §14 |
 | V3 principle: the spending review never writes treasury data. | **Kept.** Clearing writes only the report and its funding pairs; treasury records are created later, on treasury screens. | §15 |
 | V3 principle: raw transactions are temporary. | **Kept.** Verification, proposals and checks store totals and statuses only. Records the owner creates from a single transfer carry its amount and a month-end date (OD10). | §13–§15 |
 | V3: interaccount debts are excluded from net worth. | **Kept.** Economic balances are shown beside, never inside, net worth. | §13.2 |

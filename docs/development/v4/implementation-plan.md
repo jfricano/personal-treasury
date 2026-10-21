@@ -1,15 +1,15 @@
 # Personal Treasury v4: implementation plan and builder handoff
 
-Prepared 2026-09-27 from the v3 specification on `v3/spec`, the v0.2.2 source on `main`, and a private accounting review of the treasury logic and the owner's history. This is a **build plan**. Nothing in it is implemented yet, and v3, which Track B depends on, isn't built either.
+Prepared 2026-09-27 from the v3 specification, the v0.2.2 source and a private accounting review of the treasury logic and the owner's history. Updated 2026-10-20 for the shipped v3 (v0.3.0-preview.2, schema 5, merged into `main`). This is a **build plan**. Nothing in it is implemented yet.
 
-Read first: [Product specification](product-spec.md), [Treasury rules](treasury-rules.md), [Acceptance tests](acceptance-tests.md), and the [v3 implementation plan](../v3/implementation-plan.md).
+Read first: [Product specification](product-spec.md), [Treasury rules](treasury-rules.md), [Acceptance tests](acceptance-tests.md), the [delivery workflow](../DELIVERY_WORKFLOW.md), and v3's [preview status](../v3/preview-status.md) for what shipped and what remains open.
 
 ## 1. Starting point
 
-| Item | State on 2026-09-27 | V4 treatment |
+| Item | State on 2026-10-20 | V4 treatment |
 | --- | --- | --- |
-| `main` (v0.2.2) | Treasury, budget, tax, private web build, encrypted snapshot sync. Schema version 3. | Baseline for Track A's code. Every existing test must keep passing unless an accepted owner decision changes it. |
-| `v3/spec` | V3 specified: sign-in, Budget Analysis, Connected Accounts, balance snapshot. No code. | Track B depends on v3 slices S3, S4, S6a, S7 and S9. The amendments in [product spec §10](product-spec.md#10-proposed-amendments-to-v3) would change v3's specification before S4, if the owner adopts them (OD19). |
+| `main` (v0.3.0-preview.2) | Treasury, budget and tax from v2; v3's sign-in, Budget Analysis, Connected Accounts, cleared reports and balance snapshots. Schema version 5. V3's stable-release gates (provider lifecycle, native and browser acceptance, security and operational review) are still open. | Baseline for every slice. Every existing test must keep passing unless an accepted owner decision changes it. V4 migrations start at version 6. |
+| Shipped v3 that Track B builds on | `institution_accounts` (optional `treasury_account_id`, `shared` flag), categorization rules, the review store and transfer pairing, `spending_reports` with lines, flows, sources (per-account inflows and outflows) and `balance_snapshots`. The funding-mismatch and transfer-confirmation hints (v3 FR-REV-12, FR-REV-13) were not built. | Extended by B0–B4 through the changes in [product spec §10](product-spec.md#10-changes-v4-makes-to-shipped-v3) (OD19). |
 | `v4/spec` (this branch) | The v4 documents and ADR 0011. | Merges into `main` by PR, documents only. |
 | Treasury code the change touches | `src/domain/debts.ts` (`rollForward`, `debtPosition`, `debtStatus`, `summarizeDebts`, `paymentToChange`, `suggestChangeForTransfer`), `src/domain/monthly.ts` (`computeMonth`), `src/domain/types.ts`, `src/api/treasury.ts` (`createMonth`, `setAllocation`, `addTransfer`, `updateTransfer`, `addAdvancedEntry`, `deleteEntry`, `debtBoard`, `recordPayment`, `recordAdjustment`, `recordEntryOnDebt`, `dashboard`), `src/api/schemas.ts`, `src/db/migrations.ts`, `src/import/analyze.ts`, `src/export/workbook.ts`, `src/export/backup.ts`, `src/demo/persona.ts`, `src/demo/seed.ts`. | Extended, not replaced. `summarizeDebts` keeps its signature and results; the as-of filter is a new `positionsAsOf` upstream of it. |
 | Evidence | The owner's history, analyzed privately, shows the final-transfer method already reaches the minimum number of real transfers, and that most journal rows repay debts. | No netting work. The debt workflow and the checks are where the time goes. |
@@ -17,21 +17,22 @@ Read first: [Product specification](product-spec.md), [Treasury rules](treasury-
 ## 2. Branches, authorship and releases
 
 ```text
-main ──●────────────────────────●──────────────────────────●── v0.4.0 tag
-       │ (v4 spec merged)       ▲ v0.3.0 (with Track A      ▲
-       │                        │  under option a)          │ release PR
-       └─► release/v3 ◄── v3 slices, and v4/<A-slice> PRs    │
-                                └─► release/v4 ──●────●──────┘
-                                                 ▲    ▲
-                                       v4/<B-slice> PRs, one per slice
+main ──●──────●──────●──────●───────────────────────────────●── v0.4.0 tag
+       │ spec  ▲ B0   ▲ A1   ▲ A2 … (each slice its own PR,   ▲
+       │       │      │      │  shipped in the next preview)  │ release PR
+       │      v4/<slice> PRs from main                        │
+       └────────────────────► release/v4 ──●────●────●────────┘
+                                           ▲    ▲    ▲
+                                  v4/<B1–B6 slice> PRs
 ```
 
-- **`v4/spec`** holds the v4 documents only. It merges into `main` by PR so the plan is visible, without code changes. It changes no file in `docs/development/v3/`; the v3 amendments are adopted, if at all, by a separate PR to v3's documents.
-- **Track A's branch base depends on OD21** (§4): `release/v3` under option (a), `release/v3.1` under option (b).
-- **`release/v4`** is cut from `main` after v3 (and v3.1, if used) merges. It is the Track B integration branch. Nothing merges into `main` from v4 until the release gate (§9) passes.
+- **`v4/spec`** holds the v4 documents only. It merges into `main` by PR so the plan is visible, without code changes. It changes no file in `docs/development/v3/`; slice D updates them when the changes in product spec §10 ship.
+- **B0 and Track A** (A1–A7 and the Track A close checklist) are cut from `main` and return to `main` by PR, one slice per PR, under OD21's recommended path (§4). Each ships in the next preview release; every behavior change sits behind a setting that starts at the old behavior.
+- **`release/v4`** is cut from `main` once B0 and A1 have merged. It is the integration branch for B1–B6, which add a page and change the link model together. Nothing merges into `main` from it until the release gate (§9) passes.
 - **Slice branches `v4/<slice>`** are cut from their integration branch and return by pull request, one slice per branch, small enough to review in one sitting, rebased before review.
 - **Fixes** to released versions go on `fix/<topic>` from `main` and are merged forward.
-- **Authorship:** every commit is authored by the owner with the repository's configured noreply address. No co-author trailers and no tool attribution in commits, pull requests, code comments or documents.
+- **Authorship:** every commit is authored and signed with the owner's configured identity and key (the repository's noreply address and SSH signing). No co-author trailers and no tool attribution in commits, pull requests, code comments or documents. If signing fails, stop and report it; never fall back to unsigned commits.
+- **Merging** belongs to the owner. Slices open pull requests; nobody else merges, tags or publishes.
 - **Privacy:** `npm run privacy:check` before every push. The accounting review's notes and evidence, the owner's review questions (OD5, OD7, OD8) and every figure from the reference workbook stay in the gitignored `reference/` folder. Public tests use the Harper household and invented numbers only.
 - **Parallel work** uses one git worktree per slice (`git worktree add ../pt-<slice> v4/<slice>`). Slices that need the private reference tests run them in the main checkout.
 
@@ -39,7 +40,17 @@ main ──●──────────────────────
 
 Each slice lists its requirements, what it delivers, its dependencies, and its gate: the evidence its pull request must include. **Every slice's gate also includes** its new tables and columns in `BACKUP_TABLES` with a backup round trip, `npm run db:check` covering its constraints (FR-DATA-1, FR-DATA-2), its part of V4-AT17, and keyboard entry for the actions it adds (FR-V4UI-7).
 
-### Track A: no v3 data needed
+### B0 — Keep funding-pair totals and allow account-only rules (`v4/funding-pairs`)
+
+Ship this first and on its own. Every month cleared without it loses the totals that settlement proposals and card coverage need, because the month's transactions are deleted when it is cleared.
+
+- FR-SETTLE-1 (the totals only), V3-A3 and V3-A4 from [product spec §10](product-spec.md#10-changes-v4-makes-to-shipped-v3).
+- `spending_report_funding_pairs` (Treasury rules §17), written at clearing from accepted budget parts, in the same transaction as the report; the **Funding pairs** sheet in the report export; categorization rules that match on an institution account with an empty description pattern (the matcher and the API schema both accept it only when an account is set); backup, restore and replaced-report handling for the new table.
+- Until B1 ships, a pair's paying side comes from the institution account's existing treasury link, and spending from unlinked or Shared accounts is totalled in an "unlinked" row that never produces a proposal.
+- Gate: V4-AT14.0 (totals built at clearing); the canary scan over the new table; a report cleared before B0 still opens and exports unchanged; rules without an account still require a pattern.
+- No dependencies. Changes no treasury calculation.
+
+### Track A: no institution data needed
 
 #### A1 — Treasury roles and the hub bucket (`v4/treasury-roles`)
 
@@ -98,35 +109,35 @@ Each slice lists its requirements, what it delivers, its dependencies, and its g
 - Gate: V4-AT16.1.
 - After A4 and A5.
 
-### Track B: needs v3
+### Track B: uses institution data
 
 #### B1 — Required links (`v4/links`)
 
 - FR-ACCT-5 to FR-ACCT-9, FR-V4UI-1 (editable link picker and setup view), FR-DATA-4 for links.
-- `institution_accounts.link_target` with its indexes and the migration from `shared` (Treasury rules §3), unless V3-A1 and V3-A2 were adopted, in which case this slice only adds the setup view and completeness checks.
-- Gate: V4-AT11; migration test from a v3 database fixture with a Shared card and duplicate mappings.
-- After A1 and v3 S4 (institution accounts) and S7 (Connected Accounts page).
+- `institution_accounts.link_target` with its indexes and the migration from `shared` and the optional `treasury_account_id` (Treasury rules §3, V3-A1, V3-A2); Connected Accounts' **Shared** label removed.
+- Gate: V4-AT11; migration test from a schema-5 database fixture with a Shared card and duplicate mappings.
+- After A1 and B0.
 
 #### B2 — Observed balances and checks (`v4/balances`)
 
 - FR-BAL-1 to FR-BAL-7, FR-MON-6, FR-V4UI-4, FR-V4UI-6.
 - `domain/balances`: `month_end`, settlement amounts, proof of cash, economic balance and the integrity footer, card coverage, card funding, hub checks, timing, explanations. The optional statement opening balance on manual entry; `pending_total` and `in_transit_total` written at clearing. The **Balances** page. `balance_check_notes`. The setup question for OD18.
 - Gate: V4-AT12; the Balances view empty without a cleared report; screenshot review at 390 and 1440 px.
-- After B1, A2 (as-of net positions), B4's funding-pair table (or V3-A4), and v3 S9 (balance snapshot).
+- After B1, A2 (as-of net positions) and B0 (funding pairs). Uses v3's `balance_snapshots` and report source rows.
 
 #### B3 — Transfer verification (`v4/verification`)
 
 - FR-VER-1 to FR-VER-5, FR-CLOSE-4, FR-V4UI-3 (verification column and actions).
-- Legs, windows and statuses over the open reviews' transactions; **Mark verified lines Done**; **Transfers outside the plan**; `transfer_verifications` and `transfer_verification_months`; the clearing warning. Replaces v3's FR-REV-13 hint.
+- Legs, windows and statuses over the open reviews' transactions; **Mark verified lines Done**; **Transfers outside the plan**; `transfer_verifications` and `transfer_verification_months`; the clearing warning. Takes the place of v3's unbuilt FR-REV-13 hint, with cent matching (V3-A5).
 - Gate: V4-AT13; the canary scan extended to the new tables; v3's isolation test (V3-AT11) still passing, because verification writes only on the owner's click.
-- After B1, A7 (cents and standing amounts) and v3 S3, S6a and S7.
+- After B1 and A7 (cents and standing amounts). Uses v3's review store and transfer pairing.
 
 #### B4 — Settlement proposals (`v4/settlements`)
 
 - FR-SETTLE-1 to FR-SETTLE-7, FR-V4DEMO-2, FR-V4UI-3 (proposals panel).
-- `spending_report_funding_pairs` (unless V3-A4 was adopted), written at clearing; the proposal list; `settlement_decisions` with sequence and supersession; the card-refund default; replaced-report handling; the demo's card statement file.
+- The proposal list over B0's funding pairs; `settlement_decisions` with sequence and supersession; the card-refund default; replaced-report handling; the demo's card statement file.
 - Gate: V4-AT14; the canary scan over the new tables and the generated descriptions; the "nothing posts without acceptance" test.
-- After B1 and v3 S7. Merge its funding-pair table before B2.
+- After B0 and B1.
 
 #### B5 — Floors, targets and sweeps (`v4/sinking-funds`)
 
@@ -144,7 +155,7 @@ Each slice lists its requirements, what it delivers, its dependencies, and its g
 
 ### D — Documentation and screenshots (`v4/docs`)
 
-Documentation is part of the release. This slice runs after the other slices are feature-complete, so the text and images describe the shipped interface. Each item is a checkbox in the PR description. (Under OD21 option (a) or (b), a shorter version of this slice runs for Track A's release.)
+Documentation is part of the release. This slice runs after the other slices are feature-complete, so the text and images describe the shipped interface. Each item is a checkbox in the PR description. (A shorter version runs with each Track A preview: its release notes and the affected guide sections.)
 
 **Release-specific documents (new):**
 
@@ -165,6 +176,7 @@ Documentation is part of the release. This slice runs after the other slices are
 | `docs/development/workbook-import.md` | The new export columns, what the workbook path doesn't carry, and that roles and links are never imported from other workbooks. |
 | `docs/development/development.md`, `testing.md` | New suites, properties and fixtures. |
 | `docs/development/decisions/` | ADR 0011 marked accepted with its final details; ADR 0004 updated for recording in the same save. |
+| `docs/development/v3/` | The product spec, spending review rules and preview status updated for the shipped changes in product spec §10 (links, no Shared, account-only rules, funding pairs, the narrowed non-goal). |
 
 **Screenshots:**
 
@@ -180,24 +192,24 @@ The full verification in §9, including V4-AT18, then the release PR from `relea
 
 ## 4. Release path for Track A
 
-`PRAGMA user_version` is one linear counter, so Track A's migrations must sit in the same sequence as v3's on whichever branch ships them. Three paths are valid; the owner chooses (OD21).
+V3's schema is complete at version 5 on `main`, so Track A no longer has to share a migration sequence with unmerged v3 work. `PRAGMA user_version` stays one linear counter on `main`: each v4 migration takes the next number when its slice merges. The owner chooses the path (OD21).
 
-| Option | How | Migrations | Cost |
-| --- | --- | --- | --- |
-| **(a) Inside v3.0** | Track A slice branches are cut from `release/v3` and merge there by PR, alongside v3's slices. V3.0 (v0.3.0) ships with Track A. | One sequence on `release/v3`: each migration takes the next number when its slice merges, whether it is v3's or Track A's. | Track A's acceptance tests join v3's release gate. If Track A isn't finished when v3's own slices pass their gate, the unmerged Track A slices move to option (b) rather than holding v3. |
-| **(b) v3.1 after v3.0** | After v0.3.0 merges, cut `release/v3.1` from `main`; Track A merges there and ships as v0.3.1. `release/v4` is then cut from `main` for Track B. | Numbered after v3.0's last migration, on one branch. | Track A waits for all of v3.0, including its institution work. |
-| **(c) Before v3.0, as v0.2.3** | Track A merges into `main` and ships as v0.2.3; `main` is merged into `release/v3` before v3's S4 migration merges. | Track A takes the numbers after version 3; v3's migrations are renumbered after them. This requires amending v3's rules (§13, "numbered after the current version 3"). | The earliest delivery, but it constrains the merge order of v3's schema slices and amends v3's schema plan. Not recommended. |
-
-**Recommended:** (a) if it doesn't delay v3's release gate, otherwise (b). Under either, B6's Track A part (steps 4–6) ships with Track A, because it needs only A4 and A5.
-
-## 5. Dependencies on v3
-
-| V4 slice | Needs from v3 | Better with |
+| Option | How | Cost |
 | --- | --- | --- |
-| B1 | S4 (`institution_accounts`), S7 (Connected Accounts page) | V3-A1, V3-A2 |
-| B2 | S9 (balance snapshot), S4 (report source rows), B4's funding pairs | V3-A4, V3-A7 |
-| B3 | S3 (pairing), S6a (review store), S7 | V3-A5, V3-A6 |
-| B4 | S3 (dispositions), S7 (clearing), report tables | V3-A3, V3-A4 |
+| **(a) Previews from `main`** | B0 and each Track A slice merge into `main` by PR and ship in the next v0.3 preview (for example v0.3.0-preview.3). V3's stable gates continue alongside; the stable v0.3.0 then includes whatever has merged. | Track A's acceptance tests join the next stable gate. Behavior changes stay behind settings until the owner answers each decision, so a preview never changes an existing figure on its own. |
+| **(b) Hold for v0.4.0** | Track A merges into `release/v4` with Track B and ships once, as v0.4.0. | Nothing reaches the owner until Track B is done; B0's totals are lost for every month cleared meanwhile, unless B0 alone still ships from `main`. |
+
+**Recommended:** (a). B0 ships first under either option.
+
+## 5. Dependencies on shipped v3
+
+| V4 slice | Uses from shipped v3 | Changes it |
+| --- | --- | --- |
+| B0 | Clearing, report tables, categorization rules | V3-A3, V3-A4 |
+| B1 | `institution_accounts`, Connected Accounts | V3-A1, V3-A2 |
+| B2 | `balance_snapshots`, report source rows (inflows, outflows) | V3-A7 |
+| B3 | Review store, transfer pairing, household settings | V3-A5, V3-A6 |
+| B4 | B0's funding pairs, report months | V3-A6 |
 | B5 | B2 | — |
 | B6 | B2–B4 | — |
 
@@ -205,14 +217,15 @@ The full verification in §9, including V4-AT18, then the release PR from `relea
 
 | Phase | Parallel sessions | Why it is safe |
 | --- | --- | --- |
-| Start | A1 · A2 | A1 touches accounts, month creation and the Accounts page; A2 touches `debt_events`, `domain/debts.ts` and the debt views. |
+| Start | B0 · A1 · A2 | B0 touches clearing, report tables and rules; A1 touches accounts, month creation and the Accounts page; A2 touches `debt_events`, `domain/debts.ts` and the debt views. They share only `src/db/migrations.ts`: merge them one at a time and renumber on rebase. |
 | After A1 and A2 | A3 · A7 | A3 touches the transfer services and debt links; A7 touches `createMonth`, schemas and `computeMonth`. Both edit `src/api/schemas.ts`; agree the two-decimal helper in A7's first PR. |
 | After A3 | A4 · A6 | A4 adds the tie-out and link history; A6 adds pair services and the Pairs tab. |
 | After A4 | A5, then the Track A close checklist | A5 needs the tie-out reason. |
-| After v3 S7 and B1 | B4, then B2 · B3 | B4's funding-pair table comes first; then B2 reads reports and B3 reads the open reviews, sharing only B1's link lookups. |
+| After B0 and B1 | B2 · B3 · B4 | B2 reads reports, B3 reads the open reviews and B4 reads B0's totals; they share only B1's link lookups. |
 | After B2 | B5 · B6 | Disjoint screens. |
 
-- Every PR gets a correctness review against the treasury rules by a reviewer who did not write it. Slices that change a domain rule or a default (A2, A3, A7, B3, B4) get a second review against §18 of the treasury rules.
+- Reviews follow the [delivery workflow](../DELIVERY_WORKFLOW.md). The author verifies each slice with its gate. A focused independent review is required for the high-risk parts: B1's migration of existing link data; the backup and restore delta of every slice; and B0, B3 and B4, which touch the boundary that keeps raw transactions temporary. Repairs are checked by delta, not by a full re-review.
+- Domain-rule changes are not settled by review: each is an owner decision (Treasury rules §18) and ships behind its setting.
 - Each session starts by reading this plan and the treasury rules, and ends with a PR that names the requirements it satisfies and its evidence.
 
 ## 7. Test strategy
@@ -232,7 +245,7 @@ Public tests use only synthetic data and the Harper household.
 ## 8. Owner rollout
 
 1. Take a complete JSON backup and record where it is.
-2. Decide the open owner decisions: for Track A at least OD2, OD3, OD4, OD6, OD9, OD13, OD15, OD16, OD20 and OD21; OD19 before v3 slice S4 starts.
+2. Decide the open owner decisions: OD19 and OD21 first (they unblock B0 and the release path); for Track A at least OD2, OD3, OD4, OD6, OD9, OD13, OD15, OD16 and OD20.
 3. After Track A: answer the setup questions, declare every account's role and the hub bucket, and set standing amounts once the bank's recurring transfers exist (OD14).
 4. Run **Link history**, then work through the tie-out and the review queue using the private notes in `reference/` (OD5, OD7, OD8). Correct with write-offs, reassignments and adjusting events, never by editing imported rows. Record the before-and-after controls privately.
 5. After Track B: link every cash bucket and card, mark the rest outside the treasury, declare which month pay funds (OD18), and set the hub cushion if the hub is separate.
@@ -253,4 +266,4 @@ V4 releases only with a report that shows:
 
 ## 10. Builder handoff prompt
 
-> Implement Personal Treasury v4 from `docs/development/v4/`. Treat `treasury-rules.md` as the calculation contract, alongside `data-and-rules.md` and v3's rules, and add a test for every numbered rule you implement. Build Track A (A1–A7) first, on the branch OD21 names; build Track B (B1–B6) only after the v3 slices it names. Work on slice branches `v4/<slice>`, one git worktree per concurrent session, and author commits as the repository's configured owner with no co-author trailers or tool attribution. Never infer an account's treasury role or link, never compute a balance from allocations, never change an existing row's values, never record a debt event twice for one transfer, and never create a treasury record or a Done mark from institution data without the owner's click. Keep the summary in all-recorded-events mode identical to today's. Every decision that changes existing behavior is a setting that starts at the old behavior; keep every existing treasury, budget, import, export, undo and backup behavior and test unchanged except where this plan lists the change. Use only synthetic data and the Harper household in committed tests; run `npm run privacy:check` before every push. Finish with slice D: release notes, a release report, every standing document updated, and all screenshots regenerated from the demo build.
+> Implement Personal Treasury v4 from `docs/development/v4/`. Treat `treasury-rules.md` as the calculation contract, alongside `data-and-rules.md` and v3's rules, and add a test for every numbered rule you implement. Build B0 first, then Track A (A1–A7) on the path OD21 names, then Track B (B1–B6) on `release/v4`. Work on slice branches `v4/<slice>`, one git worktree per concurrent session, and author and sign commits as the repository's configured owner with no co-author trailers or tool attribution, and leave merging to the owner. Never infer an account's treasury role or link, never compute a balance from allocations, never change an existing row's values, never record a debt event twice for one transfer, and never create a treasury record or a Done mark from institution data without the owner's click. Keep the summary in all-recorded-events mode identical to today's. Every decision that changes existing behavior is a setting that starts at the old behavior; keep every existing treasury, budget, import, export, undo and backup behavior and test unchanged except where this plan lists the change. Use only synthetic data and the Harper household in committed tests; run `npm run privacy:check` before every push. Finish with slice D: release notes, a release report, every standing document updated, and all screenshots regenerated from the demo build.
