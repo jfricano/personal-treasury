@@ -25,4 +25,6 @@ V4 comes from an accounting review of the treasury logic, an analysis of the own
 | 2026-09-27 | Specification drafted, then reviewed twice: for accounting correctness (2 blockers, 11 should-fix) and for consistency, buildability and privacy (2 blockers, 19 should-fix). Every blocker and should-fix item was resolved in the second commit on `v4/spec`. |
 | 2026-10-20 | Updated for the shipped v3: the proposed v3 amendments became changes to shipped v3 ([product spec §10](product-spec.md#10-changes-v4-makes-to-shipped-v3)); slice B0 added; the Track A release path rewritten for one migration sequence on `main` (OD21); reviews aligned with the [delivery workflow](../DELIVERY_WORKFLOW.md). |
 
+**Handoff:** [state on 2026-10-20](handoff.md) for whoever continues.
+
 **Next:** the owner answers the decisions in [product spec §9](product-spec.md#9-owner-decisions), OD19 and OD21 first. Nothing is built until then.
