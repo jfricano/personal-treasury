@@ -23,6 +23,7 @@ Current public release: **v3 / 0.3.0-preview.2**. [GitHub downloads](https://git
 | [Treasury acceptance tests](development/acceptance-tests.md) | Check the unchanged treasury baseline, alongside the v3 acceptance matrix. |
 | [Testing](development/testing.md) | Find the current unit, integration, service, browser, native and container checks. |
 | [V3 specification](development/v3/README.md) | Find the product, spending, security and provider contracts and their acceptance requirements. |
+| [V4 specification](development/v4/README.md) | Plan v4: treasury accounts as physical accounts, with account roles, debt payments entered once, an as-of debt summary, balance checks, verified transfers and a month-end close. Proposed; owner decisions open. |
 | [V3 release report](development/v3-release-report.md) | Review publication, test evidence, documentation audit and remaining acceptance work. |
 | [Preview status](development/v3/preview-status.md) | See implemented paths, outstanding gates and disposable local walkthroughs. |
 | [Distribution plan](distribution-plan.md) | Maintain Local-only public downloads and track stable signing/acceptance work. |
