@@ -272,6 +272,12 @@ export async function createV3Server({
   for (const [id, value] of Object.entries(authPeppers))
     if (!validKeyId(id) || typeof value !== 'string' || Buffer.from(value, 'base64').length !== 32)
       throw new Error('Every authentication pepper must contain 32 bytes');
+  if (
+    Object.values(pepperKeys).some((value) =>
+      timingSafeEqual(Buffer.from(value, 'base64'), Buffer.from(pepper, 'base64')),
+    )
+  )
+    throw new Error('Retiring authentication pepper must differ from the active pepper');
   const verifierPepperId = (record) =>
     record.verifierPepperId === undefined ? '1' : record.verifierPepperId;
   const lifecycle = (type, detail) => {

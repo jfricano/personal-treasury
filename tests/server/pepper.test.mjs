@@ -186,6 +186,7 @@ test('pepper configuration fails closed and never silently selects legacy mode',
     { pepperKeys: { 1: key() } },
     { pepperKeyId: '3', pepperKeys: { 1: key(), 2: key() } },
     { pepperKeys: { old: 'bad' } },
+    { pepperKeyId: '2', pepperKeys: { 1: f.keys.pepper } },
     { pepperKeyId: '2' },
   ])
     await assert.rejects(createV3Server({ ...f.config, ...extra }));
