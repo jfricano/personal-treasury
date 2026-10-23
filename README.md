@@ -103,3 +103,7 @@ Stack: Tauri 2, React 19, TypeScript, SQLite (sql.js), decimal.js, Zod, SheetJS,
 ## Delivery workflow
 
 See [the delivery workflow](docs/development/DELIVERY_WORKFLOW.md) for author verification, focused review of high-risk changes and scoped release authority. Existing project behavior and setup commands above remain authoritative.
+
+## Shared agent instructions
+
+Both shared agent entrypoints in the repository root stay tracked so local and remote agents can read the project instructions. Personal overrides, credentials and session state remain local and untracked. Existing project-specific instructions and permissions continue to apply.
