@@ -20,7 +20,9 @@ Configure secrets through a secret manager or deployment environment before star
 | Variable | Requirement |
 | --- | --- |
 | `PT_PUBLIC_ORIGIN` | Exact public HTTPS origin; localhost HTTP is permitted only for fixtures/development. |
-| `PT_AUTH_PEPPER` | 32 random bytes in base64; selects v3 mode. |
+| `PT_AUTH_PEPPER` | Active authentication pepper: 32 random bytes in base64; selects v3 mode. |
+| `PT_AUTH_PEPPER_ID` | Optional active verifier-pepper ID, default `1`. Separate from client and at-rest key IDs. |
+| `PT_AUTH_PEPPER_<id>` | Optional single retiring verifier pepper, for an account still using that ID. Do not configure an alias for the active ID. |
 | `PT_AT_REST_KEY` | Separate 32-byte base64 key for protected account secrets. |
 | `PT_DEVICE_COOKIE_KEY` | Separate 32-byte base64 secret. |
 | `PT_LOG_KEY` | Separate 32-byte base64 log key. |
@@ -52,6 +54,18 @@ Migration freezes legacy writes, accepts re-encrypted history and verifies it be
 For lost MFA, configure a fresh random `PT_AUTH_MFA_RESET` of at least 32 characters and restart. The reset is single-use and still requires the owner's encryption password and new authenticator enrollment. Confirmation revokes old factors/sessions. A reset cannot recover a forgotten encryption password; recovery uses an independently encrypted backup and its passphrase.
 
 For server at-rest rotation, retain the old key as `PT_AT_REST_KEY_1`, add independent `PT_AT_REST_KEY_2`, and set `PT_AT_REST_KEY_ID=2`. Startup rewraps protected server secrets without changing client ciphertext. Verify restart/sign-in before removing the old runtime key, and retain historical keys with backups that need them. Arbitrary replacement of a key is not rotation.
+
+### Authentication-pepper transition
+
+Independently review, then deploy rotation-aware source before changing authentication peppers. Existing accounts without `verifierPepperId` use logical pepper `1`. A transition to `2` sets the active `PT_AUTH_PEPPER` to an independent new key, `PT_AUTH_PEPPER_ID=2`, and `PT_AUTH_PEPPER_1` to the required old key through the approved secret store. IDs are case-sensitive, 1–32 letters/digits/underscores/hyphens, excluding reserved `ID`. Missing required keys, conflicting aliases, identical active/retiring key bytes or explicit versioned configuration without an active key fail startup; they never silently select legacy mode.
+
+A correct password alone does not migrate the account. After a successful full sign-in with its existing second factor, the server atomically replaces only the verifier and its pepper ID, preserves the client data key and factor bookkeeping, and invalidates other sessions/pending sign-ins. Unlock and step-up checks are read-only. New enrollment and the existing authenticated native password-change operation write the active ID. The client protocol, password, KDF parameters, encrypted history and MFA enrollment do not change merely to rotate a pepper.
+
+Private `auth_pepper_loaded` records report IDs and migration-needed status from the application being constructed; pair them with actual deployment/listening evidence. `auth_pepper_migrated` is emitted only after the durable write. Neither record includes credentials or account identifiers. SSH execution-environment values and a health response alone do not establish application configuration adoption. A failed/uncertain verifier write blocks API access with `authentication_unavailable` until a controlled restart reconciles the durable record with its required keys; never reset the account or blindly restore an old verifier.
+
+After the durable new ID and a full owner sign-in are verified, protect historical recovery keys outside the service and **stage removal of the old alias**. A controlled deployment/restart with only the new pepper, followed by another owner sign-in/sync/reopen check, verifies final retirement. An empty old alias is invalid; remove it through the provider's reviewed staged configuration procedure. Keep the new key with post-migration backups. Old inactive accounts/backups may still need the old pepper for an explicitly isolated recovery; the live migration does not rewrite them. Rollback must retain the key required by the current durable verifier. Do not automatically revert to pre-transition source/configuration or reattach the old data directory.
+
+This requires the legitimate owner to complete authentication during a bounded transition; a forgotten password is not recovered by pepper rotation. Retiring a pepper does not undo historical exposure of an old verifier/pepper pair or revoke a client authentication key that was itself compromised. Those cases need a separate evidence-based response. Keep at-rest rotation, device-cookie rotation and the native offline-login repair separate. No new public configuration endpoint or automatic deployment is provided.
 
 ## Development and validation
 

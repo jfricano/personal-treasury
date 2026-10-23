@@ -320,6 +320,16 @@ export async function createSyncServer({
 }
 
 export async function startFromEnv(environment = process.env) {
+  const pepperKeys = Object.fromEntries(
+    Object.entries(environment)
+      .filter(([name]) => /^PT_AUTH_PEPPER_[a-zA-Z0-9_-]+$/.test(name) && name !== 'PT_AUTH_PEPPER_ID')
+      .map(([name, value]) => [name.slice('PT_AUTH_PEPPER_'.length), value]),
+  );
+  if (
+    !environment.PT_AUTH_PEPPER &&
+    (environment.PT_AUTH_PEPPER_ID !== undefined || Object.keys(pepperKeys).length)
+  )
+    throw new Error('Versioned authentication peppers require an active pepper');
   if (environment.PT_AUTH_PEPPER) {
     const { createV3Server } = await import('./v3.mjs');
     const { INGESTION_LIMITS } = await import('./ingestion.mjs');
@@ -333,6 +343,9 @@ export async function startFromEnv(environment = process.env) {
       staticDirectory: environment.PT_STATIC_DIR,
       origin: environment.PT_PUBLIC_ORIGIN,
       pepper: environment.PT_AUTH_PEPPER,
+      pepperKeyId: environment.PT_AUTH_PEPPER_ID ?? '1',
+      pepperKeys,
+      lifecycleLogger: (record) => console.log(JSON.stringify(record)),
       atRestKey: environment.PT_AT_REST_KEY,
       atRestKeyId: environment.PT_AT_REST_KEY_ID ?? '1',
       atRestKeys: Object.fromEntries(

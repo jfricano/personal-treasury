@@ -238,6 +238,8 @@ export async function createV3Server({
   staticDirectory,
   origin,
   pepper,
+  pepperKeyId = '1',
+  pepperKeys = {},
   atRestKey,
   atRestKeyId = '1',
   atRestKeys = {},
@@ -249,6 +251,8 @@ export async function createV3Server({
   trustProxy = false,
   ingestionLimits = INGESTION_LIMITS,
   requestLogger = (record) => console.log(JSON.stringify(record)),
+  lifecycleLogger = () => undefined,
+  persistVerifier = atomic,
   now = () => Date.now(),
 } = {}) {
   if (!dataDirectory || !origin) throw new Error('V3 needs a data directory and public origin');
@@ -257,6 +261,32 @@ export async function createV3Server({
     throw new Error('Private origin must use HTTPS');
   atRestKey = atRestKeys[atRestKeyId] ?? atRestKey;
   const keys = { pepper, atRestKey, deviceCookieKey, logKey };
+  const validKeyId = (id) => typeof id === 'string' && id !== 'ID' && /^[a-zA-Z0-9_-]{1,32}$/.test(id);
+  if (
+    !validKeyId(pepperKeyId) ||
+    Object.keys(pepperKeys).length > 1 ||
+    Object.hasOwn(pepperKeys, pepperKeyId)
+  )
+    throw new Error('Invalid authentication pepper key mapping');
+  const authPeppers = { ...pepperKeys, [pepperKeyId]: pepper };
+  for (const [id, value] of Object.entries(authPeppers))
+    if (!validKeyId(id) || typeof value !== 'string' || Buffer.from(value, 'base64').length !== 32)
+      throw new Error('Every authentication pepper must contain 32 bytes');
+  if (
+    Object.values(pepperKeys).some((value) =>
+      timingSafeEqual(Buffer.from(value, 'base64'), Buffer.from(pepper, 'base64')),
+    )
+  )
+    throw new Error('Retiring authentication pepper must differ from the active pepper');
+  const verifierPepperId = (record) =>
+    record.verifierPepperId === undefined ? '1' : record.verifierPepperId;
+  const lifecycle = (type, detail) => {
+    try {
+      lifecycleLogger({ type, ...detail });
+    } catch {
+      // Receipt failures cannot reverse a durable authentication transition.
+    }
+  };
   if (!/^[a-zA-Z0-9_-]{1,32}$/.test(atRestKeyId)) throw new Error('Invalid at-rest key ID');
   const keyRing = { ...atRestKeys, [atRestKeyId]: atRestKey };
   for (const value of Object.values(keyRing))
@@ -294,6 +324,11 @@ export async function createV3Server({
       pinned: [],
       pruned: {},
     });
+  if (
+    account &&
+    (!validKeyId(verifierPepperId(account)) || !Object.hasOwn(authPeppers, verifierPepperId(account)))
+  )
+    throw new Error('Required authentication pepper is missing');
   if (account && [account.wrapped, account.totp].some((v) => v.kid !== atRestKeyId)) {
     const wrapped = openRest(account.wrapped),
       secret = openRest(account.totp);
@@ -344,11 +379,42 @@ export async function createV3Server({
     state.events = state.events.filter((e) => Date.parse(e.time) > now() - 400 * DAY).slice(-10000);
     await saveState();
   };
-  const verifier = (key) => mac('pepper', key);
+  const verifier = (key, id = pepperKeyId) =>
+    createHmac('sha256', Buffer.from(authPeppers[id], 'base64')).update(key).digest('base64');
   const verifyPassword = (b) => {
-    const expected = account?.verifier ?? mac('pepper', 'dummy');
-    const matched = equal(verifier(typeof b.authKey === 'string' ? b.authKey : ''), expected);
+    const id = account ? verifierPepperId(account) : pepperKeyId;
+    const expected = account?.verifier ?? verifier('dummy');
+    const matched = equal(verifier(typeof b.authKey === 'string' ? b.authKey : '', id), expected);
     return !!account && matched && normalizeId(b.userId) === account.userId;
+  };
+  let verifierPersistenceFailed = false;
+  const commitVerifier = async (next) => {
+    const previousId = verifierPepperId(account);
+    try {
+      // This writer is injectable only by trusted in-process callers for fault tests.
+      await persistVerifier(accountFile, next);
+    } catch {
+      // A rename may have committed despite an interrupted acknowledgement. Never
+      // continue with a possibly stale in-memory verifier; restart reconciles disk.
+      verifierPersistenceFailed = true;
+      sessions.clear();
+      pending.clear();
+      reject(503, 'authentication_unavailable');
+    }
+    account = next;
+    if (previousId !== next.verifierPepperId)
+      lifecycle('auth_pepper_migrated', {
+        previousPepperId: previousId,
+        verifierPepperId: next.verifierPepperId,
+      });
+  };
+  const checkUpgrade = (p) => {
+    if (
+      p.pepperUpgrade &&
+      (p.pepperUpgrade.previousId !== verifierPepperId(account) ||
+        !equal(p.pepperUpgrade.previousVerifier, account.verifier))
+    )
+      reject(401, 'second_factor_failed');
   };
   const trust = (req) => {
     const value = cookie(req, '__Host-pt_device');
@@ -568,6 +634,7 @@ export async function createV3Server({
           record: {
             userId: normalizeId(b.userId),
             verifier: verifier(b.authKey),
+            verifierPepperId: pepperKeyId,
             salt: b.salt,
             params: b.params,
             kid: b.kid,
@@ -698,6 +765,15 @@ export async function createV3Server({
         desktop,
         trusted,
         resetAllowed: resetAvailable ? hash(mfaReset) : null,
+        ...(verifierPepperId(account) !== pepperKeyId
+          ? {
+              pepperUpgrade: {
+                previousId: verifierPepperId(account),
+                previousVerifier: account.verifier,
+                replacementVerifier: verifier(b.authKey),
+              },
+            }
+          : {}),
       });
       if (!desktop) res.setHeader('Set-Cookie', cookieValue('__Host-pt_pending', id, '; Max-Age=300'));
       return json(res, 200, {
@@ -710,6 +786,7 @@ export async function createV3Server({
       const id = b.pending ?? cookie(req, '__Host-pt_pending'),
         p = pending.get(hash(String(id)));
       if (!p || now() - p.created > 5 * 60000) reject(401, 'second_factor_failed');
+      checkUpgrade(p);
       if (
         p.desktop &&
         !['tauri://localhost', 'http://tauri.localhost', 'https://tauri.localhost'].includes(
@@ -770,6 +847,16 @@ export async function createV3Server({
       if (!p.reenrolled && p.desktop && !['totp', 'device'].includes(b.method))
         reject(401, 'second_factor_failed');
       if (!p.reenrolled) await secondFactor(b, p);
+      if (p.pepperUpgrade) {
+        checkUpgrade(p);
+        await commitVerifier({
+          ...account,
+          verifier: p.pepperUpgrade.replacementVerifier,
+          verifierPepperId: pepperKeyId,
+        });
+        sessions.clear();
+        pending.clear();
+      }
       pending.delete(hash(String(id)));
       state.failures = 0;
       state.lockedUntil = 0;
@@ -999,13 +1086,13 @@ export async function createV3Server({
       const next = {
         ...account,
         verifier: verifier(b.authKey),
+        verifierPepperId: pepperKeyId,
         salt: b.salt,
         params: b.params,
         wrapped: sealRest(b.wrapped),
         kid: b.kid,
       };
-      await atomic(accountFile, next);
-      account = next;
+      await commitVerifier(next);
       pending.clear();
       state.trusted = {};
       for (const k of sessions.keys()) if (k !== key) sessions.delete(k);
@@ -1382,6 +1469,7 @@ export async function createV3Server({
           createReadStream(actual).pipe(res);
           return;
         }
+        if (verifierPersistenceFailed) reject(503, 'authentication_unavailable');
         const legacy = !!(
           legacyToken &&
           equal(req.headers.authorization ?? '', `Bearer ${legacyToken}`) &&
@@ -1492,6 +1580,7 @@ export async function createV3Server({
         // replay checks and conditional writes remain serialized; recheck after slow uploads.
         const task = queue.then(async () => {
           if (req.aborted || res.destroyed) return;
+          if (verifierPersistenceFailed) reject(503, 'authentication_unavailable');
           await authorizeQueued();
           if (!legacy) return route(req, res, url, b);
           legacyBodies.set(req, b);
@@ -1524,5 +1613,10 @@ export async function createV3Server({
   // Do not invite an upload until route, authentication and capacity checks pass.
   server.on('checkContinue', (req, res) => server.emit('request', req, res));
   server.on('close', () => clearInterval(interval));
+  lifecycle('auth_pepper_loaded', {
+    activePepperId: pepperKeyId,
+    verifierPepperId: account ? verifierPepperId(account) : null,
+    migrationPending: !!account && verifierPepperId(account) !== pepperKeyId,
+  });
   return server;
 }
