@@ -1,26 +1,18 @@
-import { readOfflineAccess, writeOfflineAccess, unlockOffline, type OfflineAccess } from './offline';
+import { readOfflineAccess, unlockOffline, type OfflineAccess } from './offline';
 import { useEffect, useRef, useState } from 'react';
 import { startAuthentication } from '@simplewebauthn/browser';
 import type { PublicKeyCredentialRequestOptionsJSON } from '@simplewebauthn/browser';
 import { isTauri, defaultStorage } from '@/db/storage';
 import { MigrationPanel } from './MigrationPanel';
 import { DesktopSetup } from './DesktopSetup';
-import { readDeviceKey, saveDeviceKey, removeDeviceKey, deviceProof } from './device';
+import { readDeviceKey, removeDeviceKey, deviceProof } from './device';
 import { Treasury } from '@/api/treasury';
-import { IndexedDbStorage } from '@/db/storage';
 import { App } from '@/app/App';
 import { SecurityClient, V3Session, SecurityError } from './client';
-import {
-  derivePasswordKeys,
-  unwrapDataKey,
-  userId,
-  base64,
-  unbase64,
-  type KdfParameters,
-  type Sealed,
-} from './crypto';
+import { derivePasswordKeys, userId, base64, unbase64, type KdfParameters } from './crypto';
 import { EncryptedStorage } from './storage';
 import { registerReviewBackend } from '@/features/spending/useReviewStore';
+import { enterPrivateTreasury, type EntryResponse } from './privateEntry';
 export function PrivateBoot({ wasmUrl }: { wasmUrl: string }) {
   const desktop = isTauri();
   const [migration, setMigration] = useState<CryptoKey | null>(null);
@@ -57,53 +49,33 @@ export function PrivateBoot({ wasmUrl }: { wasmUrl: string }) {
         })
         .catch(() => undefined);
   }, [desktop, client]);
-  const enter = async (response: { wrapped: Sealed; kid: string; userId: string; token?: string }) => {
-    if (!wrap.current) throw new Error('Enter your password again.');
-    if (response.token) client.setToken(response.token);
-    const key = await unwrapDataKey(wrap.current, response.wrapped, response.userId, response.kid);
+  const enter = async (response: EntryResponse) => {
+    const wrapKey = wrap.current;
+    const prelogin = parameters.current;
     wrap.current = null;
-    if (desktop) {
-      const migration = await client.request<{ required: boolean }>('/api/migration/status');
-      if (migration.required) {
-        setMigration(key);
+    parameters.current = null;
+    pending.current = undefined;
+    try {
+      const result = await enterPrivateTreasury(client, response, wrapKey, prelogin, desktop, wasmUrl);
+      if (result.kind === 'migration') {
+        setMigration(result.key);
         return;
       }
+      if (result.offlineAccess) setOfflineAccess(result.offlineAccess);
+      setOpened({ treasury: result.treasury, session: result.session });
+      setPassword('');
+      setCode('');
+      setError('');
+      setReenrollment(null);
+    } catch (error) {
+      if (desktop) {
+        setStage('password');
+        setPassword('');
+        setCode('');
+        setReenrollment(null);
+      }
+      throw error;
     }
-    const storage = new EncryptedStorage(
-      desktop ? defaultStorage() : new IndexedDbStorage(),
-      key,
-      `v3:${response.userId}`,
-    );
-    const treasury = await Treasury.open({ storage, profile: 'default', locateWasm: () => wasmUrl });
-    const session = new V3Session(client, key, response.userId, response.kid);
-    await session.start(treasury);
-    registerReviewBackend(treasury, session.reviewBackend(treasury.profile));
-    if (desktop && !(await readDeviceKey(client.baseUrl))) {
-      const pair = await crypto.subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, false, [
-        'sign',
-        'verify',
-      ]);
-      const publicKey = base64(new Uint8Array(await crypto.subtle.exportKey('spki', pair.publicKey)));
-      const { id } = await client.request<{ id: string }>('/api/auth/devices', 'POST', { publicKey });
-      await saveDeviceKey(client.baseUrl, { id, privateKey: pair.privateKey, publicKey });
-    }
-    if (desktop && parameters.current) {
-      const access: OfflineAccess = {
-        v: 1,
-        origin: client.baseUrl,
-        userId: response.userId,
-        kid: response.kid,
-        ...parameters.current,
-        wrapped: response.wrapped,
-      };
-      await writeOfflineAccess(access);
-      setOfflineAccess(access);
-    }
-    setOpened({ treasury, session });
-    setPassword('');
-    setCode('');
-    setError('');
-    setReenrollment(null);
   };
   const perform = async (action: () => Promise<void>) => {
     setBusy(true);
